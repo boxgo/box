@@ -15,7 +15,7 @@ func WithContext(ctx context.Context) Option {
 }
 
 // WithBoxes 预置boxes
-func WithBoxes(boxes []minibox.MiniBox) Option {
+func WithBoxes(boxes ...minibox.MiniBox) Option {
 	return func(op *Options) {
 		op.Boxes = boxes
 	}

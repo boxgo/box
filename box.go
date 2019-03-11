@@ -179,7 +179,7 @@ func NewBox(options ...Option) *Box {
 		serverHook: opts.ServerHook,
 	}
 
-	b.Mount(b)
+	b.Mount(b).Mount(opts.Boxes...)
 
 	return b
 }
