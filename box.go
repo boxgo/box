@@ -4,8 +4,8 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
+	"time"
 
 	"github.com/boxgo/box/config"
 	"github.com/boxgo/box/minibox"
@@ -53,39 +53,43 @@ func (box *Box) Mount(boxes ...minibox.MiniBox) *Box {
 func (box *Box) Serve() error {
 	box.setupConfig()
 
-	if box.serverHook != nil {
-		box.serverHook.ServerWillReady(box.ctx)
-	}
-
-	box.traverseMiniBoxes(func(mini minibox.MiniBox) {
-		var serverOk, serverHookOk bool
-		var server minibox.Server
-		var serverHook minibox.ServerHook
-
-		server, serverOk = mini.(minibox.Server)
-		serverHook, serverHookOk = mini.(minibox.ServerHook)
-
-		if serverHookOk {
-			serverHook.ServerWillReady(box.ctx)
+	go func() {
+		if box.serverHook != nil {
+			box.serverHook.ServerWillReady(box.ctx)
 		}
 
-		if serverOk {
-			if err := server.Serve(box.ctx); err != nil {
-				logger.Default.Errorf("MiniBox [%s] serve error: %s", mini.Name(), err)
-				panic(err)
-			} else {
-				logger.Default.Infof("MiniBox [%s] serve success", mini.Name())
+		box.traverseMiniBoxes(func(mini minibox.MiniBox) {
+			var serverOk, serverHookOk bool
+			var server minibox.Server
+			var serverHook minibox.ServerHook
+
+			server, serverOk = mini.(minibox.Server)
+			serverHook, serverHookOk = mini.(minibox.ServerHook)
+
+			if serverHookOk {
+				serverHook.ServerWillReady(box.ctx)
 			}
-		}
 
-		if serverHookOk {
-			serverHook.ServerDidReady(box.ctx)
-		}
-	})
+			if serverOk {
+				go func() {
+					if err := server.Serve(box.ctx); err != nil {
+						logger.Default.Errorf("MiniBox [%s] serve error: %s", mini.Name(), err)
+						panic(err)
+					}
+				}()
+			}
 
-	if box.serverHook != nil {
-		box.serverHook.ServerDidReady(box.ctx)
-	}
+			// 等待100毫秒启动，如果没有报错，认为是启动成功了
+			time.Sleep(time.Millisecond * 100)
+			if serverHookOk {
+				serverHook.ServerDidReady(box.ctx)
+			}
+		})
+
+		if box.serverHook != nil {
+			box.serverHook.ServerDidReady(box.ctx)
+		}
+	}()
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -115,7 +119,7 @@ func (box *Box) Shutdown() {
 		}
 
 		if serverOk {
-			if err := server.Serve(box.ctx); err != nil {
+			if err := server.Shutdown(box.ctx); err != nil {
 				logger.Default.Errorf("MiniBox [%s] shutdown error: %s", mini.Name(), err)
 				panic(err)
 			} else {
@@ -133,19 +137,10 @@ func (box *Box) Shutdown() {
 	}
 }
 
-func (box *Box) traverseMiniBoxes(done func(minibox.MiniBox)) {
-	wg := sync.WaitGroup{}
-
+func (box *Box) traverseMiniBoxes(handler func(minibox.MiniBox)) {
 	for _, b := range box.boxes {
-		wg.Add(1)
-
-		go func(miniBox minibox.MiniBox) {
-			done(miniBox)
-			wg.Done()
-		}(b)
+		handler(b)
 	}
-
-	wg.Wait()
 }
 
 func (box *Box) setupConfig() {
