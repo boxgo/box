@@ -51,8 +51,12 @@ func (boxCfg *configCenter) Scan(ctx context.Context) {
 			cfgHook.ConfigDidLoad(ctx)
 		}
 
-		cfgStr, _ := json.Marshal(cfg)
-		logger.Default.Infof("config: %-20s %s", cfg.Name(), cfgStr)
+		cfgStr, err := json.Marshal(cfg)
+		if err != nil {
+			logger.Default.Errorf("config: %-20s marshal error: %s", cfg.Name(), err.Error())
+		} else {
+			logger.Default.Infof("config: %-20s %s", cfg.Name(), cfgStr)
+		}
 	}
 }
 
