@@ -5,6 +5,11 @@ import (
 )
 
 type (
+	// App 基础信息
+	App struct {
+		AppName string `json:"name" desc:"Application name"`
+	}
+
 	// MiniBox a mini box
 	// 迷你盒子是一个微型应用，Duck Typing优雅的解决了已注册迷你盒子对功能的自由支持与扩展。
 	// * 支持从配置中心获取自己以及外部的配置信息
@@ -45,3 +50,8 @@ type (
 		ServerDidClose(ctx context.Context)
 	}
 )
+
+// Name app 基础信息存储在根目录
+func (app *App) Name() string {
+	return ""
+}

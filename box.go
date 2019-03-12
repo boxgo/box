@@ -15,7 +15,7 @@ import (
 type (
 	// Box is a application bootstrap
 	Box struct {
-		App string `json:"name" desc:"Application name"`
+		minibox.App
 
 		ctx        context.Context
 		boxes      []minibox.MiniBox
