@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/boxgo/kit/logger"
-
-	"github.com/boxgo/box/minibox"
 )
 
 type (
@@ -20,10 +18,6 @@ type (
 
 func (l *Logger) Name() string {
 	return "logger"
-}
-
-func (l *Logger) Exts() []minibox.MiniBox {
-	return []minibox.MiniBox{}
 }
 
 func (l *Logger) Serve(ctx context.Context) error {
@@ -41,22 +35,22 @@ func (l *Logger) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// func (l *Logger) ConfigWillLoad(ctx context.Context) {
-// 	logger.Default.Debug(l.Name(), " ConfigWillLoad")
-// }
-// func (l *Logger) ConfigDidLoad(ctx context.Context) {
-// 	logger.Default.Debug(l.Name(), " ConfigDidLoad")
-// }
+func (l *Logger) ConfigWillLoad(ctx context.Context) {
+	logger.Default.Debug(l.Name(), " ConfigWillLoad")
+}
+func (l *Logger) ConfigDidLoad(ctx context.Context) {
+	logger.Default.Debug(l.Name(), " ConfigDidLoad")
+}
 
 func (l *Logger) ServerWillReady(ctx context.Context) {
-	logger.Default.Debug(l.Name(), "  ServerWillReady")
+	logger.Default.Debug(l.Name(), " ServerWillReady")
 }
 func (l *Logger) ServerDidReady(ctx context.Context) {
-	logger.Default.Debug(l.Name(), "  ServerDidReady")
+	logger.Default.Debug(l.Name(), " ServerDidReady")
 }
 func (l *Logger) ServerWillClose(ctx context.Context) {
-	logger.Default.Debug(l.Name(), "  ServerWillClose")
+	logger.Default.Debug(l.Name(), " ServerWillClose")
 }
 func (l *Logger) ServerDidClose(ctx context.Context) {
-	logger.Default.Debug(l.Name(), "  ServerDidClose")
+	logger.Default.Debug(l.Name(), " ServerDidClose")
 }

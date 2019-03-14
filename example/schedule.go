@@ -4,66 +4,48 @@ import (
 	"context"
 
 	"github.com/boxgo/kit/logger"
-
-	"github.com/boxgo/box/minibox"
 )
 
 type (
-	App struct {
-		AppName string `json:"name" desc:"Application name"`
-	}
-)
-
-func (c *App) Name() string {
-	return "ext"
-}
-
-type (
-	Info struct {
-		App    App
-		Common Common
+	Schedule struct {
 		Server string `json:"server" desc:"server ip"`
 	}
 )
 
-func (l *Info) Name() string {
+func (l *Schedule) Name() string {
 	return "schedule"
 }
 
-func (l *Info) Exts() []minibox.MiniBox {
-	return []minibox.MiniBox{&l.App, &l.Common}
-}
-
-func (l *Info) Serve(ctx context.Context) error {
+func (l *Schedule) Serve(ctx context.Context) error {
 	logger.Default.Debug(l.Name(), " Serve")
 	return nil
 }
 
-func (l *Info) Shutdown(ctx context.Context) error {
+func (l *Schedule) Shutdown(ctx context.Context) error {
 	logger.Default.Debug(l.Name(), " Shutdown")
 	return nil
 }
 
-// func (l *Info) ConfigWillLoad(ctx context.Context) {
-// 	logger.Default.Debug(l.Name(), " ConfigWillLoad")
-// }
-
-// func (l *Info) ConfigDidLoad(ctx context.Context) {
-// 	logger.Default.Debug(l.Name(), " ConfigDidLoad")
-// }
-
-func (l *Info) ServerWillReady(ctx context.Context) {
-	logger.Default.Debug(l.Name(), "  ServerWillReady")
+func (l *Schedule) ConfigWillLoad(ctx context.Context) {
+	logger.Default.Debug(l.Name(), " ConfigWillLoad")
 }
 
-func (l *Info) ServerDidReady(ctx context.Context) {
-	logger.Default.Debug(l.Name(), "  ServerDidReady")
+func (l *Schedule) ConfigDidLoad(ctx context.Context) {
+	logger.Default.Debug(l.Name(), " ConfigDidLoad")
 }
 
-func (l *Info) ServerWillClose(ctx context.Context) {
-	logger.Default.Debug(l.Name(), "  ServerWillClose")
+func (l *Schedule) ServerWillReady(ctx context.Context) {
+	logger.Default.Debug(l.Name(), " ServerWillReady")
 }
 
-func (l *Info) ServerDidClose(ctx context.Context) {
-	logger.Default.Debug(l.Name(), "  ServerDidClose")
+func (l *Schedule) ServerDidReady(ctx context.Context) {
+	logger.Default.Debug(l.Name(), " ServerDidReady")
+}
+
+func (l *Schedule) ServerWillClose(ctx context.Context) {
+	logger.Default.Debug(l.Name(), " ServerWillClose")
+}
+
+func (l *Schedule) ServerDidClose(ctx context.Context) {
+	logger.Default.Debug(l.Name(), " ServerDidClose")
 }

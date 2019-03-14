@@ -2,7 +2,7 @@ name: box-test
 test: test
 
 logger:
-  level: debug
+  level: info
 ext:
   name: hello world
 
