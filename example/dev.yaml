@@ -1,0 +1,11 @@
+name: box-test
+test: test
+
+logger:
+  level: debug
+ext:
+  name: hello world
+
+rest:
+  port: 8081
+  doc: true
