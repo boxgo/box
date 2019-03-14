@@ -72,8 +72,9 @@ func (box *Box) Serve() error {
 
 			if serverOk {
 				go func() {
+					logger.Default.Infof("server %-20s ready to serve", mini.Name())
 					if err := server.Serve(box.ctx); err != nil {
-						logger.Default.Errorf("MiniBox [%s] serve error: %s", mini.Name(), err)
+						logger.Default.Errorf("server %-20s serve error: %s", mini.Name(), err)
 						panic(err)
 					}
 				}()
@@ -120,10 +121,10 @@ func (box *Box) Shutdown() {
 
 		if serverOk {
 			if err := server.Shutdown(box.ctx); err != nil {
-				logger.Default.Errorf("MiniBox [%s] shutdown error: %s", mini.Name(), err)
+				logger.Default.Errorf("server %-20s shutdown error: %s", mini.Name(), err)
 				panic(err)
 			} else {
-				logger.Default.Infof("MiniBox [%s] shutdown success", mini.Name())
+				logger.Default.Infof("server %-20s shutdown success", mini.Name())
 			}
 		}
 
