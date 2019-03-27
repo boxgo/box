@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/boxgo/box/cmd/rest"
+	"github.com/boxgo/box/cmd/box/rest"
 	"github.com/spf13/cobra"
 )
 
