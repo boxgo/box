@@ -4,7 +4,7 @@ import (
 	"github.com/boxgo/box"
 	"github.com/boxgo/box/config"
 	"github.com/boxgo/box/config/loader"
-	"github.com/boxgo/box/server/rest"
+	"github.com/boxgo/rest"
 )
 
 func main() {
