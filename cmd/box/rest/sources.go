@@ -19,8 +19,8 @@ package main
 
 import (
 	"github.com/boxgo/box"
-	"github.com/boxgo/demo/src/middlewares"
-	"github.com/boxgo/demo/src/schedules"
+	"{{.Repo}}/{{.ProjectName}}/src/middlewares"
+	"{{.Repo}}/{{.ProjectName}}/src/schedules"
 	"github.com/boxgo/kit/logger"
 	"github.com/boxgo/kit/request"
 )
