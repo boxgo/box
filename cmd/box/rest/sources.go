@@ -146,8 +146,8 @@ func init() {
 			Description: "Get server version info",
 			Handlers: gin.HandlersChain{func(ctx *gin.Context) {
 				ctx.JSON(200, map[string]string{
-					"version":   BoxVersion,
-					"buildTime": BoxBuildTime,
+					"version": BoxVersion,
+					"time":    BoxBuildTime,
 				})
 			}},
 		},
@@ -451,7 +451,7 @@ clean:
 
 
 build_info:
-	$(eval BoxVersion := $(shell git rev-parse HEAD))
+	$(eval BoxVersion := $(shell git rev-parse --short HEAD))
 	$(eval BoxBuildTime := $(shell date '+%Y/%m/%d,%H:%M:%S'))
 	@echo BoxVersion=$(BoxVersion)
 	@echo BoxBuildTime=$(BoxBuildTime)
