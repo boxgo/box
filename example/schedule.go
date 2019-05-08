@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/boxgo/kit/logger"
+	"github.com/boxgo/logger"
 )
 
 type (

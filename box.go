@@ -9,7 +9,7 @@ import (
 
 	"github.com/boxgo/box/config"
 	"github.com/boxgo/box/minibox"
-	"github.com/boxgo/kit/logger"
+	"github.com/boxgo/logger"
 )
 
 type (

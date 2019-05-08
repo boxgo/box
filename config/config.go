@@ -7,7 +7,7 @@ import (
 	"github.com/boxgo/box/config/loader"
 	"github.com/boxgo/box/config/printer"
 	"github.com/boxgo/box/minibox"
-	"github.com/boxgo/kit/logger"
+	"github.com/boxgo/logger"
 )
 
 type (

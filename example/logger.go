@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/boxgo/kit/logger"
+	"github.com/boxgo/logger"
 )
 
 type (
