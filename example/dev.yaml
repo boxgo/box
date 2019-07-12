@@ -6,6 +6,9 @@ logger:
 ext:
   name: hello world
 
+schedule:
+  a: 1
+
 rest:
   port: 8081
   doc: true

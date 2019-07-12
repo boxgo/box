@@ -3,16 +3,25 @@ package main
 import (
 	"github.com/boxgo/box"
 	"github.com/boxgo/box/config"
-	"github.com/boxgo/box/config/loader"
-	"github.com/boxgo/rest"
+	"github.com/boxgo/config/source/env"
+	"github.com/boxgo/config/source/file"
+	"github.com/boxgo/config/source/pflag"
 )
 
 func main() {
-	app := box.NewBox(
-		box.WithConfig(config.NewConfig(loader.NewFileConfig("example/dev.yaml"))),
+	cfg := config.NewConfig(
+		file.NewSource(file.WithPath("./example/dev.yaml")),
+		pflag.NewSource(),
+		env.NewSource(),
 	)
 
-	app.Mount(&Logger{}, &Schedule{}, rest.NewServer())
+	cfg.EnablePflag(true)
+
+	app := box.NewBox(
+		box.WithConfig(cfg),
+	)
+
+	app.Mount(&Logger{}, &Schedule{})
 
 	app.Serve()
 }

@@ -149,7 +149,7 @@ func (box *Box) setupConfig() {
 		box.configHook.ConfigWillLoad(box.ctx)
 	}
 
-	box.config.Set(box.boxes...).Scan(box.ctx)
+	box.config.Register(box.boxes...).Delivery(box.ctx)
 
 	if box.configHook != nil {
 		box.configHook.ConfigDidLoad(box.ctx)

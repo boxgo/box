@@ -9,10 +9,10 @@ import (
 
 type (
 	Logger struct {
-		Level          string `json:"level" desc:"Levels: debug,info,warn,error,dpanic,panic,fatal"`
-		Encoding       string `json:"encoding" desc:"PS: console or json"`
-		TraceUID       string `json:"traceUid" desc:"Name as trace uid in context"`
-		TraceRequestID string `json:"traceRequestId" desc:"Name as trace requestId in context"`
+		Level          string `config:"level" desc:"Levels: debug,info,warn,error,dpanic,panic,fatal"`
+		Encoding       string `config:"encoding" desc:"PS: console or json"`
+		TraceUID       string `config:"traceUid" desc:"Name as trace uid in context"`
+		TraceRequestID string `config:"traceRequestId" desc:"Name as trace requestId in context"`
 	}
 )
 
