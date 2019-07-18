@@ -7,7 +7,7 @@ import (
 type (
 	// App 基础信息
 	App struct {
-		AppName string `json:"name" desc:"Application name"`
+		AppName string `config:"name" desc:"Application name"`
 	}
 
 	// MiniBox a mini box
