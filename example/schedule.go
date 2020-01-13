@@ -8,7 +8,7 @@ import (
 
 type (
 	Schedule struct {
-		Server string `json:"server" desc:"server ip"`
+		Server string `config:"server" help:"server ip"`
 	}
 )
 
