@@ -2,44 +2,71 @@
 package config
 
 import (
-	"context"
+	"time"
 
-	"github.com/boxgo/box/pkg/config/loader"
 	"github.com/boxgo/box/pkg/config/reader"
 	"github.com/boxgo/box/pkg/config/source"
 	"github.com/boxgo/box/pkg/config/source/file"
 )
 
-// Config is an interface abstraction for dynamic configuration
-type Config interface {
-	// provide the reader.Values interface
-	reader.Values
-	// Stop the config loader/watcher
-	Close() error
-	// Load config sources
-	Load(source ...source.Source) error
-	// Force a source changeset sync
-	Sync() error
-	// Watch a value for changes
-	Watch(path ...string) (Watcher, error)
-}
+type (
+	// Configurator is an interface abstraction for dynamic configuration
+	Configurator interface {
+		// Load config sources
+		Load(source ...source.Source) error
+		// Force a source changeset sync
+		Sync() error
+		// Watch a value for changes
+		Watch(field *Field) (Watcher, error)
+		// Stop the config loader/watcher
+		Close() error
+		// SprintFields registered fields
+		SprintFields() string
+		// SprintTemplate through encoder
+		SprintTemplate(encoder string) string
+		// Mounter mount fields to configurator
+		Mounter
+		// Getter get value through field
+		Getter
+	}
 
-// Watcher is the config watcher
-type Watcher interface {
-	Next() (reader.Value, error)
-	Stop() error
-}
+	// Configurable instance should implements this interface
+	Config interface {
+		Name() string
+		Configure(mg MountGetter)
+	}
 
-type Options struct {
-	Loader loader.Loader
-	Reader reader.Reader
-	Source []source.Source
+	// Mounter fields
+	Mounter interface {
+		Mount(fields ...*Field)
+	}
 
-	// for alternative data
-	Context context.Context
-}
+	Getter interface {
+		// Get value through field
+		Get(field *Field) reader.Value
+		// GetString through field
+		GetBool(field *Field) bool
+		// GetInt through field
+		GetInt(field *Field) int
+		// GetUint through field
+		GetUint(field *Field) uint
+		// GetString through field
+		GetString(field *Field) string
+		// GetFloat64 through field
+		GetFloat64(field *Field) float64
+		// GetDuration through field
+		GetDuration(field *Field) time.Duration
+		// GetStringSlice through field
+		GetStringSlice(field *Field) []string
+		// GetStringMap through field
+		GetStringMap(field *Field) map[string]string
+	}
 
-type Option func(o *Options)
+	MountGetter interface {
+		Mounter
+		Getter
+	}
+)
 
 var (
 	// Default Config Manager
@@ -47,43 +74,8 @@ var (
 )
 
 // NewConfig returns new config
-func NewConfig(opts ...Option) Config {
+func NewConfig(opts ...Option) Configurator {
 	return newConfig(opts...)
-}
-
-// Return config as raw json
-func Bytes() []byte {
-	return DefaultConfig.Bytes()
-}
-
-// Return config as a map
-func Map() map[string]interface{} {
-	return DefaultConfig.Map()
-}
-
-// Scan values to a go type
-func Scan(v interface{}) error {
-	return DefaultConfig.Scan(v)
-}
-
-// Force a source changeset sync
-func Sync() error {
-	return DefaultConfig.Sync()
-}
-
-// Get a value from the config
-func Get(path ...string) reader.Value {
-	return DefaultConfig.Get(path...)
-}
-
-// Load config sources
-func Load(source ...source.Source) error {
-	return DefaultConfig.Load(source...)
-}
-
-// Watch a value for changes
-func Watch(path ...string) (Watcher, error) {
-	return DefaultConfig.Watch(path...)
 }
 
 // LoadFile is short hand for creating a file source and loading it
@@ -91,4 +83,84 @@ func LoadFile(path string) error {
 	return Load(file.NewSource(
 		file.WithPath(path),
 	))
+}
+
+// Load config sources
+func Load(source ...source.Source) error {
+	return DefaultConfig.Load(source...)
+}
+
+// Force a source changeset sync
+func Sync() error {
+	return DefaultConfig.Sync()
+}
+
+// Watch a value for changes
+func Watch(field *Field) (Watcher, error) {
+	return DefaultConfig.Watch(field)
+}
+
+// Stop the config loader/watcher
+func Close() error {
+	return DefaultConfig.Close()
+}
+
+// Mount fields
+func Mount(fields ...*Field) {
+	DefaultConfig.Mount(fields...)
+}
+
+// Get a value from the config
+func Get(field *Field) reader.Value {
+	return DefaultConfig.Get(field)
+}
+
+// GetString through field
+func GetBool(field *Field) bool {
+	return DefaultConfig.GetBool(field)
+}
+
+// GetInt through field
+func GetInt(field *Field) int {
+	return DefaultConfig.GetInt(field)
+}
+
+// GetUint through field
+func GetUint(field *Field) uint {
+	return DefaultConfig.GetUint(field)
+}
+
+// GetString through field
+func GetString(field *Field) string {
+	return DefaultConfig.GetString(field)
+}
+
+// GetFloat64 through field
+func GetFloat64(field *Field) float64 {
+	return DefaultConfig.GetFloat64(field)
+}
+
+// GetDuration through field
+func GetDuration(field *Field) time.Duration {
+	return DefaultConfig.GetDuration(field)
+}
+
+// GetStringSlice through field
+func GetStringSlice(field *Field) []string {
+	return DefaultConfig.GetStringSlice(field)
+}
+
+// GetStringMap through field
+func GetStringMap(field *Field) map[string]string {
+	return DefaultConfig.GetStringMap(field)
+}
+
+// SprintFields registered fields
+func SprintFields() string {
+	return DefaultConfig.SprintFields()
+}
+
+// SprintTemplate through encoder
+func SprintTemplate(encoder string) string {
+	return DefaultConfig.SprintTemplate(encoder)
 }

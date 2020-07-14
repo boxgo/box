@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"sync"
 	"time"
 
@@ -12,25 +11,22 @@ import (
 	"github.com/boxgo/box/pkg/config/source"
 )
 
-type config struct {
-	exit chan bool
-	opts Options
+type (
+	config struct {
+		exit chan bool
+		opts Options
 
-	sync.RWMutex
-	// the current snapshot
-	snap *loader.Snapshot
-	// the current values
-	vals reader.Values
-}
+		sync.RWMutex
+		// the current snapshot
+		snap *loader.Snapshot
+		// the current values
+		vals reader.Values
+		// the current fields
+		fields map[string]*Field
+	}
+)
 
-type watcher struct {
-	lw    loader.Watcher
-	rd    reader.Reader
-	path  []string
-	value reader.Value
-}
-
-func newConfig(opts ...Option) Config {
+func newConfig(opts ...Option) Configurator {
 	options := Options{
 		Loader: memory.NewLoader(),
 		Reader: json.NewReader(),
@@ -45,10 +41,11 @@ func newConfig(opts ...Option) Config {
 	vals, _ := options.Reader.Values(snap.ChangeSet)
 
 	c := &config{
-		exit: make(chan bool),
-		opts: options,
-		snap: snap,
-		vals: vals,
+		exit:   make(chan bool),
+		opts:   options,
+		snap:   snap,
+		vals:   vals,
+		fields: make(map[string]*Field),
 	}
 
 	go c.run()
@@ -113,16 +110,28 @@ func (c *config) run() {
 	}
 }
 
-func (c *config) Map() map[string]interface{} {
-	c.RLock()
-	defer c.RUnlock()
-	return c.vals.Map()
-}
+// Load config sources
+func (c *config) Load(sources ...source.Source) error {
+	if err := c.opts.Loader.Load(sources...); err != nil {
+		return err
+	}
 
-func (c *config) Scan(v interface{}) error {
-	c.RLock()
-	defer c.RUnlock()
-	return c.vals.Scan(v)
+	snap, err := c.opts.Loader.Snapshot()
+	if err != nil {
+		return err
+	}
+
+	c.Lock()
+	defer c.Unlock()
+
+	c.snap = snap
+	vals, err := c.opts.Reader.Values(snap.ChangeSet)
+	if err != nil {
+		return err
+	}
+	c.vals = vals
+
+	return nil
 }
 
 // sync loads all the sources, calls the parser and updates the config
@@ -149,65 +158,10 @@ func (c *config) Sync() error {
 	return nil
 }
 
-func (c *config) Close() error {
-	select {
-	case <-c.exit:
-		return nil
-	default:
-		close(c.exit)
-	}
-	return nil
-}
-
-func (c *config) Get(path ...string) reader.Value {
-	c.RLock()
-	defer c.RUnlock()
-
-	// did sync actually work?
-	if c.vals != nil {
-		return c.vals.Get(path...)
-	}
-
-	// no value
-	return newValue()
-}
-
-func (c *config) Bytes() []byte {
-	c.RLock()
-	defer c.RUnlock()
-
-	if c.vals == nil {
-		return []byte{}
-	}
-
-	return c.vals.Bytes()
-}
-
-func (c *config) Load(sources ...source.Source) error {
-	if err := c.opts.Loader.Load(sources...); err != nil {
-		return err
-	}
-
-	snap, err := c.opts.Loader.Snapshot()
-	if err != nil {
-		return err
-	}
-
-	c.Lock()
-	defer c.Unlock()
-
-	c.snap = snap
-	vals, err := c.opts.Reader.Values(snap.ChangeSet)
-	if err != nil {
-		return err
-	}
-	c.vals = vals
-
-	return nil
-}
-
-func (c *config) Watch(path ...string) (Watcher, error) {
-	value := c.Get(path...)
+// Watch a value for changes
+func (c *config) Watch(field *Field) (Watcher, error) {
+	value := c.Get(field)
+	path := field2path(field)
 
 	w, err := c.opts.Loader.Watch(path...)
 	if err != nil {
@@ -222,32 +176,160 @@ func (c *config) Watch(path ...string) (Watcher, error) {
 	}, nil
 }
 
-func (c *config) String() string {
-	return "config"
+// Stop the config loader/watcher
+func (c *config) Close() error {
+	select {
+	case <-c.exit:
+		return nil
+	default:
+		close(c.exit)
+	}
+	return nil
 }
 
-func (w *watcher) Next() (reader.Value, error) {
-	for {
-		s, err := w.lw.Next()
-		if err != nil {
-			return nil, err
-		}
-
-		// only process changes
-		if bytes.Equal(w.value.Bytes(), s.ChangeSet.Data) {
-			continue
-		}
-
-		v, err := w.rd.Values(s.ChangeSet)
-		if err != nil {
-			return nil, err
-		}
-
-		w.value = v.Get()
-		return w.value, nil
+// Mount fields
+func (c *config) Mount(fields ...*Field) {
+	for _, field := range fields {
+		c.fields[field.String()] = field
 	}
 }
 
-func (w *watcher) Stop() error {
-	return w.lw.Stop()
+// Get value through field
+func (c *config) Get(field *Field) reader.Value {
+	c.RLock()
+	defer c.RUnlock()
+
+	// did sync actually work?
+	if c.vals != nil {
+		return c.vals.Get(field2path(field)...)
+	}
+
+	// no value
+	return newValue()
+}
+
+// GetString through field
+func (c *config) GetBool(field *Field) (val bool) {
+	if field == nil {
+		return
+	}
+
+	def, ok := field.def.(bool)
+	if !ok {
+		return
+	}
+
+	return c.Get(field).Bool(def)
+}
+
+// GetInt through field
+func (c *config) GetInt(field *Field) (val int) {
+	if field == nil {
+		return
+	}
+
+	def, ok := field.def.(int)
+	if !ok {
+		return
+	}
+
+	return c.Get(field).Int(def)
+}
+
+// GetUint through field
+func (c *config) GetUint(field *Field) (val uint) {
+	if field == nil {
+		return
+	}
+
+	def, ok := field.def.(uint)
+	if !ok {
+		return
+	}
+
+	return c.Get(field).Uint(def)
+}
+
+// GetString through field
+func (c *config) GetString(field *Field) (val string) {
+	if field == nil {
+		return
+	}
+
+	def, ok := field.def.(string)
+	if !ok {
+		return
+	}
+
+	return c.Get(field).String(def)
+}
+
+// GetFloat64 through field
+func (c *config) GetFloat64(field *Field) (val float64) {
+	if field == nil {
+		return
+	}
+
+	def, ok := field.def.(float64)
+	if !ok {
+		return
+	}
+
+	return c.Get(field).Float64(def)
+}
+
+// GetDuration through field
+func (c *config) GetDuration(field *Field) (val time.Duration) {
+	if field == nil {
+		return
+	}
+
+	def, ok := field.def.(time.Duration)
+	if !ok {
+		return
+	}
+
+	return c.Get(field).Duration(def)
+}
+
+// GetStringSlice through field
+func (c *config) GetStringSlice(field *Field) (val []string) {
+	if field == nil {
+		return
+	}
+
+	def, ok := field.def.([]string)
+	if !ok {
+		return
+	}
+
+	return c.Get(field).StringSlice(def)
+}
+
+// GetStringMap through field
+func (c *config) GetStringMap(field *Field) (val map[string]string) {
+	if field == nil {
+		return
+	}
+
+	def, ok := field.def.(map[string]string)
+	if !ok {
+		return
+	}
+
+	return c.Get(field).StringMap(def)
+}
+
+// SprintFields registered fields
+func (c *config) SprintFields() (str string) {
+	return sprintFields(c.fields)
+}
+
+// SprintTemplate through encoder
+func (c *config) SprintTemplate(encoder string) (str string) {
+	return sprintTemplate(c.fields, encoder)
+}
+
+func (c *config) String() string {
+	return "config"
 }

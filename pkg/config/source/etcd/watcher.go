@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/boxgo/box/pkg/config/source"
-	"go.etcd.io/etcd/clientv3"
+	"github.com/coreos/etcd/clientv3"
 )
 
 type watcher struct {
