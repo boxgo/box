@@ -29,9 +29,9 @@ func WithLoader(l loader.Loader) Option {
 }
 
 // WithSource appends a source to list of sources
-func WithSource(s source.Source) Option {
+func WithSource(s ...source.Source) Option {
 	return func(o *Options) {
-		o.Source = append(o.Source, s)
+		o.Source = append(o.Source, s...)
 	}
 }
 
