@@ -187,6 +187,11 @@ func (c *config) Close() error {
 	return nil
 }
 
+// Bytes get merged config data
+func (c *config) Bytes() []byte {
+	return c.vals.Bytes()
+}
+
 // Mount fields
 func (c *config) Mount(fields ...*Field) {
 	for _, field := range fields {

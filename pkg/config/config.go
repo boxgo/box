@@ -23,6 +23,8 @@ type (
 		Sync() error
 		// Stop the config loader/watcher
 		Close() error
+		// Bytes get merged config data
+		Bytes() []byte
 		// SprintFields registered fields
 		SprintFields() string
 		// SprintTemplate through encoder
