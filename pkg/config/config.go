@@ -21,32 +21,27 @@ type (
 		Load(source ...source.Source) error
 		// Force a source changeset sync
 		Sync() error
-		// Watch a value for changes
-		Watch(field *Field) (Watcher, error)
 		// Stop the config loader/watcher
 		Close() error
 		// SprintFields registered fields
 		SprintFields() string
 		// SprintTemplate through encoder
 		SprintTemplate(encoder string) string
-		// Mounter mount fields to configurator
-		Mounter
-		// Getter get value through field
-		Getter
+		// Watch, Mount, Getter value through field
+		WatchMountGetter
 	}
 
 	// Configurable instance should implements this interface
 	Config interface {
 		Name() string
-		Configure(mg MountGetter)
+		Configure(mg WatchMountGetter)
 	}
 
-	// Mounter fields
-	Mounter interface {
+	WatchMountGetter interface {
+		// Watch field change
+		Watch(field *Field) (Watcher, error)
+		// Mount fields to configurator
 		Mount(fields ...*Field)
-	}
-
-	Getter interface {
 		// Get value through field
 		Get(field *Field) reader.Value
 		// GetString through field
@@ -65,11 +60,6 @@ type (
 		GetStringSlice(field *Field) []string
 		// GetStringMap through field
 		GetStringMap(field *Field) map[string]string
-	}
-
-	MountGetter interface {
-		Mounter
-		Getter
 	}
 )
 
