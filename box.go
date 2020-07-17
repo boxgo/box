@@ -44,6 +44,7 @@ func (app *application) Run() error {
 		return err
 	}
 
+	defer close(app.quit)
 	<-app.quit
 
 	if err := app.shutdown(); err != nil {
@@ -96,6 +97,7 @@ func (app *application) serve() error {
 
 	errCh := make(chan error)
 	go func() {
+		defer close(errCh)
 		errCh <- g.Wait()
 	}()
 
