@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -16,6 +18,7 @@ type (
 		level *zap.AtomicLevel
 		sugar *zap.SugaredLogger
 		opts  *Options
+		cfg   config.WatchMountGetter
 	}
 )
 
@@ -43,6 +46,7 @@ func (logger *Logger) Configure(cfg config.WatchMountGetter) {
 
 	lgr, lv := newLogger(cfg.GetString(logger.opts.Level), cfg.GetString(logger.opts.Encoding))
 
+	logger.cfg = cfg
 	logger.level = lv
 	logger.sugar = lgr.Sugar()
 
@@ -151,6 +155,43 @@ func (logger *Logger) Fatalw(msg string, keysAndValues ...interface{}) {
 	logger.sugar.Fatalw(msg, keysAndValues...)
 }
 
+// Trace logger with requestId and uid
+func (logger *Logger) Trace(ctx context.Context) *zap.SugaredLogger {
+	return logger.trace(ctx)
+}
+
+func (logger *Logger) TraceRaw(ctx context.Context) *zap.Logger {
+	return logger.trace(ctx).Desugar()
+}
+
+func (logger *Logger) Named(name string) *zap.SugaredLogger {
+	return logger.sugar.Named(name)
+}
+
 func (logger *Logger) Desugar() *zap.Logger {
 	return logger.sugar.Desugar()
+}
+
+func (logger *Logger) trace(ctx context.Context) *zap.SugaredLogger {
+	var uid, requestID, spanId, bizId string
+
+	traceUid := logger.cfg.GetString(logger.opts.TraceUid)
+	traceRequestId := logger.cfg.GetString(logger.opts.TraceRequestId)
+	traceSpanId := logger.cfg.GetString(logger.opts.TraceSpanId)
+	traceBizId := logger.cfg.GetString(logger.opts.TraceBizId)
+
+	if uidStr, ok := ctx.Value(traceUid).(string); ok {
+		uid = uidStr
+	}
+	if requestIDStr, ok := ctx.Value(traceRequestId).(string); ok {
+		requestID = requestIDStr
+	}
+	if spanIdStr, ok := ctx.Value(traceSpanId).(string); ok {
+		spanId = spanIdStr
+	}
+	if bizIdStr, ok := ctx.Value(traceBizId).(string); ok {
+		bizId = bizIdStr
+	}
+
+	return logger.sugar.Named(fmt.Sprintf("[%s][%s][%s][%s]", uid, requestID, spanId, bizId))
 }

@@ -1,5 +1,11 @@
 package logger
 
+import (
+	"context"
+
+	"go.uber.org/zap"
+)
+
 var (
 	// Default the default logger
 	Default = New()
@@ -87,4 +93,20 @@ func Fatalf(template string, args ...interface{}) {
 
 func Fatalw(msg string, keysAndValues ...interface{}) {
 	Default.Fatalw(msg, keysAndValues...)
+}
+
+func Trace(ctx context.Context) *zap.SugaredLogger {
+	return Default.Trace(ctx)
+}
+
+func TraceRaw(ctx context.Context) *zap.Logger {
+	return Default.TraceRaw(ctx)
+}
+
+func Named(name string) *zap.SugaredLogger {
+	return Default.Named(name)
+}
+
+func Desugar() *zap.Logger {
+	return Default.Desugar()
 }
