@@ -194,6 +194,9 @@ func (c *config) Bytes() []byte {
 
 // Mount fields
 func (c *config) Mount(fields ...*Field) {
+	c.Lock()
+	defer c.Unlock()
+
 	for _, field := range fields {
 		c.fields[field.String()] = field
 	}
