@@ -14,7 +14,8 @@ func (*DummyBox) Name() string {
 	return "dummyBox"
 }
 
-func (*DummyBox) Configure(config.WatchMountGetter) {
+func (*DummyBox) Init(config.SubConfigurator) error {
+	return nil
 }
 
 func (*DummyBox) Serve(context.Context) error {

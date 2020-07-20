@@ -30,16 +30,10 @@ type (
 		// SprintTemplate through encoder
 		SprintTemplate(encoder string) string
 		// Watch, Mount, Getter value through field
-		WatchMountGetter
+		SubConfigurator
 	}
 
-	// Configurable instance should implements this interface
-	Config interface {
-		Name() string
-		Configure(mg WatchMountGetter)
-	}
-
-	WatchMountGetter interface {
+	SubConfigurator interface {
 		// Watch field change
 		Watch(field *Field) (Watcher, error)
 		// Mount fields to configurator
@@ -62,6 +56,12 @@ type (
 		GetStringSlice(field *Field) []string
 		// GetStringMap through field
 		GetStringMap(field *Field) map[string]string
+	}
+
+	// Configurable instance should implements this interface
+	Config interface {
+		Name() string
+		Init(SubConfigurator) error
 	}
 )
 

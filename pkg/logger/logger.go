@@ -18,7 +18,7 @@ type (
 		level *zap.AtomicLevel
 		sugar *zap.SugaredLogger
 		opts  *Options
-		cfg   config.WatchMountGetter
+		cfg   config.SubConfigurator
 	}
 )
 
@@ -41,7 +41,7 @@ func (logger *Logger) Name() string {
 	return defaultName
 }
 
-func (logger *Logger) Configure(cfg config.WatchMountGetter) {
+func (logger *Logger) Init(cfg config.SubConfigurator) error {
 	cfg.Mount(logger.opts.Fields()...)
 
 	lgr, lv := newLogger(cfg.GetString(logger.opts.Level), cfg.GetString(logger.opts.Encoding))
@@ -69,6 +69,8 @@ func (logger *Logger) Configure(cfg config.WatchMountGetter) {
 			}
 		}()
 	}
+
+	return nil
 }
 
 func (logger *Logger) Debug(args ...interface{}) {

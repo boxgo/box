@@ -32,14 +32,14 @@ type (
 		quit            chan os.Signal
 		cfg             config.Configurator
 	}
+
+	boxErr struct {
+		box Box
+		err error
+	}
 )
 
 func (app *application) Run() error {
-	logger.Info("box application run")
-	if err := app.init(); err != nil {
-		return err
-	}
-
 	if err := app.serve(); err != nil {
 		return err
 	}
@@ -55,109 +55,107 @@ func (app *application) Run() error {
 }
 
 func (app *application) init() error {
-	logger.Debug("register signal")
-	signal.Notify(app.quit, syscall.SIGINT, syscall.SIGTERM)
+	g := errgroup.Group{}
 
-	// force sync config source
-	if err := app.cfg.Sync(); err != nil {
-		return err
-	}
-
-	logger.Infof("configs: %s", app.cfg.Bytes())
-
-	// register config mounter getter to boxes
 	for _, box := range app.boxes {
-		logger.Infof("configure [%s]", box.Name())
-		box.Configure(app.cfg)
+		box := box
+		g.Go(func() error {
+			return box.Init(app.cfg)
+		})
 	}
 
-	return nil
+	return g.Wait()
 }
 
 func (app *application) serve() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(app.startupTimeout)*time.Millisecond)
-	defer cancel()
-
 	logger.Info("serve start...")
 
 	g := errgroup.Group{}
 	for _, box := range app.boxes {
 		box := box
 		g.Go(func() error {
-			err := box.Serve(ctx)
-			if err != nil {
-				logger.Infof("serve [%s] error: %v", box.Name(), err)
-			} else {
-				logger.Infof("serve [%s] success", box.Name())
-			}
+			serveCh := make(chan boxErr)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(app.startupTimeout)*time.Millisecond)
+			defer cancel()
 
-			return err
+			go func() {
+				defer close(serveCh)
+
+				logger.Infof("serve %s", box.Name())
+				serveCh <- boxErr{
+					box: box,
+					err: box.Serve(ctx),
+				}
+			}()
+
+			select {
+			case ch := <-serveCh:
+				if ch.err != nil {
+					logger.Errorf("serve %s error: %v", ch.box.Name(), ch.err)
+				}
+
+				return ch.err
+			case <-ctx.Done():
+				if ctx.Err() == context.DeadlineExceeded {
+					return nil
+				} else {
+					return ctx.Err()
+				}
+			}
 		})
 	}
 
-	errCh := make(chan error)
-	go func() {
-		defer close(errCh)
-		errCh <- g.Wait()
-	}()
-
-	select {
-	case err := <-errCh:
-		if err != nil {
-			logger.Errorf("serve error: %v", err)
-		} else {
-			logger.Info("serve success")
-		}
-		return err
-	case <-ctx.Done():
-		if ctx.Err() == context.DeadlineExceeded {
-			logger.Infof("serve done...")
-			return nil
-		} else {
-			logger.Errorf("serve server error: %v", ctx.Err())
-			return ctx.Err()
-		}
+	err := g.Wait()
+	if err != nil {
+		logger.Errorf("serve error: %v", err)
+	} else {
+		logger.Infof("serve done...")
 	}
+
+	return err
 }
 
 func (app *application) shutdown() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(app.shutdownTimeout)*time.Millisecond)
-	defer cancel()
-
 	logger.Info("shutdown start...")
 
 	g := errgroup.Group{}
 	for _, box := range app.boxes {
 		box := box
 		g.Go(func() error {
-			err := box.Shutdown(ctx)
-			if err != nil {
-				logger.Infof("shutdown [%s] error: %v", box.Name(), err)
-			} else {
-				logger.Infof("shutdown [%s] success", box.Name())
-			}
+			shutdownCh := make(chan boxErr)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(app.shutdownTimeout)*time.Millisecond)
+			defer cancel()
 
-			return err
+			go func() {
+				defer close(shutdownCh)
+
+				logger.Infof("shutdown %s", box.Name())
+				shutdownCh <- boxErr{
+					box: box,
+					err: box.Shutdown(ctx),
+				}
+			}()
+
+			select {
+			case ch := <-shutdownCh:
+				if ch.err != nil {
+					logger.Errorf("shutdown %s error: %v", ch.box.Name(), ch.err)
+				}
+				return ch.err
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		})
 	}
 
-	errCh := make(chan error)
-	go func() {
-		errCh <- g.Wait()
-	}()
-
-	select {
-	case err := <-errCh:
-		if err != nil {
-			logger.Errorf("shutdown error: %v", err)
-		} else {
-			logger.Info("shutdown done...")
-		}
-		return err
-	case <-ctx.Done():
-		logger.Infof("shutdown timeout: %v", ctx.Err())
-		return ctx.Err()
+	err := g.Wait()
+	if err != nil {
+		logger.Errorf("shutdown error: %v", err)
+	} else {
+		logger.Infof("shutdown done...")
 	}
+
+	return err
 }
 
 // New new a box bootstrap
@@ -181,6 +179,20 @@ func New(options ...Option) Application {
 		cfg:             opts.Configurator,
 		boxes:           opts.Boxes,
 	}
+
+	if app.cfg == nil {
+		logger.Fatal("configurator is required")
+	} else if err := app.cfg.Sync(); err != nil {
+		logger.Fatalf("configurator sync error: %v\n", err)
+	} else {
+		logger.Infof("configurator: %s", app.cfg.Bytes())
+	}
+
+	if err := app.init(); err != nil {
+		logger.Fatalf("init error: %v", err)
+	}
+
+	signal.Notify(app.quit, syscall.SIGINT, syscall.SIGTERM)
 
 	return app
 }
