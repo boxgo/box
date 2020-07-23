@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/boxgo/box/pkg/config"
-	"github.com/boxgo/box/pkg/server/grpcserver/middleware/wrapper"
+	"github.com/boxgo/box/pkg/server/grpcserver/interceptor/wrapper"
 	"github.com/boxgo/box/pkg/util/strutil"
 	"github.com/teris-io/shortid"
 	"google.golang.org/grpc"
