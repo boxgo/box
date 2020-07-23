@@ -21,8 +21,10 @@ type (
 		snap *loader.Snapshot
 		// the current values
 		vals reader.Values
-		// the current fields
-		fields map[string]*Field
+		// system registered fields
+		sysFields []*Field
+		// user registered fields
+		userFields []*Field
 	}
 )
 
@@ -41,12 +43,21 @@ func newConfig(opts ...Option) Configurator {
 	vals, _ := options.Reader.Values(snap.ChangeSet)
 
 	c := &config{
-		exit:   make(chan bool),
-		opts:   options,
-		snap:   snap,
-		vals:   vals,
-		fields: make(map[string]*Field),
+		exit:       make(chan bool),
+		opts:       options,
+		snap:       snap,
+		vals:       vals,
+		sysFields:  make([]*Field, 0),
+		userFields: make([]*Field, 0),
 	}
+
+	c.MountSystem(
+		fieldBoxName,
+		fieldTraceUid,
+		fieldTraceReqId,
+		fieldTraceSpanId,
+		fieldTraceBizId,
+	)
 
 	go c.run()
 
@@ -197,9 +208,14 @@ func (c *config) Mount(fields ...*Field) {
 	c.Lock()
 	defer c.Unlock()
 
-	for _, field := range fields {
-		c.fields[field.String()] = field
-	}
+	c.userFields = append(c.userFields, fields...)
+}
+
+func (c *config) MountSystem(fields ...*Field) {
+	c.Lock()
+	defer c.Unlock()
+
+	c.sysFields = append(c.sysFields, fields...)
 }
 
 // Get value through field
@@ -328,14 +344,39 @@ func (c *config) GetStringMap(field *Field) (val map[string]string) {
 	return c.Get(field).StringMap(def)
 }
 
+// GetBoxName path: box.name
+func (c *config) GetBoxName() string {
+	return c.GetString(fieldBoxName)
+}
+
+// GetTraceUid path: box.trace.uid
+func (c *config) GetTraceUid() string {
+	return c.GetString(fieldTraceUid)
+}
+
+// GetTraceReqId path: box.trace.reqid
+func (c *config) GetTraceReqId() string {
+	return c.GetString(fieldTraceReqId)
+}
+
+// GetTraceBizId path: box.trace.bizid
+func (c *config) GetTraceBizId() string {
+	return c.GetString(fieldTraceBizId)
+}
+
+// GetTraceSpanId path: box.trace.spanid
+func (c *config) GetTraceSpanId() string {
+	return c.GetString(fieldTraceSpanId)
+}
+
 // SprintFields registered fields
 func (c *config) SprintFields() (str string) {
-	return sprintFields(c.fields)
+	return sprintFields(c.sysFields, c.userFields)
 }
 
 // SprintTemplate through encoder
 func (c *config) SprintTemplate(encoder string) (str string) {
-	return sprintTemplate(c.fields, encoder)
+	return sprintTemplate(c.sysFields, c.userFields, encoder)
 }
 
 func (c *config) String() string {

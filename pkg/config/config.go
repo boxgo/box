@@ -2,16 +2,10 @@
 package config
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/boxgo/box/pkg/config/reader"
 	"github.com/boxgo/box/pkg/config/source"
-	"github.com/boxgo/box/pkg/config/source/env"
-	"github.com/boxgo/box/pkg/config/source/etcd"
-	"github.com/boxgo/box/pkg/config/source/file"
-	"github.com/boxgo/box/pkg/util"
 )
 
 type (
@@ -56,12 +50,16 @@ type (
 		GetStringSlice(field *Field) []string
 		// GetStringMap through field
 		GetStringMap(field *Field) map[string]string
-	}
-
-	// Configurable instance should implements this interface
-	Config interface {
-		Name() string
-		Init(SubConfigurator) error
+		// GetBoxName path: box.name
+		GetBoxName() string
+		// GetTraceUid path: box.trace.uid
+		GetTraceUid() string
+		// GetTraceReqId path: box.trace.reqid
+		GetTraceReqId() string
+		// GetTraceBizId path: box.trace.bizid
+		GetTraceBizId() string
+		// GetTraceSpanId path: box.trace.spanid
+		GetTraceSpanId() string
 	}
 )
 
@@ -74,20 +72,7 @@ var (
 // the priority is: `env` > `file`.
 // `env` will use filename as prefix automatically.
 func NewSimple(filePath string) Configurator {
-	name := util.Filename(filePath)
-	nameUpper := strings.ToUpper(name)
-
-	return newConfig(
-		WithSource(
-			file.NewSource(
-				file.WithPath(filePath),
-			),
-			env.NewSource(
-				env.WithPrefix(nameUpper),
-				env.WithStrippedPrefix(nameUpper),
-			),
-		),
-	)
+	return newConfig(WithSimpleSource(filePath))
 }
 
 // NewClassic create a configurator with `file`, `env` and `etcd` source support.
@@ -95,53 +80,18 @@ func NewSimple(filePath string) Configurator {
 // `env` will use filename as prefix automatically.
 // `etcd` key format: `/{fileName}/config`
 func NewClassic(filePath, username, password, address string) Configurator {
-	name := util.Filename(filePath)
-	nameUpper := strings.ToUpper(name)
-
-	return newConfig(
-		WithSource(
-			file.NewSource(
-				file.WithPath(filePath),
-			),
-			env.NewSource(
-				env.WithPrefix(nameUpper),
-				env.WithStrippedPrefix(nameUpper),
-			),
-			etcd.NewSource(
-				etcd.WithAddress(address),
-				etcd.Auth(username, password),
-				etcd.WithPrefix(fmt.Sprintf("/%s/config", name)),
-				etcd.StripPrefix(true),
-			),
-		),
-	)
+	return newConfig(WithClassicSource(filePath, username, password, address))
 }
 
 // NewEtcd create a configurator with `etcd` source support.
 // `etcd` key format: `/{prefix}/config`
 func NewEtcd(prefix, username, password, address string) Configurator {
-	return newConfig(
-		WithSource(
-			etcd.NewSource(
-				etcd.WithAddress(address),
-				etcd.Auth(username, password),
-				etcd.WithPrefix(fmt.Sprintf("/%s/config", prefix)),
-				etcd.StripPrefix(true),
-			),
-		),
-	)
+	return newConfig(WithEtcdSource(prefix, username, password, address))
 }
 
 // NewConfig returns new config
 func NewConfig(opts ...Option) Configurator {
 	return newConfig(opts...)
-}
-
-// LoadFile is short hand for creating a file source and loading it
-func LoadFile(path string) error {
-	return Load(file.NewSource(
-		file.WithPath(path),
-	))
 }
 
 // Load config sources
@@ -212,6 +162,31 @@ func GetStringSlice(field *Field) []string {
 // GetStringMap through field
 func GetStringMap(field *Field) map[string]string {
 	return Default.GetStringMap(field)
+}
+
+// GetBoxName path: box.name
+func GetBoxName() string {
+	return Default.GetBoxName()
+}
+
+// GetTraceUid path: box.trace.uid
+func GetTraceUid() string {
+	return Default.GetTraceUid()
+}
+
+// GetTraceReqId path: box.trace.reqid
+func GetTraceReqId() string {
+	return Default.GetTraceReqId()
+}
+
+// GetTraceBizId path: box.trace.bizid
+func GetTraceBizId() string {
+	return Default.GetTraceBizId()
+}
+
+// GetTraceSpanId path: box.trace.spanid
+func GetTraceSpanId() string {
+	return Default.GetTraceSpanId()
 }
 
 // SprintFields registered fields
