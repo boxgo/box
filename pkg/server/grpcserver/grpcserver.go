@@ -12,36 +12,69 @@ import (
 type (
 	Server struct {
 		dummybox.DummyBox
-		cfg           *Config
-		lis           net.Listener
-		server        *grpc.Server
+		name   string
+		cfg    *Config
+		server *grpc.Server
+	}
+
+	Options struct {
+		name          string
+		cfg           config.SubConfigurator
 		serverOptions []grpc.ServerOption
 	}
+
+	OptionFunc func(*Options)
 )
 
-func NewServer(opts ...grpc.ServerOption) *Server {
+func WithName(name string) OptionFunc {
+	return func(opts *Options) {
+		opts.name = name
+	}
+}
+
+func WithConfigurator(cfg config.SubConfigurator) OptionFunc {
+	return func(opts *Options) {
+		opts.cfg = cfg
+	}
+}
+
+func WithServerOption(serverOptions ...grpc.ServerOption) OptionFunc {
+	return func(opts *Options) {
+		opts.serverOptions = append(opts.serverOptions, serverOptions...)
+	}
+}
+
+func New(optFunc ...OptionFunc) *Server {
+	opts := &Options{}
+	for _, fn := range optFunc {
+		fn(opts)
+	}
+
+	if opts.name == "" {
+		opts.name = "grpc.server"
+	}
+	if opts.cfg == nil {
+		opts.cfg = config.Default
+	}
+
 	return &Server{
-		server:        nil,
-		cfg:           nil,
-		serverOptions: opts,
+		name:   opts.name,
+		cfg:    newConfig(opts.name, opts.cfg),
+		server: grpc.NewServer(opts.serverOptions...),
 	}
 }
 
 func (s *Server) Name() string {
-	return "grpcserver"
-}
-
-func (s *Server) Init(cfg config.SubConfigurator) (err error) {
-	s.cfg = newConfig(s.Name(), cfg)
-	s.lis, err = net.Listen(s.cfg.Network(), s.cfg.Address())
-	s.server = grpc.NewServer(s.serverOptions...)
-	s.cfg.Mount(s.cfg.Fields()...)
-
-	return err
+	return s.name
 }
 
 func (s *Server) Serve(ctx context.Context) error {
-	err := s.server.Serve(s.lis)
+	lis, err := net.Listen(s.cfg.Network(), s.cfg.Address())
+	if err != nil {
+		return err
+	}
+
+	err = s.server.Serve(lis)
 	if err != grpc.ErrServerStopped {
 		return nil
 	}

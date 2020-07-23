@@ -13,12 +13,15 @@ type (
 )
 
 func newConfig(name string, cfg config.SubConfigurator) *Config {
-	return &Config{
+	c := &Config{
 		SubConfigurator: cfg,
-		network:         config.NewField(name, "network", "The network must be \"tcp\", \"tcp4\", \"tcp6\", \"unix\" or \"unixpacket\".", "tcp"),
+		network:         config.NewField(name, "network", "The network must be \"tcp\", \"tcp4\", \"tcp6\", \"unix\" or \"unixpacket\".", "tcp4"),
 		address:         config.NewField(name, "address", "format: host:port", ":9092"),
 	}
 
+	c.Mount(c.Fields()...)
+
+	return c
 }
 
 func (cfg *Config) Address() string {
