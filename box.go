@@ -16,7 +16,6 @@ import (
 type (
 	// Box component interface
 	Box interface {
-		config.Config
 		server.Server
 	}
 
@@ -52,19 +51,6 @@ func (app *application) Run() error {
 	}
 
 	return nil
-}
-
-func (app *application) init() error {
-	g := errgroup.Group{}
-
-	for _, box := range app.boxes {
-		box := box
-		g.Go(func() error {
-			return box.Init(app.cfg)
-		})
-	}
-
-	return g.Wait()
 }
 
 func (app *application) serve() error {
@@ -186,10 +172,6 @@ func New(options ...Option) Application {
 		logger.Fatalf("configurator sync error: %v\n", err)
 	} else {
 		logger.Infof("configurator: %s", app.cfg.Bytes())
-	}
-
-	if err := app.init(); err != nil {
-		logger.Fatalf("init error: %v", err)
 	}
 
 	signal.Notify(app.quit, syscall.SIGINT, syscall.SIGTERM)

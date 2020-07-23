@@ -2,8 +2,6 @@ package dummybox
 
 import (
 	"context"
-
-	"github.com/boxgo/box/pkg/config"
 )
 
 type (
@@ -12,10 +10,6 @@ type (
 
 func (*DummyBox) Name() string {
 	return "dummyBox"
-}
-
-func (*DummyBox) Init(config.SubConfigurator) error {
-	return nil
 }
 
 func (*DummyBox) Serve(context.Context) error {
