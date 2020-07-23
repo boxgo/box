@@ -8,8 +8,16 @@ import (
 
 var (
 	// Default the default logger
-	Default = New()
+	Default *Logger
 )
+
+func init() {
+	if log, err := New(); err != nil {
+		panic(err)
+	} else {
+		Default = log
+	}
+}
 
 func Debug(args ...interface{}) {
 	Default.Debug(args...)

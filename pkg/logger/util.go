@@ -5,13 +5,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func newLogger(level, encoding string) (*zap.Logger, *zap.AtomicLevel) {
-	lv, _ := newLevelFromString(level)
-	atomicLevel := zap.NewAtomicLevelAt(lv)
-
+func newLogger(level *zap.AtomicLevel, encoding string) *zap.Logger {
 	cfg := &zap.Config{
 		Development: false,
-		Level:       atomicLevel,
+		Level:       *level,
 		Encoding:    encoding,
 		Sampling: &zap.SamplingConfig{
 			Initial:    100,
@@ -38,7 +35,18 @@ func newLogger(level, encoding string) (*zap.Logger, *zap.AtomicLevel) {
 		panic(err)
 	}
 
-	return log, &atomicLevel
+	return log
+}
+
+func newAtomicLevelFromString(level string) *zap.AtomicLevel {
+	var atomicLevel zap.AtomicLevel
+	if lv, err := newLevelFromString(level); err != nil {
+		atomicLevel = zap.NewAtomicLevel()
+	} else {
+		atomicLevel = zap.NewAtomicLevelAt(lv)
+	}
+
+	return &atomicLevel
 }
 
 func newLevelFromString(str string) (lv zapcore.Level, err error) {

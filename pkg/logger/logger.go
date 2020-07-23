@@ -15,62 +15,47 @@ type (
 	// Logger logger option
 	Logger struct {
 		dummybox.DummyBox
+		name  string
 		level *zap.AtomicLevel
 		sugar *zap.SugaredLogger
-		opts  *Options
-		cfg   config.SubConfigurator
+		cfg   *Config
 	}
 )
 
-const (
-	defaultName = "logger"
-)
+func New(optFunc ...OptionFunc) (*Logger, error) {
+	opts := &Options{}
+	for _, fn := range optFunc {
+		fn(opts)
+	}
 
-func New() *Logger {
-	logger, level := newLogger("info", "console")
+	if opts.config == nil {
+		opts.config = config.Default
+	}
+	if opts.name == "" {
+		opts.name = "logger"
+	}
 
-	return &Logger{
+	cfg := newConfig(opts.name, opts.config)
+	level := newAtomicLevelFromString(cfg.GetLevel())
+	sugar := newLogger(level, cfg.GetEncoding()).Sugar()
+
+	newLogger := &Logger{
+		name:  opts.name,
 		level: level,
-		sugar: logger.Sugar(),
-		opts:  NewOptions(defaultName),
+		sugar: sugar,
+		cfg:   cfg,
 	}
+
+	if err := newLogger.watch(); err != nil {
+		return nil, err
+	}
+
+	return newLogger, nil
 }
 
 // Name logger config name
 func (logger *Logger) Name() string {
-	return defaultName
-}
-
-func (logger *Logger) Init(cfg config.SubConfigurator) error {
-	cfg.Mount(logger.opts.Fields()...)
-
-	lgr, lv := newLogger(cfg.GetString(logger.opts.Level), cfg.GetString(logger.opts.Encoding))
-
-	logger.cfg = cfg
-	logger.level = lv
-	logger.sugar = lgr.Sugar()
-
-	if w, err := cfg.Watch(logger.opts.Level); err != nil {
-		panic(err)
-	} else {
-		go func() {
-			for {
-				time.Sleep(time.Second)
-
-				v, _ := w.Next()
-				newLv := v.String("info")
-				oldLv := logger.level.String()
-
-				if err := setAtomicLevel(logger.level, newLv); err != nil {
-					log.Printf("logger.setAtomicLevel.error %s->%s\n", oldLv, newLv)
-				} else {
-					log.Printf("logger.setAtomicLevel.success %s->%s\n", oldLv, newLv)
-				}
-			}
-		}()
-	}
-
-	return nil
+	return logger.name
 }
 
 func (logger *Logger) Debug(args ...interface{}) {
@@ -174,13 +159,37 @@ func (logger *Logger) Desugar() *zap.Logger {
 	return logger.sugar.Desugar()
 }
 
+func (logger *Logger) watch() error {
+	if w, err := logger.cfg.Watch(logger.cfg.Level); err != nil {
+		return err
+	} else {
+		go func() {
+			for {
+				time.Sleep(time.Second)
+
+				v, _ := w.Next()
+				newLv := v.String("info")
+				oldLv := logger.level.String()
+
+				if err := setAtomicLevel(logger.level, newLv); err != nil {
+					log.Printf("logger.setAtomicLevel.error %s->%s\n", oldLv, newLv)
+				} else {
+					log.Printf("logger.setAtomicLevel.success %s->%s\n", oldLv, newLv)
+				}
+			}
+		}()
+	}
+
+	return nil
+}
+
 func (logger *Logger) trace(ctx context.Context) *zap.SugaredLogger {
 	var uid, requestID, spanId, bizId string
 
-	traceUid := logger.cfg.GetString(logger.opts.TraceUid)
-	traceRequestId := logger.cfg.GetString(logger.opts.TraceRequestId)
-	traceSpanId := logger.cfg.GetString(logger.opts.TraceSpanId)
-	traceBizId := logger.cfg.GetString(logger.opts.TraceBizId)
+	traceUid := logger.cfg.GetTraceUid()
+	traceRequestId := logger.cfg.GetTraceReqId()
+	traceSpanId := logger.cfg.GetTraceSpanId()
+	traceBizId := logger.cfg.GetTraceBizId()
 
 	if uidStr, ok := ctx.Value(traceUid).(string); ok {
 		uid = uidStr
