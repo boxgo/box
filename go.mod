@@ -24,7 +24,7 @@ require (
 	github.com/json-iterator/go v1.1.10
 	github.com/mwitkow/go-proto-validators v0.3.0
 	github.com/olekukonko/tablewriter v0.0.4
-	github.com/prometheus/client_golang v1.7.1 // indirect
+	github.com/prometheus/client_golang v1.7.1
 	github.com/spf13/pflag v1.0.5
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/ugorji/go v1.1.7 // indirect
