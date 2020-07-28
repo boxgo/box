@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	// Default the default logger
+	// Default the default logger.
+	// TODO configurator can't get config rightly, because `init()` always called before `config.Load()`
 	Default *Logger
 )
 

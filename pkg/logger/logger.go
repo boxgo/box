@@ -20,7 +20,26 @@ type (
 		sugar *zap.SugaredLogger
 		cfg   *Config
 	}
+
+	Options struct {
+		name   string
+		config config.SubConfigurator
+	}
+
+	OptionFunc func(*Options)
 )
+
+func WithName(name string) OptionFunc {
+	return func(opts *Options) {
+		opts.name = name
+	}
+}
+
+func WithConfigurator(cfg config.Configurator) OptionFunc {
+	return func(opts *Options) {
+		opts.config = cfg
+	}
+}
 
 func New(optFunc ...OptionFunc) (*Logger, error) {
 	opts := &Options{}
