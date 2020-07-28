@@ -11,7 +11,7 @@ import (
 	"github.com/boxgo/box/pkg/config/source/env"
 	"github.com/boxgo/box/pkg/config/source/etcd"
 	"github.com/boxgo/box/pkg/config/source/file"
-	"github.com/boxgo/box/pkg/util"
+	"github.com/boxgo/box/pkg/util/fputil"
 )
 
 type (
@@ -70,7 +70,7 @@ func WithEtcdSource(prefix, username, password, address string) Option {
 }
 
 func SimpleSource(filePath string) []source.Source {
-	name := util.Filename(filePath)
+	name := fputil.GetFilename(filePath)
 	nameUpper := strings.ToUpper(name)
 
 	return []source.Source{
@@ -85,7 +85,7 @@ func SimpleSource(filePath string) []source.Source {
 }
 
 func ClassicSource(filePath, username, password, address string) []source.Source {
-	name := util.Filename(filePath)
+	name := fputil.GetFilename(filePath)
 	nameUpper := strings.ToUpper(name)
 
 	return []source.Source{
