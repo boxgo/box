@@ -5,3 +5,6 @@ main
 debug
 example
 vendor
+
+*.zip
+*.log
