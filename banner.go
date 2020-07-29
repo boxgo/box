@@ -1,7 +1,5 @@
 package box
 
-import "fmt"
-
 const banner = `
 							____
 							|  _ \
@@ -10,7 +8,3 @@ const banner = `
 							| |_) | (_) >  <
 							|____/ \___/_/\_\
 `
-
-func init() {
-	fmt.Print(banner)
-}

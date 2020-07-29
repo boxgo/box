@@ -2,6 +2,7 @@ package box
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -156,6 +157,10 @@ func New(options ...Option) Application {
 	}
 	if opts.ShutdownTimeout == 0 {
 		opts.ShutdownTimeout = 5000
+	}
+	if !opts.Silent {
+		fmt.Print(banner)
+		fmt.Print(config.SprintFields())
 	}
 
 	app := &application{
