@@ -37,7 +37,7 @@ var (
 	Subsystem     = config.NewField(name, "subsystem", "metric subsystem", "")
 	PushEnabled   = config.NewField(name, "pushEnabled", "enable push", false)
 	PushTargetURL = config.NewField(name, "pushTargetURL", "pushgateway url", "")
-	PushInterval  = config.NewField(name, "pushInterval", "push to a pushgateway interval, millisecond", 3000)
+	PushInterval  = config.NewField(name, "pushInterval", "push to a pushgateway interval, millisecond", time.Second*3)
 )
 
 // New a metrics
