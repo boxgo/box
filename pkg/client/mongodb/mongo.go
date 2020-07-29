@@ -13,15 +13,18 @@ import (
 type (
 	Mongo struct {
 		dummybox.DummyBox
-		name   string
-		cfg    config.SubConfigurator
-		client *mongo.Client
-		uri    *config.Field
+		name    string
+		cfg     config.SubConfigurator
+		client  *mongo.Client
+		uri     *config.Field
+		monitor *Monitor
 	}
 
 	Options struct {
-		name string
-		cfg  config.SubConfigurator
+		name   string
+		isSet  int
+		enable bool
+		cfg    config.SubConfigurator
 	}
 
 	OptionFunc func(*Options)
@@ -30,6 +33,13 @@ type (
 func WithName(name string) OptionFunc {
 	return func(options *Options) {
 		options.name = name
+	}
+}
+
+func WithEnableMonitor(enable bool) OptionFunc {
+	return func(options *Options) {
+		options.enable = enable
+		options.isSet = 1
 	}
 }
 
@@ -53,15 +63,23 @@ func New(optionFunc ...OptionFunc) (*Mongo, error) {
 	if opts.cfg == nil {
 		opts.cfg = config.Default
 	}
+	if opts.isSet == 0 {
+		opts.enable = true
+	}
 
 	uriField := config.NewField(opts.name, "uri", "mongodb connection uri. https://docs.mongodb.com/manual/reference/connection-string", "mongodb://127.0.0.1:27017")
 
 	// set override options
 	clientOptions := options.Client()
-	clientOptions.Monitor = newCommandMonitor()
-	clientOptions.PoolMonitor = newPoolMonitor()
 	clientOptions.ApplyURI(opts.cfg.GetString(uriField))
 	clientOptions.SetAppName(opts.cfg.GetBoxName())
+
+	var monitor *Monitor
+	if opts.enable {
+		monitor = newMonitor(opts.cfg)
+		clientOptions.Monitor = monitor.CommandMonitor()
+		clientOptions.PoolMonitor = monitor.PoolEventMonitor()
+	}
 
 	client, err := mongo.NewClient(clientOptions)
 	if err != nil {
@@ -69,10 +87,11 @@ func New(optionFunc ...OptionFunc) (*Mongo, error) {
 	}
 
 	mgo := &Mongo{
-		name:   opts.name,
-		client: client,
-		cfg:    opts.cfg,
-		uri:    uriField,
+		name:    opts.name,
+		client:  client,
+		cfg:     opts.cfg,
+		uri:     uriField,
+		monitor: monitor,
 	}
 
 	opts.cfg.Mount(mgo.uri)
@@ -80,15 +99,27 @@ func New(optionFunc ...OptionFunc) (*Mongo, error) {
 	return mgo, nil
 }
 
+func (mgo *Mongo) Name() string {
+	return mgo.name
+}
+
 func (mgo *Mongo) Serve(ctx context.Context) error {
 	if err := mgo.client.Connect(ctx); err != nil {
 		return err
+	}
+
+	if mgo.monitor != nil {
+		mgo.monitor.watch(mgo.client)
 	}
 
 	return mgo.client.Ping(ctx, readpref.Primary())
 }
 
 func (mgo *Mongo) Shutdown(ctx context.Context) error {
+	if mgo.monitor != nil {
+		mgo.monitor.shutdown()
+	}
+
 	return mgo.client.Disconnect(ctx)
 }
 
