@@ -30,8 +30,14 @@ type (
 	OptionFunc func(*Options)
 )
 
+const (
+	Nil         = redis.Nil
+	TxFailedErr = redis.TxFailedErr
+)
+
 var (
-	Default = New()
+	Default   = New()
+	ErrClosed = redis.ErrClosed
 )
 
 func New(optionFunc ...OptionFunc) *Redis {
@@ -65,6 +71,10 @@ func New(optionFunc ...OptionFunc) *Redis {
 	return r
 }
 
+func Client() redis.UniversalClient {
+	return Default.Client()
+}
+
 func (r *Redis) Name() string {
 	return r.name
 }
@@ -93,4 +103,8 @@ func (r *Redis) Shutdown(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (r *Redis) Client() redis.UniversalClient {
+	return r.client
 }
