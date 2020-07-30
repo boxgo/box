@@ -22,9 +22,9 @@ type (
 		// the current values
 		vals reader.Values
 		// system registered fields
-		sysFields []*Field
+		sysFields Fields
 		// user registered fields
-		userFields []*Field
+		userFields Fields
 	}
 )
 
@@ -47,8 +47,8 @@ func newConfig(opts ...Option) Configurator {
 		opts:       options,
 		snap:       snap,
 		vals:       vals,
-		sysFields:  make([]*Field, 0),
-		userFields: make([]*Field, 0),
+		sysFields:  make(Fields, 0),
+		userFields: make(Fields, 0),
 	}
 
 	c.MountSystem(
@@ -208,14 +208,14 @@ func (c *config) Mount(fields ...*Field) {
 	c.Lock()
 	defer c.Unlock()
 
-	c.userFields = append(c.userFields, fields...)
+	c.userFields.Append(fields...).Sort()
 }
 
 func (c *config) MountSystem(fields ...*Field) {
 	c.Lock()
 	defer c.Unlock()
 
-	c.sysFields = append(c.sysFields, fields...)
+	c.sysFields.Append(fields...).Sort()
 }
 
 // Get value through field
