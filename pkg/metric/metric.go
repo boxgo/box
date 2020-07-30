@@ -74,7 +74,7 @@ func (m *Metric) Serve(context.Context) error {
 	hostname, _ := os.Hostname()
 
 	go func() {
-		ticker := time.NewTicker(m.cfg.GetDuration(PushInterval) * time.Millisecond)
+		ticker := time.NewTicker(m.cfg.GetDuration(PushInterval))
 		defer ticker.Stop()
 
 		pusher := push.
@@ -89,6 +89,8 @@ func (m *Metric) Serve(context.Context) error {
 			case <-ticker.C:
 				if err := pusher.Add(); err != nil {
 					logger.Error("metrics.pusher.add.error", err)
+				} else {
+					logger.Debug("metrics.pusher.add.success")
 				}
 			}
 		}
