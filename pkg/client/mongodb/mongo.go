@@ -5,6 +5,7 @@ import (
 
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/dummybox"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -28,6 +29,11 @@ type (
 	}
 
 	OptionFunc func(*Options)
+
+	A bson.A
+	D bson.D
+	E bson.E
+	M bson.M
 )
 
 var (
