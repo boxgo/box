@@ -24,7 +24,7 @@ var (
 			Namespace: "",
 			Subsystem: "",
 			Name:      "mongo_client_command_total",
-			Help:      "mongodb client command cmdTotal",
+			Help:      "mongodb client command counter",
 		},
 		[]string{"command", "error"},
 	)
@@ -32,8 +32,15 @@ var (
 		prometheus.SummaryOpts{
 			Namespace: "",
 			Subsystem: "",
-			Name:      "mongo_client_command_duration_summary",
-			Help:      "mongodb client command duration cmdDurationSummary",
+			Name:      "mongo_client_command_duration_seconds",
+			Help:      "mongodb client command duration seconds",
+			Objectives: map[float64]float64{
+				0.25: 0.05,
+				0.5:  0.05,
+				0.75: 0.05,
+				0.9:  0.01,
+				0.99: 0.001,
+			},
 		},
 		[]string{"command", "error"},
 	)
@@ -82,7 +89,7 @@ func (mon *Monitor) started(ctx context.Context, ev *event.CommandStartedEvent) 
 func (mon *Monitor) succeeded(ctx context.Context, ev *event.CommandSucceededEvent) {
 	labels := []string{ev.CommandName, ""}
 	cmdTotal.WithLabelValues(labels...).Inc()
-	cmdDurationSummary.WithLabelValues(labels...).Observe(float64(ev.DurationNanos))
+	cmdDurationSummary.WithLabelValues(labels...).Observe(time.Duration(ev.DurationNanos).Seconds())
 
 	logger.Trace(ctx).Debugf("mongo_command_success cmd: %s, reqId: %d, connId: %s, duration: %s", ev.CommandName, ev.RequestID, ev.ConnectionID, time.Duration(ev.DurationNanos))
 }
@@ -90,7 +97,7 @@ func (mon *Monitor) succeeded(ctx context.Context, ev *event.CommandSucceededEve
 func (mon *Monitor) failed(ctx context.Context, ev *event.CommandFailedEvent) {
 	labels := []string{ev.CommandName, ev.Failure}
 	cmdTotal.WithLabelValues(labels...).Inc()
-	cmdDurationSummary.WithLabelValues(labels...).Observe(float64(ev.DurationNanos))
+	cmdDurationSummary.WithLabelValues(labels...).Observe(time.Duration(ev.DurationNanos).Seconds())
 
 	logger.Trace(ctx).Debugf("mongo_command_error cmd: %s, reqId: %d, connId: %s, duration: %d, error: %s", ev.CommandName, ev.RequestID, ev.ConnectionID, ev.DurationNanos, ev.Failure)
 }

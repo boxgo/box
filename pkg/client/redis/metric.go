@@ -26,14 +26,21 @@ var (
 	cmdTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "redis_client_command_total",
-			Help: "redis command count",
+			Help: "redis command counter",
 		},
 		[]string{"address", "db", "masterName", "pipe", "cmd", "error"},
 	)
 	cmdElapsedSummary = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
-			Name: "redis_client_command_seconds",
-			Help: "redis command elapsed seconds",
+			Name: "redis_client_command_duration_seconds",
+			Help: "redis command duration seconds",
+			Objectives: map[float64]float64{
+				0.25: 0.05,
+				0.5:  0.05,
+				0.75: 0.05,
+				0.9:  0.01,
+				0.99: 0.001,
+			},
 		},
 		[]string{"address", "db", "masterName", "pipe", "cmd", "error"},
 	)
