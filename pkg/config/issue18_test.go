@@ -41,17 +41,24 @@ func TestIssue18(t *testing.T) {
 		fh.Close()
 		os.Remove(path)
 	}()
-	os.Setenv("AMQP_HOST", "rabbit.testing.com")
+	os.Setenv("BOX_AMQP_HOST", "rabbit.testing.com")
 
 	conf := NewConfig()
 	conf.Load(
 		file.NewSource(
 			file.WithPath(path),
 		),
-		env.NewSource(),
+		env.NewSource(
+			env.WithStrippedPrefix("BOX"),
+		),
 	)
 
-	actualHost := conf.Get("amqp", "host").String("backup")
+	actualHost := conf.GetString(&Field{
+		name: "",
+		path: "amqp.host",
+		desc: "",
+		def:  "backup",
+	})
 	if actualHost != "rabbit.testing.com" {
 		t.Fatalf("Expected %v but got %v",
 			"rabbit.testing.com",

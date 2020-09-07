@@ -28,6 +28,7 @@ require (
 	github.com/mwitkow/go-proto-validators v0.3.0
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/prometheus/client_golang v1.7.1
+	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
@@ -46,4 +47,5 @@ require (
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0 // indirect
+	moul.io/http2curl v1.0.0
 )

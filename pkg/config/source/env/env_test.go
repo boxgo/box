@@ -18,11 +18,13 @@ func TestEnv_Read(t *testing.T) {
 		},
 	}
 
-	os.Setenv("DATABASE_HOST", "localhost")
-	os.Setenv("DATABASE_PASSWORD", "password")
-	os.Setenv("DATABASE_DATASOURCE", "user:password@tcp(localhost:port)/db?charset=utf8mb4&parseTime=True&loc=Local")
+	os.Setenv("BOX_DATABASE_HOST", "localhost")
+	os.Setenv("BOX_DATABASE_PASSWORD", "password")
+	os.Setenv("BOX_DATABASE_DATASOURCE", "user:password@tcp(localhost:port)/db?charset=utf8mb4&parseTime=True&loc=Local")
 
-	source := NewSource()
+	source := NewSource(
+		WithStrippedPrefix("BOX"),
+	)
 	c, err := source.Read()
 	if err != nil {
 		t.Error(err)

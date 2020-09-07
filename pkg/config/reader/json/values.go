@@ -1,7 +1,6 @@
 package json
 
 import (
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -17,19 +16,7 @@ type jsonValues struct {
 	api jsoniter.API
 }
 
-type (
-	ext struct {
-		jsoniter.DummyExtension
-	}
-)
-
 const defaultTagKey = "box"
-
-func (*ext) UpdateStructDescriptor(structDescriptor *jsoniter.StructDescriptor) {
-	for _, field := range structDescriptor.Fields {
-		log.Println("---", field.Field.Tag().Get(defaultTagKey))
-	}
-}
 
 func init() {
 	jsoniter.RegisterTypeDecoderFunc("time.Duration", func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
@@ -57,8 +44,6 @@ func newValues(ch *source.ChangeSet) (reader.Values, error) {
 		ValidateJsonRawMessage: true,
 		TagKey:                 defaultTagKey,
 	}.Froze()
-
-	api.RegisterExtension(&ext{})
 
 	return &jsonValues{
 		ch:  ch,
