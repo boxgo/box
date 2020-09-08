@@ -7,40 +7,35 @@ on:
     branches: [ next ]
 
 jobs:
+#  lint:
+#    - name: Check out code into the Go module directory
+#      uses: actions/checkout@v2
+#    - name: Run golangci-lint
+#      uses: golangci/golangci-lint-action@v1.2.1
 
-  build:
-    name: Build
-    runs-on: ubuntu-latest
+  test_and_coverage:
+    strategy:
+      matrix:
+        go-version: [1.12.x, 1.13.x, 1.14.x, 1.15.x]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
     steps:
-
-      - name: Set up Go 1.x
+      - name: Install Go
+        if: success()
         uses: actions/setup-go@v2
         with:
-          go-version: ^1.13
-        id: go
-
-      - name: Check out code into the Go module directory
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: Build
-        run: go build -v .
-
       - name: Test
-        run: go test -v -coverprofile=coverage.txt -covermode=count ./...
-
+        run: go test -v -coverprofile=coverage.out -covermode=count ./...
+      - name: Convert coverage to lcov
+        uses: jandelgado/gcov2lcov-action@v1.0.0
+        with:
+          infile: coverage.out
+          outfile: coverage.lcov
       - name: Coveralls
         uses: coverallsapp/github-action@v1.1.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Path to lcov file
-          path-to-lcov: ./coverage.txt
-          # Job flag name, e.g. "Unit", "Functional", or "Integration". Will be shown in the Coveralls UI.
-          flag-name: # optional
-          # Set to true if you are running parallel jobs, then use "parallel_finished: true" for the last action.
-          parallel: # optional
-          # Set to true for the last action when using "parallel: true".
-          parallel-finished: # optional
-          # Coveralls Enterprise server (more info: https://enterprise.coveralls.io)
-          coveralls-endpoint: # optional, default is https://coveralls.io
-          # The root folder of the project that originally ran the tests
-          base-path: # optional
+          path-to-lcov: ./coverage.lcov
