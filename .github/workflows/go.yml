@@ -26,4 +26,22 @@ jobs:
         run: go build -v .
 
       - name: Test
-        run: go test -v .
+        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@v1.1.2
+        with:
+          version: v1.2.3
+          github-token: LhU2NxLQhIxeVuP6hnS5LjTXpX8HOOQg7
+          # Path to lcov file
+          path-to-lcov: ./coverage.txt
+          # Job flag name, e.g. "Unit", "Functional", or "Integration". Will be shown in the Coveralls UI.
+          flag-name: # optional
+          # Set to true if you are running parallel jobs, then use "parallel_finished: true" for the last action.
+          parallel: # optional
+          # Set to true for the last action when using "parallel: true".
+          parallel-finished: # optional
+          # Coveralls Enterprise server (more info: https://enterprise.coveralls.io)
+          coveralls-endpoint: # optional, default is https://coveralls.io
+          # The root folder of the project that originally ran the tests
+          base-path: # optional
