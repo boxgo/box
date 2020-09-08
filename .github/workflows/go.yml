@@ -31,7 +31,6 @@ jobs:
       - name: Coveralls GitHub Action
         uses: coverallsapp/github-action@v1.1.2
         with:
-          version: v1.2.3
           github-token: LhU2NxLQhIxeVuP6hnS5LjTXpX8HOOQg7
           # Path to lcov file
           path-to-lcov: ./coverage.txt
