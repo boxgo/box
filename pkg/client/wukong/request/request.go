@@ -1,4 +1,4 @@
-package wukong
+package request
 
 import (
 	"context"
@@ -6,16 +6,18 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"reflect"
-	"sync"
 
 	"github.com/boxgo/box/pkg/client/wukong/encoder"
+	"github.com/boxgo/box/pkg/client/wukong/response"
+	"github.com/boxgo/box/pkg/client/wukong/util"
 )
 
 type (
 	Request struct {
-		do          Do
+		do          func(*Request) *response.Response
 		ctx         context.Context
 		error       error
 		method      string
@@ -31,41 +33,23 @@ type (
 	}
 )
 
-var (
-	requestPool = sync.Pool{
-		New: func() interface{} {
-			req := &Request{}
-
-			return req.Reset()
-		},
+func NewRequest(do func(*Request) *response.Response, method, baseUrl, path string) *Request {
+	req := &Request{
+		do:          do,
+		ctx:         nil,
+		error:       nil,
+		method:      method,
+		baseUrl:     baseUrl,
+		url:         path,
+		contentType: encoder.MimeTypeJSON,
+		header:      http.Header{},
+		cookies:     make([]*http.Cookie, 0),
+		queryData:   url.Values{},
+		formData:    url.Values{},
+		paramData:   make(map[string]interface{}),
 	}
-)
-
-func NewRequest(do Do, method, baseUrl, url string) *Request {
-	req := requestPool.Get().(*Request).Reset()
-
-	req.method = method
-	req.baseUrl = baseUrl
-	req.url = url
-	req.do = do
 
 	return req
-}
-
-func (request *Request) Reset() *Request {
-	request.ctx = nil
-	request.error = nil
-	request.method = ""
-	request.baseUrl = ""
-	request.url = ""
-	request.contentType = encoder.MimeTypeJSON
-	request.header = http.Header{}
-	request.cookies = make([]*http.Cookie, 0)
-	request.queryData = url.Values{}
-	request.formData = url.Values{}
-	request.paramData = make(map[string]interface{})
-
-	return request
 }
 
 func (request *Request) WithCTX(ctx context.Context) *Request {
@@ -124,9 +108,7 @@ func (request *Request) Type(typ string) *Request {
 	return request
 }
 
-func (request *Request) End() (*Response, error) {
-	defer requestPool.Put(request)
-
+func (request *Request) End() *response.Response {
 	return request.do(request)
 }
 
@@ -140,7 +122,7 @@ func (request *Request) RawRequest() (*http.Request, error) {
 		return req, err
 	}
 
-	targetUrl, err := urlJoin(request.baseUrl, request.url)
+	targetUrl, err := util.UrlJoin(request.baseUrl, request.url)
 	if err != nil {
 		return req, err
 	}
@@ -151,12 +133,12 @@ func (request *Request) RawRequest() (*http.Request, error) {
 		}
 	}
 
-	if req, err = http.NewRequest(request.method, urlFormat(targetUrl, request.paramData), reader); err != nil {
+	if req, err = http.NewRequest(request.method, util.UrlFormat(targetUrl, request.paramData), reader); err != nil {
 		return req, err
 	}
 
 	if request.ctx != nil {
-		req = req.WithContext(request.ctx)
+		req = req.WithContext(httptrace.WithClientTrace(request.ctx, trace))
 	}
 
 	req.Header = request.header

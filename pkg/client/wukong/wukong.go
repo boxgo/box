@@ -1,62 +1,70 @@
 package wukong
 
 import (
-	"log"
 	"net/http"
+	"net/http/httptrace"
 	"time"
 
-	"moul.io/http2curl"
+	"github.com/boxgo/box/pkg/client/wukong/request"
+	"github.com/boxgo/box/pkg/client/wukong/response"
 )
 
 type (
 	WuKong struct {
-		baseUrl string
-		timeout time.Duration
-		client  *http.Client
+		baseUrl     string
+		timeout     time.Duration
+		client      *http.Client
+		clientTrace *httptrace.ClientTrace
 	}
-
-	Do func(*Request) (*Response, error)
 )
 
 func New(baseUrl string) *WuKong {
 	w := &WuKong{
 		baseUrl: baseUrl,
-		client:  &http.Client{},
+		client: &http.Client{
+			Transport: DefaultTransport,
+		},
 	}
 
 	return w
 }
 
-func (wk *WuKong) Get(path string) *Request {
-	return NewRequest(wk.do, http.MethodGet, wk.baseUrl, path)
+func (wk *WuKong) SetTransport(transport *http.Transport) *WuKong {
+	wk.client.Transport = transport
+
+	return wk
 }
 
-func (wk *WuKong) Post(path string) *Request {
-	return NewRequest(wk.do, http.MethodPost, wk.baseUrl, path)
+func (wk *WuKong) Get(path string) *request.Request {
+	return request.NewRequest(wk.do, http.MethodGet, wk.baseUrl, path)
 }
 
-func (wk *WuKong) Put(path string) *Request {
-	return NewRequest(wk.do, http.MethodPut, wk.baseUrl, path)
+func (wk *WuKong) Post(path string) *request.Request {
+	return request.NewRequest(wk.do, http.MethodPost, wk.baseUrl, path)
 }
 
-func (wk *WuKong) Patch(path string) *Request {
-	return NewRequest(wk.do, http.MethodPatch, wk.baseUrl, path)
+func (wk *WuKong) Put(path string) *request.Request {
+	return request.NewRequest(wk.do, http.MethodPut, wk.baseUrl, path)
 }
 
-func (wk *WuKong) Delete(path string) *Request {
-	return NewRequest(wk.do, http.MethodDelete, wk.baseUrl, path)
+func (wk *WuKong) Patch(path string) *request.Request {
+	return request.NewRequest(wk.do, http.MethodPatch, wk.baseUrl, path)
 }
 
-func (wk *WuKong) Head(path string) *Request {
-	return NewRequest(wk.do, http.MethodHead, wk.baseUrl, path)
+func (wk *WuKong) Delete(path string) *request.Request {
+	return request.NewRequest(wk.do, http.MethodDelete, wk.baseUrl, path)
 }
 
-func (wk *WuKong) Options(path string) *Request {
-	return NewRequest(wk.do, http.MethodOptions, wk.baseUrl, path)
+func (wk *WuKong) Head(path string) *request.Request {
+	return request.NewRequest(wk.do, http.MethodHead, wk.baseUrl, path)
 }
 
-func (wk *WuKong) Trace(path string) *Request {
-	return NewRequest(wk.do, http.MethodTrace, wk.baseUrl, path)
+func (wk *WuKong) Options(path string) *request.Request {
+	return request.NewRequest(wk.do, http.MethodOptions, wk.baseUrl, path)
+}
+
+func (wk *WuKong) Trace(path string) *request.Request {
+	return request.NewRequest(wk.do, http.MethodTrace, wk.baseUrl, path)
 }
 
 func (wk *WuKong) Timeout(t time.Duration) *WuKong {
@@ -65,18 +73,14 @@ func (wk *WuKong) Timeout(t time.Duration) *WuKong {
 	return wk
 }
 
-func (wk *WuKong) do(req *Request) (*Response, error) {
-	r, err := req.RawRequest()
+func (wk *WuKong) do(r *request.Request) *response.Response {
+	req, err := r.RawRequest()
+
 	if err != nil {
-		return nil, err
+		return response.New(err, nil)
 	}
 
-	log.Println(http2curl.GetCurlCommand(r))
+	resp, err := wk.client.Do(req)
 
-	resp, err := wk.client.Do(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Response{resp: resp}, nil
+	return response.New(err, resp)
 }

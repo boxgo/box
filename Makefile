@@ -1,0 +1,6 @@
+
+test:
+	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+test_client_wukong:
+	go test -v ./pkg/client/wukong/...

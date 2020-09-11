@@ -19,3 +19,9 @@ func (c *JSONEncoder) Decode(v interface{}) (io.Reader, error) {
 
 	return bytes.NewReader(data), err
 }
+
+func (c *JSONEncoder) Encode(reader io.Reader, v interface{}) error {
+	dec := json.NewDecoder(reader)
+
+	return dec.Decode(v)
+}

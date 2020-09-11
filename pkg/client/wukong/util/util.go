@@ -1,4 +1,4 @@
-package wukong
+package util
 
 import (
 	"fmt"
@@ -10,15 +10,15 @@ import (
 	"testing"
 )
 
-func assertEqual(t *testing.T, a interface{}, b interface{}) {
-	if a == b {
+func AssertEqual(t *testing.T, received interface{}, expected interface{}) {
+	if received == expected {
 		return
 	}
 
-	t.Errorf("Received %v (type %v), expected %v (type %v)", a, reflect.TypeOf(a), b, reflect.TypeOf(b))
+	t.Errorf("Received %v (type %v), expected %v (type %v)", received, reflect.TypeOf(received), expected, reflect.TypeOf(expected))
 }
 
-func urlJoin(baseUrl string, segments ...string) (string, error) {
+func UrlJoin(baseUrl string, segments ...string) (string, error) {
 	u, err := url.Parse(baseUrl)
 	if err != nil {
 		return "", err
@@ -29,7 +29,7 @@ func urlJoin(baseUrl string, segments ...string) (string, error) {
 	return u.String(), nil
 }
 
-func urlFormat(rawUrl string, pathParam map[string]interface{}) string {
+func UrlFormat(rawUrl string, pathParam map[string]interface{}) string {
 	re := regexp.MustCompile(`/:(\w+)`)
 
 	return re.ReplaceAllStringFunc(rawUrl, func(s string) string {
