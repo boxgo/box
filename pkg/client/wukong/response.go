@@ -1,19 +1,17 @@
-package response
+package wukong
 
 import (
-	"bytes"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
-
-	"github.com/boxgo/box/pkg/client/wukong/encoder"
 )
 
 type (
 	Response struct {
-		err  error
-		resp *http.Response
+		err      error
+		resp     *http.Response
+		bodyData []byte
 	}
 
 	ConditionBind struct {
@@ -22,10 +20,20 @@ type (
 	}
 )
 
-func New(err error, resp *http.Response) *Response {
+func NewResponse(err error, resp *http.Response) *Response {
+	if err != nil {
+		return &Response{
+			err:  err,
+			resp: resp,
+		}
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
 	return &Response{
-		err:  err,
-		resp: resp,
+		err:      err,
+		resp:     resp,
+		bodyData: body,
 	}
 }
 
@@ -34,7 +42,19 @@ func (resp *Response) Error() error {
 }
 
 func (resp *Response) BindError(err *error) *Response {
-	*err = resp.Error()
+	if err != nil {
+		*err = resp.Error()
+	}
+
+	return resp
+}
+
+func (resp *Response) Bytes() []byte {
+	return resp.bodyData
+}
+
+func (resp *Response) BindBytes(b []byte) *Response {
+	b = resp.bodyData
 
 	return resp
 }
@@ -48,7 +68,9 @@ func (resp *Response) StatusCode() int {
 }
 
 func (resp *Response) BindStatusCode(code *int) *Response {
-	*code = resp.StatusCode()
+	if code != nil {
+		*code = resp.StatusCode()
+	}
 
 	return resp
 }
@@ -62,7 +84,9 @@ func (resp *Response) Status() string {
 }
 
 func (resp *Response) BindStatus(status *string) *Response {
-	*status = resp.Status()
+	if status != nil {
+		*status = resp.Status()
+	}
 
 	return resp
 }
@@ -76,22 +100,11 @@ func (resp *Response) Header() http.Header {
 }
 
 func (resp *Response) BindHeader(header *http.Header) *Response {
-	if resp.resp == nil {
+	if header == nil {
 		return resp
 	}
 
 	*header = resp.Header()
-
-	return resp
-}
-
-func (resp *Response) BindIsTimeout(ok *bool) *Response {
-	if resp.err == nil {
-		*ok = false
-		return resp
-	}
-
-	*ok = resp.IsTimeout()
 
 	return resp
 }
@@ -109,13 +122,12 @@ func (resp *Response) IsTimeout() bool {
 	return false
 }
 
-func (resp *Response) BindIsCancel(ok *bool) *Response {
-	if resp.err == nil {
-		*ok = false
+func (resp *Response) BindIsTimeout(ok *bool) *Response {
+	if ok == nil {
 		return resp
 	}
 
-	*ok = resp.IsCancel()
+	*ok = resp.IsTimeout()
 
 	return resp
 }
@@ -132,6 +144,16 @@ func (resp *Response) IsCancel() bool {
 	return false
 }
 
+func (resp *Response) BindIsCancel(ok *bool) *Response {
+	if ok == nil {
+		return resp
+	}
+
+	*ok = resp.IsCancel()
+
+	return resp
+}
+
 func (resp *Response) Body() io.ReadCloser {
 	if resp.resp == nil {
 		return nil
@@ -141,12 +163,12 @@ func (resp *Response) Body() io.ReadCloser {
 }
 
 func (resp *Response) BindBody(data interface{}) *Response {
-	if resp.err != nil {
+	if resp.err != nil || data == nil {
 		return resp
 	}
 
 	contentType := resp.resp.Header.Get("Content-Type")
-	if err := encoder.Encode(contentType, resp.resp.Body, data); err != nil {
+	if err := Encode(contentType, resp.bodyData, data); err != nil {
 		resp.err = err
 	}
 
@@ -154,20 +176,14 @@ func (resp *Response) BindBody(data interface{}) *Response {
 }
 
 func (resp *Response) ConditionBindBody(check func(interface{}) bool, data ...interface{}) *Response {
-	if resp.err != nil {
+	if resp.err != nil || len(data) == 0 {
 		return resp
 	}
 
 	contentType := resp.resp.Header.Get("Content-Type")
 
-	body, err := ioutil.ReadAll(resp.resp.Body)
-	if err != nil {
-		resp.err = err
-		return resp
-	}
-
 	for _, d := range data {
-		if err := encoder.Encode(contentType, bytes.NewBuffer(body), d); err != nil {
+		if err := Encode(contentType, resp.bodyData, d); err != nil {
 			resp.err = err
 			break
 		}

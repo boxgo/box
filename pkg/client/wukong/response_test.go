@@ -1,4 +1,4 @@
-package response
+package wukong
 
 import (
 	"context"
@@ -6,8 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/boxgo/box/pkg/client/wukong/util"
 )
 
 func TestResponseIsTimeout(t *testing.T) {
@@ -21,10 +19,9 @@ func TestResponseIsTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
-	resp := do(req)
+	resp := New(ts.URL).Get("/").WithCTX(ctx).End()
 
-	util.AssertEqual(t, true, resp.IsTimeout())
+	AssertEqual(t, true, resp.IsTimeout())
 }
 
 func TestResponseIsCancel(t *testing.T) {
@@ -41,10 +38,9 @@ func TestResponseIsCancel(t *testing.T) {
 		cancel()
 	}()
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
-	resp := do(req)
+	resp := New(ts.URL).Get("/").WithCTX(ctx).End()
 
-	util.AssertEqual(t, true, resp.IsCancel())
+	AssertEqual(t, true, resp.IsCancel())
 }
 
 func TestResponseBindJson(t *testing.T) {
@@ -64,15 +60,13 @@ func TestResponseBindJson(t *testing.T) {
 	}
 	d := &data{}
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
-	resp := do(req)
-	resp.BindBody(d)
+	resp := New(ts.URL).Get("/").WithCTX(ctx).End().BindBody(d)
 
-	util.AssertEqual(t, resp.Error(), nil)
-	util.AssertEqual(t, d.String, "string")
-	util.AssertEqual(t, d.Int, 1)
-	util.AssertEqual(t, d.Float, 2.3)
-	util.AssertEqual(t, d.Bool, true)
+	AssertEqual(t, resp.Error(), nil)
+	AssertEqual(t, d.String, "string")
+	AssertEqual(t, d.Int, 1)
+	AssertEqual(t, d.Float, 2.3)
+	AssertEqual(t, d.Bool, true)
 }
 
 func TestResponseConditionBindJson(t *testing.T) {
@@ -114,17 +108,15 @@ func TestResponseConditionBindJson(t *testing.T) {
 			err  Err
 			data Data
 		)
-		req, _ := http.NewRequest(http.MethodGet, ts.URL, nil)
-		resp := do(req)
-		e := resp.ConditionBindBody(condition, &err, &data).Error()
+		e := New(ts.URL).Get("/").End().ConditionBindBody(condition, &err, &data).Error()
 
-		util.AssertEqual(t, e, nil)
-		util.AssertEqual(t, err.ErrCode, 0)
-		util.AssertEqual(t, err.ErrMsg, "")
-		util.AssertEqual(t, data.Bool, true)
-		util.AssertEqual(t, data.String, "string")
-		util.AssertEqual(t, data.Int, 1)
-		util.AssertEqual(t, data.Float, 2.3)
+		AssertEqual(t, e, nil)
+		AssertEqual(t, err.ErrCode, 0)
+		AssertEqual(t, err.ErrMsg, "")
+		AssertEqual(t, data.Bool, true)
+		AssertEqual(t, data.String, "string")
+		AssertEqual(t, data.Int, 1)
+		AssertEqual(t, data.Float, 2.3)
 	}
 
 	{
@@ -132,24 +124,14 @@ func TestResponseConditionBindJson(t *testing.T) {
 			err  Err
 			data Data
 		)
-		req, _ := http.NewRequest(http.MethodPost, ts.URL, nil)
-		resp := do(req)
-		e := resp.ConditionBindBody(condition, &err, &data).Error()
+		e := New(ts.URL).Post("/").End().ConditionBindBody(condition, &err, &data).Error()
 
-		util.AssertEqual(t, e, nil)
-		util.AssertEqual(t, err.ErrCode, 1)
-		util.AssertEqual(t, err.ErrMsg, "not ok")
-		util.AssertEqual(t, data.Bool, false)
-		util.AssertEqual(t, data.String, "")
-		util.AssertEqual(t, data.Int, 0)
-		util.AssertEqual(t, data.Float, 0.0)
+		AssertEqual(t, e, nil)
+		AssertEqual(t, err.ErrCode, 1)
+		AssertEqual(t, err.ErrMsg, "not ok")
+		AssertEqual(t, data.Bool, false)
+		AssertEqual(t, data.String, "")
+		AssertEqual(t, data.Int, 0)
+		AssertEqual(t, data.Float, 0.0)
 	}
-}
-
-func do(req *http.Request) *Response {
-	cli := &http.Client{}
-
-	resp, err := cli.Do(req)
-
-	return New(err, resp)
 }
