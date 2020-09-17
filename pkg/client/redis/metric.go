@@ -56,7 +56,7 @@ func (m *Metric) BeforeProcess(ctx context.Context, cmd redis.Cmder) (context.Co
 
 func (m *Metric) AfterProcess(ctx context.Context, cmd redis.Cmder) error {
 	start := ctx.Value(start).(time.Time)
-	elapsed := time.Now().Sub(start)
+	elapsed := time.Since(start)
 
 	m.report(false, elapsed, cmd)
 
@@ -69,7 +69,7 @@ func (m *Metric) BeforeProcessPipeline(ctx context.Context, cmds []redis.Cmder) 
 
 func (m *Metric) AfterProcessPipeline(ctx context.Context, cmds []redis.Cmder) error {
 	start := ctx.Value(start).(time.Time)
-	elapsed := time.Now().Sub(start)
+	elapsed := time.Since(start)
 
 	m.report(true, elapsed, cmds...)
 

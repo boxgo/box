@@ -53,8 +53,10 @@ func (resp *Response) Bytes() []byte {
 	return resp.bodyData
 }
 
-func (resp *Response) BindBytes(b []byte) *Response {
-	b = resp.bodyData
+func (resp *Response) BindBytes(b *[]byte) *Response {
+	if b != nil {
+		*b = resp.bodyData
+	}
 
 	return resp
 }
@@ -100,11 +102,9 @@ func (resp *Response) Header() http.Header {
 }
 
 func (resp *Response) BindHeader(header *http.Header) *Response {
-	if header == nil {
-		return resp
+	if header != nil {
+		*header = resp.Header()
 	}
-
-	*header = resp.Header()
 
 	return resp
 }
@@ -123,11 +123,9 @@ func (resp *Response) IsTimeout() bool {
 }
 
 func (resp *Response) BindIsTimeout(ok *bool) *Response {
-	if ok == nil {
-		return resp
+	if ok != nil {
+		*ok = resp.IsTimeout()
 	}
-
-	*ok = resp.IsTimeout()
 
 	return resp
 }
@@ -145,11 +143,9 @@ func (resp *Response) IsCancel() bool {
 }
 
 func (resp *Response) BindIsCancel(ok *bool) *Response {
-	if ok == nil {
-		return resp
+	if ok != nil {
+		*ok = resp.IsCancel()
 	}
-
-	*ok = resp.IsCancel()
 
 	return resp
 }

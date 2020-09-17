@@ -1,0 +1,24 @@
+run:
+  concurrency: 4
+  timeout: 1m
+  issues-exit-code: 1
+  tests: false
+  skip-dirs-use-default: true
+  skip-dirs:
+    - example
+    - pkg/config
+  skip-files:
+  allow-parallel-runners: true
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  path-prefix: ""
+
+issues:
+  exclude-rules:
+    - linters:
+      - staticcheck
+      text: "SA1029:"

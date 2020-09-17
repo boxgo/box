@@ -13,7 +13,6 @@ type (
 	PProf struct {
 		dummybox.DummyBox
 		cfg      config.SubConfigurator
-		serveMux *http.ServeMux
 		addr     *config.Field
 	}
 

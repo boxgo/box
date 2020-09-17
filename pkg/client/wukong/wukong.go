@@ -2,19 +2,16 @@ package wukong
 
 import (
 	"net/http"
-	"net/http/httptrace"
 	"time"
 )
 
 type (
 	WuKong struct {
-		baseUrl     string
-		timeout     time.Duration
-		client      *http.Client
-		clientTrace *httptrace.ClientTrace
-		basicAuth   BasicAuth
-		before      []Before
-		after       []After
+		baseUrl   string
+		client    *http.Client
+		basicAuth BasicAuth
+		before    []Before
+		after     []After
 	}
 
 	BasicAuth struct {
@@ -132,7 +129,7 @@ func (wk *WuKong) do(req *Request) (resp *Response) {
 		}
 
 		rawResp, err = wk.client.Do(rawReq)
-		req.TraceInfo.ElapsedTime = time.Now().Sub(startAt)
+		req.TraceInfo.ElapsedTime = time.Since(startAt)
 
 		resp = NewResponse(err, rawResp)
 	}
