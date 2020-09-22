@@ -16,7 +16,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-redis/redis/v8 v8.0.0-beta.5
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.4.2
 	github.com/google/btree v1.0.0 // indirect
@@ -25,7 +25,6 @@ require (
 	github.com/imdario/mergo v0.3.9
 	github.com/jonboulle/clockwork v0.2.0 // indirect
 	github.com/json-iterator/go v1.1.10
-	github.com/mwitkow/go-proto-validators v0.3.0
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/prometheus/client_golang v1.7.1
 	github.com/spf13/pflag v1.0.5
