@@ -6,14 +6,15 @@ import (
 	"net/http/pprof"
 
 	"github.com/boxgo/box/pkg/config"
+	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/dummybox"
 )
 
 type (
 	PProf struct {
 		dummybox.DummyBox
-		cfg      config.SubConfigurator
-		addr     *config.Field
+		cfg  config.SubConfigurator
+		addr *field.Field
 	}
 
 	Options struct {
@@ -45,7 +46,7 @@ func New(optionFunc ...OptionFunc) *PProf {
 
 	pp := &PProf{
 		cfg:  opts.cfg,
-		addr: config.NewField("pprof", "addr", "pprof http server listen addr", ":9091"),
+		addr: field.New(false, "pprof", "addr", "pprof http server listen addr", ":9091"),
 	}
 
 	pp.cfg.Mount(pp.addr)

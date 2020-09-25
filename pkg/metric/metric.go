@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/boxgo/box/pkg/config"
+	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -33,11 +34,11 @@ const (
 
 var (
 	Default       = New()
-	Namespace     = config.NewField(name, "namespace", "metric namespace", "")
-	Subsystem     = config.NewField(name, "subsystem", "metric subsystem", "")
-	PushEnabled   = config.NewField(name, "pushEnabled", "enable push", false)
-	PushTargetURL = config.NewField(name, "pushTargetURL", "pushgateway url", "")
-	PushInterval  = config.NewField(name, "pushInterval", "push to a pushgateway interval, millisecond", time.Second*3)
+	Namespace     = field.New(false, name, "namespace", "metric namespace", "")
+	Subsystem     = field.New(false, name, "subsystem", "metric subsystem", "")
+	PushEnabled   = field.New(false, name, "pushEnabled", "enable push", false)
+	PushTargetURL = field.New(false, name, "pushTargetURL", "pushgateway url", "")
+	PushInterval  = field.New(false, name, "pushInterval", "push to a pushgateway interval, millisecond", time.Second*3)
 )
 
 // New a metrics

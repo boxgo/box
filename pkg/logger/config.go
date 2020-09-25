@@ -2,21 +2,22 @@ package logger
 
 import (
 	"github.com/boxgo/box/pkg/config"
+	"github.com/boxgo/box/pkg/config/field"
 )
 
 type (
 	Config struct {
 		config.SubConfigurator
-		Level    *config.Field
-		Encoding *config.Field
+		Level    *field.Field
+		Encoding *field.Field
 	}
 )
 
 func newConfig(name string, cfg config.SubConfigurator) *Config {
 	c := &Config{
 		SubConfigurator: cfg,
-		Level:           config.NewField(name, "level", "levels: debug,info,warn,error,dpanic,panic,fatal", "info"),
-		Encoding:        config.NewField(name, "encoding", "console or json", "console"),
+		Level:           field.New(false, "logger", "level", "levels: debug,info,warn,error,dpanic,panic,fatal", "info"),
+		Encoding:        field.New(false, "logger", "encoding", "console or json", "console"),
 	}
 
 	c.Mount(c.Fields()...)
@@ -32,8 +33,8 @@ func (c *Config) GetEncoding() string {
 	return c.SubConfigurator.GetString(c.Encoding)
 }
 
-func (c *Config) Fields() []*config.Field {
-	return []*config.Field{
+func (c *Config) Fields() []*field.Field {
+	return []*field.Field{
 		c.Level,
 		c.Encoding,
 	}

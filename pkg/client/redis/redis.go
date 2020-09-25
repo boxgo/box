@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/boxgo/box/pkg/config"
+	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/dummybox"
 	"github.com/go-redis/redis/v8"
 )
@@ -14,12 +15,12 @@ type (
 		name           string
 		client         redis.UniversalClient
 		cfg            config.SubConfigurator
-		masterName     *config.Field
-		address        *config.Field
-		password       *config.Field
-		db             *config.Field
-		poolSize       *config.Field
-		minIdleConnCnt *config.Field
+		masterName     *field.Field
+		address        *field.Field
+		password       *field.Field
+		db             *field.Field
+		poolSize       *field.Field
+		minIdleConnCnt *field.Field
 	}
 
 	Options struct {
@@ -58,12 +59,12 @@ func New(optionFunc ...OptionFunc) *Redis {
 	r := &Redis{
 		name:           opts.name,
 		cfg:            opts.cfg,
-		masterName:     config.NewField(opts.name, "masterName", "The sentinel master name. Only failover clients.", ""),
-		address:        config.NewField(opts.name, "address", "Either a single address or a seed list of host:port addresses of cluster/sentinel nodes.", []string{}),
-		password:       config.NewField(opts.name, "password", "Redis password", ""),
-		db:             config.NewField(opts.name, "db", "Database to be selected after connecting to the server. Only single-node and failover clients.", 0),
-		poolSize:       config.NewField(opts.name, "poolSize", "Connection pool size", 100),
-		minIdleConnCnt: config.NewField(opts.name, "minIdleConnCnt", "Min idle connections.", 50),
+		masterName:     field.New(false, opts.name, "masterName", "The sentinel master name. Only failover clients.", ""),
+		address:        field.New(false, opts.name, "address", "Either a single address or a seed list of host:port addresses of cluster/sentinel nodes.", []string{}),
+		password:       field.New(false, opts.name, "password", "Redis password", ""),
+		db:             field.New(false, opts.name, "db", "Database to be selected after connecting to the server. Only single-node and failover clients.", 0),
+		poolSize:       field.New(false, opts.name, "poolSize", "Connection pool size", 100),
+		minIdleConnCnt: field.New(false, opts.name, "minIdleConnCnt", "Min idle connections.", 50),
 	}
 
 	opts.cfg.Mount(r.masterName, r.address, r.password, r.db, r.poolSize, r.minIdleConnCnt)

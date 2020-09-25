@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/boxgo/box/pkg/config"
+	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/dummybox"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,7 +18,7 @@ type (
 		name    string
 		cfg     config.SubConfigurator
 		client  *mongo.Client
-		uri     *config.Field
+		uri     *field.Field
 		monitor *Monitor
 	}
 
@@ -87,7 +88,7 @@ func New(optionFunc ...OptionFunc) (*Mongo, error) {
 		opts.enable = true
 	}
 
-	uriField := config.NewField(opts.name, "uri", "mongodb connection uri. https://docs.mongodb.com/manual/reference/connection-string", "mongodb://127.0.0.1:27017")
+	uriField := field.New(false, opts.name, "uri", "mongodb connection uri.", "mongodb://127.0.0.1:27017")
 
 	// set override options
 	clientOptions := options.Client()
