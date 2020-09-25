@@ -24,7 +24,7 @@ require (
 	github.com/imdario/mergo v0.3.9
 	github.com/jonboulle/clockwork v0.2.0 // indirect
 	github.com/json-iterator/go v1.1.10
-	github.com/olekukonko/tablewriter v0.0.4
+	github.com/olekukonko/tablewriter v0.0.5-0.20200416053754-163badb3bac6
 	github.com/prometheus/client_golang v1.7.1
 	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
