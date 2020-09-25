@@ -10,16 +10,16 @@ import (
 )
 
 const (
-	envName = "BOX_APP_NAME"
-	envVer  = "BOX_APP_VERSION"
+	EnvName = "BOX_APP_NAME"
+	EnvVer  = "BOX_APP_VERSION"
 )
 
 var (
-	Name     string
-	Version  string
-	Hostname string
-	IP       string
-	StartAt  time.Time
+	Name     string    // Application name. You can preset name when go build. And also, you can preset by env "BOX_APP_NAME".
+	Version  string    // Application version. You can preset name when go build. And also, you can preset by env "BOX_APP_VERSION".
+	StartAt  time.Time // Application start time.
+	Hostname string    // Runtime host's hostname.
+	IP       string    // Runtime host's ip.
 )
 
 func init() {
@@ -28,7 +28,7 @@ func init() {
 	StartAt = time.Now()
 
 	if Name == "" {
-		if env := os.Getenv(envName); env != "" {
+		if env := os.Getenv(EnvName); env != "" {
 			Name = env
 		} else {
 			Name = fmt.Sprintf("box_%s", strutil.RandString(6))
@@ -36,7 +36,7 @@ func init() {
 	}
 
 	if Version == "" {
-		if env := os.Getenv(envVer); env != "" {
+		if env := os.Getenv(EnvVer); env != "" {
 			Version = env
 		} else {
 			Version = "unknown"
