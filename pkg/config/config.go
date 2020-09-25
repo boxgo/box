@@ -4,6 +4,7 @@ package config
 import (
 	"time"
 
+	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/config/reader"
 	"github.com/boxgo/box/pkg/config/source"
 )
@@ -21,35 +22,33 @@ type (
 		Bytes() []byte
 		// SprintFields registered fields
 		SprintFields() string
-		// SprintTemplate through encoder
-		SprintTemplate(encoder string) string
 		// Watch, Mount, Getter value through field
 		SubConfigurator
 	}
 
 	SubConfigurator interface {
 		// Watch field change
-		Watch(field *Field) (Watcher, error)
+		Watch(field *field.Field) (Watcher, error)
 		// Mount fields to configurator
-		Mount(fields ...*Field)
+		Mount(fields ...*field.Field)
 		// Get value through field
-		Get(field *Field) reader.Value
+		Get(field *field.Field) reader.Value
 		// GetString through field
-		GetBool(field *Field) bool
+		GetBool(field *field.Field) bool
 		// GetInt through field
-		GetInt(field *Field) int
+		GetInt(field *field.Field) int
 		// GetUint through field
-		GetUint(field *Field) uint
+		GetUint(field *field.Field) uint
 		// GetString through field
-		GetString(field *Field) string
+		GetString(field *field.Field) string
 		// GetFloat64 through field
-		GetFloat64(field *Field) float64
+		GetFloat64(field *field.Field) float64
 		// GetDuration through field
-		GetDuration(field *Field) time.Duration
+		GetDuration(field *field.Field) time.Duration
 		// GetStringSlice through field
-		GetStringSlice(field *Field) []string
+		GetStringSlice(field *field.Field) []string
 		// GetStringMap through field
-		GetStringMap(field *Field) map[string]string
+		GetStringMap(field *field.Field) map[string]string
 		// GetBoxName path: box.name
 		GetBoxName() string
 		// GetTraceUid path: box.trace.uid
@@ -68,27 +67,6 @@ var (
 	Default = NewConfig()
 )
 
-// NewSimple create a configurator with `file` and `env` source support.
-// the priority is: `env` > `file`.
-// `env` will use filename as prefix automatically.
-func NewSimple(filePath string) Configurator {
-	return newConfig(WithSimpleSource(filePath))
-}
-
-// NewClassic create a configurator with `file`, `env` and `etcd` source support.
-// the priority is: `etcd` > `env` > `file`.
-// `env` will use filename as prefix automatically.
-// `etcd` key format: `/{fileName}/config`
-func NewClassic(filePath, username, password, address string) Configurator {
-	return newConfig(WithClassicSource(filePath, username, password, address))
-}
-
-// NewEtcd create a configurator with `etcd` source support.
-// `etcd` key format: `/{prefix}/config`
-func NewEtcd(prefix, username, password, address string) Configurator {
-	return newConfig(WithEtcdSource(prefix, username, password, address))
-}
-
 // NewConfig returns new config
 func NewConfig(opts ...Option) Configurator {
 	return newConfig(opts...)
@@ -105,7 +83,7 @@ func Sync() error {
 }
 
 // Watch a value for changes
-func Watch(field *Field) (Watcher, error) {
+func Watch(field *field.Field) (Watcher, error) {
 	return Default.Watch(field)
 }
 
@@ -115,52 +93,52 @@ func Close() error {
 }
 
 // Mount fields
-func Mount(fields ...*Field) {
+func Mount(fields ...*field.Field) {
 	Default.Mount(fields...)
 }
 
 // Get a value from the config
-func Get(field *Field) reader.Value {
+func Get(field *field.Field) reader.Value {
 	return Default.Get(field)
 }
 
 // GetString through field
-func GetBool(field *Field) bool {
+func GetBool(field *field.Field) bool {
 	return Default.GetBool(field)
 }
 
 // GetInt through field
-func GetInt(field *Field) int {
+func GetInt(field *field.Field) int {
 	return Default.GetInt(field)
 }
 
 // GetUint through field
-func GetUint(field *Field) uint {
+func GetUint(field *field.Field) uint {
 	return Default.GetUint(field)
 }
 
 // GetString through field
-func GetString(field *Field) string {
+func GetString(field *field.Field) string {
 	return Default.GetString(field)
 }
 
 // GetFloat64 through field
-func GetFloat64(field *Field) float64 {
+func GetFloat64(field *field.Field) float64 {
 	return Default.GetFloat64(field)
 }
 
 // GetDuration through field
-func GetDuration(field *Field) time.Duration {
+func GetDuration(field *field.Field) time.Duration {
 	return Default.GetDuration(field)
 }
 
 // GetStringSlice through field
-func GetStringSlice(field *Field) []string {
+func GetStringSlice(field *field.Field) []string {
 	return Default.GetStringSlice(field)
 }
 
 // GetStringMap through field
-func GetStringMap(field *Field) map[string]string {
+func GetStringMap(field *field.Field) map[string]string {
 	return Default.GetStringMap(field)
 }
 
@@ -192,9 +170,4 @@ func GetTraceSpanId() string {
 // SprintFields registered fields
 func SprintFields() string {
 	return Default.SprintFields()
-}
-
-// SprintTemplate through encoder
-func SprintTemplate(encoder string) string {
-	return Default.SprintTemplate(encoder)
 }
