@@ -155,7 +155,7 @@ func (c *config) Load(sources ...source.Source) error {
 	}
 	c.vals = vals
 
-	return c.Sync()
+	return nil
 }
 
 // sync loads all the sources, calls the parser and updates the config
