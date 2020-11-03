@@ -5,13 +5,11 @@ import (
 
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/config/field"
-	"github.com/boxgo/box/pkg/dummybox"
 	"github.com/go-redis/redis/v8"
 )
 
 type (
 	Redis struct {
-		dummybox.DummyBox
 		name           string
 		client         redis.UniversalClient
 		cfg            config.SubConfigurator

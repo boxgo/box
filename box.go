@@ -8,18 +8,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/boxgo/box/pkg/component"
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/logger"
-	"github.com/boxgo/box/pkg/server"
 	"golang.org/x/sync/errgroup"
 )
 
 type (
-	// Box component interface
-	Box interface {
-		server.Server
-	}
-
 	Application interface {
 		Run() error
 	}
@@ -28,13 +23,13 @@ type (
 	application struct {
 		startupTimeout  int
 		shutdownTimeout int
-		boxes           []Box
+		boxes           []component.Box
 		quit            chan os.Signal
 		cfg             config.Configurator
 	}
 
 	boxErr struct {
-		box Box
+		box component.Box
 		err error
 	}
 )

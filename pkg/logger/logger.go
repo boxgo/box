@@ -6,15 +6,15 @@ import (
 	"log"
 	"time"
 
+	"github.com/boxgo/box/pkg/component"
 	"github.com/boxgo/box/pkg/config"
-	"github.com/boxgo/box/pkg/dummybox"
 	"go.uber.org/zap"
 )
 
 type (
 	// Logger logger option
 	Logger struct {
-		dummybox.DummyBox
+		component.NoopBox
 		name  string
 		level *zap.AtomicLevel
 		sugar *zap.SugaredLogger

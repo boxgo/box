@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/boxgo/box/pkg/component"
 	"github.com/boxgo/box/pkg/config"
-	"github.com/boxgo/box/pkg/dummybox"
 	"github.com/boxgo/box/pkg/logger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -14,7 +14,7 @@ import (
 
 type (
 	Logger struct {
-		dummybox.DummyBox
+		component.NoopBox
 		cfg config.SubConfigurator
 	}
 

@@ -5,13 +5,11 @@ import (
 	"net"
 
 	"github.com/boxgo/box/pkg/config"
-	"github.com/boxgo/box/pkg/dummybox"
 	"google.golang.org/grpc"
 )
 
 type (
 	Server struct {
-		dummybox.DummyBox
 		name   string
 		cfg    *Config
 		server *grpc.Server

@@ -7,12 +7,10 @@ import (
 
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/config/field"
-	"github.com/boxgo/box/pkg/dummybox"
 )
 
 type (
 	PProf struct {
-		dummybox.DummyBox
 		cfg  config.SubConfigurator
 		addr *field.Field
 	}

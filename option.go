@@ -1,6 +1,7 @@
 package box
 
 import (
+	"github.com/boxgo/box/pkg/component"
 	"github.com/boxgo/box/pkg/config"
 )
 
@@ -10,7 +11,7 @@ type (
 		Silent          bool
 		StartupTimeout  int
 		ShutdownTimeout int
-		Boxes           []Box
+		Boxes           []component.Box
 		Configurator    config.Configurator
 	}
 
@@ -45,7 +46,7 @@ func WithConfig(cfg config.Configurator) Option {
 }
 
 // WithBoxes set boxes
-func WithBoxes(boxes ...Box) Option {
+func WithBoxes(boxes ...component.Box) Option {
 	return func(ops *Options) {
 		ops.Boxes = boxes
 	}

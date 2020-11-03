@@ -5,7 +5,6 @@ import (
 
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/config/field"
-	"github.com/boxgo/box/pkg/dummybox"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -14,7 +13,6 @@ import (
 
 type (
 	Mongo struct {
-		dummybox.DummyBox
 		name    string
 		cfg     config.SubConfigurator
 		client  *mongo.Client
