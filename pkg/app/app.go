@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/boxgo/box/pkg/util/netutil"
-	"github.com/boxgo/box/pkg/util/strutil"
 )
 
 var (
@@ -23,7 +22,7 @@ func init() {
 	StartAt = time.Now()
 
 	if Name == "" {
-		Name = fmt.Sprintf("box_%s", strutil.RandString(6))
+		Name = "box"
 	}
 
 	if Version == "" {
