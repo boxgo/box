@@ -9,14 +9,9 @@ import (
 	"github.com/boxgo/box/pkg/util/strutil"
 )
 
-const (
-	EnvName = "BOX_APP_NAME"
-	EnvVer  = "BOX_APP_VERSION"
-)
-
 var (
-	Name     string    // Application name. You can preset name when go build. And also, you can preset by env "BOX_APP_NAME".
-	Version  string    // Application version. You can preset name when go build. And also, you can preset by env "BOX_APP_VERSION".
+	Name     string    // Application name. You can preset name when go build. Or it will generate a random name.
+	Version  string    // Application version. You can preset name when go build. Or it will be setted to `unknown`.
 	StartAt  time.Time // Application start time.
 	Hostname string    // Runtime host's hostname.
 	IP       string    // Runtime host's ip.
@@ -28,19 +23,11 @@ func init() {
 	StartAt = time.Now()
 
 	if Name == "" {
-		if env := os.Getenv(EnvName); env != "" {
-			Name = env
-		} else {
-			Name = fmt.Sprintf("box_%s", strutil.RandString(6))
-		}
+		Name = fmt.Sprintf("box_%s", strutil.RandString(6))
 	}
 
 	if Version == "" {
-		if env := os.Getenv(EnvVer); env != "" {
-			Version = env
-		} else {
-			Version = "unknown"
-		}
+		Version = "unknown"
 	}
 
 	if IP == "" {
