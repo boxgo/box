@@ -9,8 +9,8 @@ import (
 type (
 	// Config of logger
 	Config struct {
-		name              string
-		Level             zap.AtomicLevel        `config:"level" json:"level"`
+		path              string
+		Level             zap.AtomicLevel        `config:"level" json:"level" desc:"debug,info,warn,error,dpanic,panic,fatal"`
 		Development       bool                   `config:"development" json:"development"`
 		DisableCaller     bool                   `config:"disableCaller" json:"disableCaller"`
 		DisableStacktrace bool                   `config:"disableStacktrace" json:"disableStacktrace"`
@@ -49,15 +49,15 @@ type (
 func StdConfig(name string) *Config {
 	cfg := DefaultConfig("logger." + name)
 
-	config.Get(cfg.name).Scan(cfg)
+	config.Scan(cfg)
 
 	return cfg
 }
 
 // DefaultConfig of logger
-func DefaultConfig(name string) *Config {
+func DefaultConfig(path string) *Config {
 	return &Config{
-		name:              name,
+		path:              path,
 		Level:             zap.NewAtomicLevel(),
 		Development:       false,
 		Encoding:          "console",
@@ -88,4 +88,8 @@ func DefaultConfig(name string) *Config {
 // Build a logger
 func (cfg *Config) Build() (*Logger, error) {
 	return newLogger(cfg)
+}
+
+func (cfg *Config) Path() string {
+	return cfg.path
 }

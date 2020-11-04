@@ -43,9 +43,8 @@ func newLogger(cfg *Config) (*Logger, error) {
 	}
 }
 
-// Name logger config name
-func (logger *Logger) Name() string {
-	return logger.cfg.name
+func (logger *Logger) String() string {
+	return "logger"
 }
 
 func (logger *Logger) Debug(args ...interface{}) {
@@ -150,7 +149,7 @@ func (logger *Logger) Desugar() *zap.Logger {
 }
 
 func (logger *Logger) watch() error {
-	if w, err := config.Watch(logger.cfg.name, "level"); err != nil {
+	if w, err := config.Watch(logger.cfg.Path(), "level"); err != nil {
 		return err
 	} else {
 		go func() {
