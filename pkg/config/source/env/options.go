@@ -2,7 +2,8 @@ package env
 
 import (
 	"context"
-
+	"encoding/json"
+	"log"
 	"strings"
 
 	"github.com/boxgo/box/pkg/config/source"
@@ -10,6 +11,25 @@ import (
 
 type strippedPrefixKey struct{}
 type prefixKey struct{}
+
+func WithConfig(data []byte) []source.Option {
+	type (
+		opt struct {
+			Prefix      string
+			StripPrefix string
+		}
+	)
+
+	v := &opt{}
+	if err := json.Unmarshal(data, v); err != nil {
+		log.Fatal(err)
+	}
+
+	return []source.Option{
+		WithPrefix(v.Prefix),
+		WithStrippedPrefix(v.StripPrefix),
+	}
+}
 
 // WithStrippedPrefix sets the environment variable prefixes to scope to.
 // These prefixes will be removed from the actual config entries.

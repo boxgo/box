@@ -2,6 +2,8 @@ package etcd
 
 import (
 	"context"
+	"encoding/json"
+	"log"
 
 	"github.com/boxgo/box/pkg/config/source"
 )
@@ -14,6 +16,30 @@ type authKey struct{}
 type authCreds struct {
 	Username string
 	Password string
+}
+
+func WithConfig(data []byte) []source.Option {
+	type (
+		opt struct {
+			UserName    string
+			Password    string
+			Address     string
+			Prefix      string
+			StripPrefix bool
+		}
+	)
+
+	v := &opt{}
+	if err := json.Unmarshal(data, v); err != nil {
+		log.Fatal(err)
+	}
+
+	return []source.Option{
+		WithAddress(v.Address),
+		WithPrefix(v.Prefix),
+		Auth(v.UserName, v.Password),
+		StripPrefix(v.StripPrefix),
+	}
 }
 
 // WithAddress sets the consul address

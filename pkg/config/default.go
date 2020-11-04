@@ -1,18 +1,14 @@
 package config
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
-	"github.com/boxgo/box/pkg/app"
-	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/config/loader"
 	"github.com/boxgo/box/pkg/config/loader/memory"
 	"github.com/boxgo/box/pkg/config/reader"
 	"github.com/boxgo/box/pkg/config/reader/json"
 	"github.com/boxgo/box/pkg/config/source"
-	"github.com/boxgo/box/pkg/config/util"
 )
 
 type (
@@ -25,18 +21,7 @@ type (
 		snap *loader.Snapshot
 		// the current values
 		vals reader.Values
-		// system registered fields
-		sysFields field.Fields
-		// user registered fields
-		userFields field.Fields
 	}
-)
-
-var (
-	traceUid    = field.New(true, "trace", "uid", "trace uid in context", "box.trace.uid")
-	traceReqId  = field.New(true, "trace", "reqId", "trace requestId in context", "box.trace.reqId")
-	traceSpanId = field.New(true, "trace", "spanId", "trace spanId in context", "box.trace.spanId")
-	traceBizId  = field.New(true, "trace", "bizId", "trace bizId in context", "box.trace.bizId")
 )
 
 func newConfig(opts ...Option) Configurator {
@@ -57,20 +42,11 @@ func newConfig(opts ...Option) Configurator {
 	vals, _ := options.Reader.Values(snap.ChangeSet)
 
 	c := &config{
-		exit:       make(chan bool),
-		opts:       options,
-		snap:       snap,
-		vals:       vals,
-		sysFields:  make(field.Fields, 0),
-		userFields: make(field.Fields, 0),
+		exit: make(chan bool),
+		opts: options,
+		snap: snap,
+		vals: vals,
 	}
-
-	c.MountSystem(
-		traceUid,
-		traceReqId,
-		traceSpanId,
-		traceBizId,
-	)
 
 	go c.run()
 
@@ -183,14 +159,10 @@ func (c *config) Sync() error {
 }
 
 // Watch a value for changes
-func (c *config) Watch(field *field.Field) (Watcher, error) {
-	value := c.Get(field)
+func (c *config) Watch(path ...string) (Watcher, error) {
+	value := c.Get(path...)
 
-	if field.Immutable {
-		return nil, fmt.Errorf("field [%s] is immutable", field.String())
-	}
-
-	w, err := c.opts.Loader.Watch(field.Paths()...)
+	w, err := c.opts.Loader.Watch(path...)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +170,7 @@ func (c *config) Watch(field *field.Field) (Watcher, error) {
 	return &watcher{
 		lw:    w,
 		rd:    c.opts.Reader,
-		path:  field.Paths(),
+		path:  path,
 		value: value,
 	}, nil
 }
@@ -219,181 +191,25 @@ func (c *config) Bytes() []byte {
 	return c.vals.Bytes()
 }
 
-// Mount fields
-func (c *config) Mount(fields ...*field.Field) {
-	c.Lock()
-	defer c.Unlock()
-
-	c.userFields.Append(fields...).Sort()
-}
-
-func (c *config) MountSystem(fields ...*field.Field) {
-	c.Lock()
-	defer c.Unlock()
-
-	c.sysFields.Append(fields...).Sort()
-}
-
-// Get value through field
-func (c *config) Get(field *field.Field) reader.Value {
+func (c *config) Scan(val interface{}) error {
 	c.RLock()
 	defer c.RUnlock()
 
-	if field.Immutable && field.Val() != nil {
-		return field.Val()
-	}
+	return c.vals.Scan(val)
+}
+
+// Get value through field
+func (c *config) Get(path ...string) reader.Value {
+	c.RLock()
+	defer c.RUnlock()
 
 	// did sync actually work?
 	if c.vals != nil {
-		field.SetVal(c.vals.Get(field.Paths()...))
-
-		return field.Val()
+		return c.vals.Get(path...)
 	}
 
 	// no value
 	return newValue()
-}
-
-// GetString through field
-func (c *config) GetBool(field *field.Field) (val bool) {
-	if field == nil {
-		return
-	}
-
-	def, ok := field.Def.(bool)
-	if !ok {
-		return
-	}
-
-	return c.Get(field).Bool(def)
-}
-
-// GetInt through field
-func (c *config) GetInt(field *field.Field) (val int) {
-	if field == nil {
-		return
-	}
-
-	def, ok := field.Def.(int)
-	if !ok {
-		return
-	}
-
-	return c.Get(field).Int(def)
-}
-
-// GetUint through field
-func (c *config) GetUint(field *field.Field) (val uint) {
-	if field == nil {
-		return
-	}
-
-	def, ok := field.Def.(uint)
-	if !ok {
-		return
-	}
-
-	return c.Get(field).Uint(def)
-}
-
-// GetString through field
-func (c *config) GetString(field *field.Field) (val string) {
-	if field == nil {
-		return
-	}
-
-	def, ok := field.Def.(string)
-	if !ok {
-		return
-	}
-
-	return c.Get(field).String(def)
-}
-
-// GetFloat64 through field
-func (c *config) GetFloat64(field *field.Field) (val float64) {
-	if field == nil {
-		return
-	}
-
-	def, ok := field.Def.(float64)
-	if !ok {
-		return
-	}
-
-	return c.Get(field).Float64(def)
-}
-
-// GetDuration through field
-func (c *config) GetDuration(field *field.Field) (val time.Duration) {
-	if field == nil {
-		return
-	}
-
-	def, ok := field.Def.(time.Duration)
-	if !ok {
-		return
-	}
-
-	return c.Get(field).Duration(def)
-}
-
-// GetStringSlice through field
-func (c *config) GetStringSlice(field *field.Field) (val []string) {
-	if field == nil {
-		return
-	}
-
-	def, ok := field.Def.([]string)
-	if !ok {
-		return
-	}
-
-	return c.Get(field).StringSlice(def)
-}
-
-// GetStringMap through field
-func (c *config) GetStringMap(field *field.Field) (val map[string]string) {
-	if field == nil {
-		return
-	}
-
-	def, ok := field.Def.(map[string]string)
-	if !ok {
-		return
-	}
-
-	return c.Get(field).StringMap(def)
-}
-
-// GetBoxName path: box.name
-func (c *config) GetBoxName() string {
-	return app.Name
-}
-
-// GetTraceUid path: box.trace.uid
-func (c *config) GetTraceUid() string {
-	return c.GetString(traceUid)
-}
-
-// GetTraceReqId path: box.trace.reqid
-func (c *config) GetTraceReqId() string {
-	return c.GetString(traceReqId)
-}
-
-// GetTraceBizId path: box.trace.bizid
-func (c *config) GetTraceBizId() string {
-	return c.GetString(traceBizId)
-}
-
-// GetTraceSpanId path: box.trace.spanid
-func (c *config) GetTraceSpanId() string {
-	return c.GetString(traceSpanId)
-}
-
-// SprintFields registered fields
-func (c *config) SprintFields() (str string) {
-	return util.SprintFields(c.sysFields, c.userFields)
 }
 
 func (c *config) String() string {
