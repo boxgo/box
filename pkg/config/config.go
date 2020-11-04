@@ -2,27 +2,42 @@
 package config
 
 import (
+	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/config/reader"
 	"github.com/boxgo/box/pkg/config/source"
 )
 
 type (
+	// Config is set of config fields. "." is a level splitter.
+	// For example:
+	//	father.child
+	// It means that config data's struct same as this.
+	// 	{
+	// 	  "father": {
+	// 	    "child": {xxx}
+	// 	  }
+	// 	}
+	Config interface {
+		Path() string
+	}
 	// Configurator is an interface abstraction for dynamic configuration
 	Configurator interface {
 		// Load config sources
 		Load(source ...source.Source) error
-		// Force a source changeset sync
+		// Force a source change set sync
 		Sync() error
 		// Stop the config loader/watcher
 		Close() error
+		// Bytes get merged config data
+		Bytes() []byte
+		// Scan to val
+		Scan(val Config) error
 		// Watch field change
 		Watch(path ...string) (Watcher, error)
 		// Get value through field
 		Get(path ...string) reader.Value
-		// Scan to val
-		Scan(val interface{}) error
-		// Bytes get merged config data
-		Bytes() []byte
+		// Scanned fields
+		Fields() *field.Fields
 	}
 )
 
@@ -46,18 +61,24 @@ func Sync() error {
 	return Default.Sync()
 }
 
-// Watch a value for changes
-func Watch(path ...string) (Watcher, error) {
-	return Default.Watch(path...)
-}
-
 // Close stop the config loader/watcher
 func Close() error {
 	return Default.Close()
 }
 
-func Scan(val interface{}) error {
+// Byte return config raw data
+func Byte() []byte {
+	return Default.Bytes()
+}
+
+// Scan config to val
+func Scan(val Config) error {
 	return Default.Scan(val)
+}
+
+// Watch a value for changes
+func Watch(path ...string) (Watcher, error) {
+	return Default.Watch(path...)
 }
 
 // Get a value from the config
@@ -65,6 +86,6 @@ func Get(path ...string) reader.Value {
 	return Default.Get(path...)
 }
 
-func Byte() []byte {
-	return Default.Bytes()
+func Fields() *field.Fields {
+	return Default.Fields()
 }

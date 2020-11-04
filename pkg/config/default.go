@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/config/loader"
 	"github.com/boxgo/box/pkg/config/loader/memory"
 	"github.com/boxgo/box/pkg/config/reader"
@@ -21,6 +22,8 @@ type (
 		snap *loader.Snapshot
 		// the current values
 		vals reader.Values
+		// scanned fields
+		fields field.Fields
 	}
 )
 
@@ -158,6 +161,32 @@ func (c *config) Sync() error {
 	return nil
 }
 
+// Stop the config loader/watcher
+func (c *config) Close() error {
+	select {
+	case <-c.exit:
+		return nil
+	default:
+		close(c.exit)
+	}
+	return nil
+}
+
+// Bytes get merged config data
+func (c *config) Bytes() []byte {
+	return c.vals.Bytes()
+}
+
+// Scan config to val
+func (c *config) Scan(val Config) error {
+	c.RLock()
+	defer c.RUnlock()
+
+	c.fields.Parse(val)
+
+	return c.vals.Get(val.Path()).Scan(val)
+}
+
 // Watch a value for changes
 func (c *config) Watch(path ...string) (Watcher, error) {
 	value := c.Get(path...)
@@ -175,29 +204,6 @@ func (c *config) Watch(path ...string) (Watcher, error) {
 	}, nil
 }
 
-// Stop the config loader/watcher
-func (c *config) Close() error {
-	select {
-	case <-c.exit:
-		return nil
-	default:
-		close(c.exit)
-	}
-	return nil
-}
-
-// Bytes get merged config data
-func (c *config) Bytes() []byte {
-	return c.vals.Bytes()
-}
-
-func (c *config) Scan(val interface{}) error {
-	c.RLock()
-	defer c.RUnlock()
-
-	return c.vals.Scan(val)
-}
-
 // Get value through field
 func (c *config) Get(path ...string) reader.Value {
 	c.RLock()
@@ -210,6 +216,10 @@ func (c *config) Get(path ...string) reader.Value {
 
 	// no value
 	return newValue()
+}
+
+func (c *config) Fields() *field.Fields {
+	return &c.fields
 }
 
 func (c *config) String() string {

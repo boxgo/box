@@ -56,7 +56,7 @@ func init() {
 		panic(fmt.Errorf("config sync error: %w", err))
 	}
 
-	if err := firstInitCfg.Scan(&firstInitCfgCfg); err != nil {
+	if err := firstInitCfg.Get().Scan(&firstInitCfgCfg); err != nil {
 		panic(fmt.Errorf("config scan error: %w", err))
 	}
 
