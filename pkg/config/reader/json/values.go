@@ -16,7 +16,7 @@ type jsonValues struct {
 	api jsoniter.API
 }
 
-const defaultTagKey = "box"
+const defaultTagKey = "config"
 
 func init() {
 	jsoniter.RegisterTypeDecoderFunc("time.Duration", func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {

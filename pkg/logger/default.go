@@ -2,120 +2,148 @@ package logger
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 )
 
 var (
-	// Default the default logger.
-	// TODO configurator can't get config rightly, because `init()` always called before `config.Load()`
-	Default *Logger
+	// defaultLogger the default logger.
+	defaultLogger *Logger
 )
 
 func init() {
-	if log, err := New(); err != nil {
-		panic(err)
+	if logger, err := StdConfig("default").Build(); err != nil {
+		panic(fmt.Errorf("logger init error: %w", err))
 	} else {
-		Default = log
+		defaultLogger = logger
 	}
 }
 
+// Debug uses fmt.Sprint to construct and log a message.
 func Debug(args ...interface{}) {
-	Default.Debug(args...)
+	defaultLogger.Debug(args...)
 }
 
+// Debugf uses fmt.Sprintf to log a templated message.
 func Debugf(template string, args ...interface{}) {
-	Default.Debugf(template, args...)
+	defaultLogger.Debugf(template, args...)
 }
 
+// Debugw logs a message with some additional context. The variadic key-value pairs are treated as they are in With.
+//
+// When debug-level logging is disabled, this is much faster than
+// 	s.With(keysAndValues).Debug(msg)
 func Debugw(msg string, keysAndValues ...interface{}) {
-	Default.Debugw(msg, keysAndValues...)
+	defaultLogger.Debugw(msg, keysAndValues...)
 }
 
+// Info uses fmt.Sprint to construct and log a message.
 func Info(args ...interface{}) {
-	Default.Info(args...)
+	defaultLogger.Info(args...)
 }
 
+// Infof uses fmt.Sprintf to log a templated message.
 func Infof(template string, args ...interface{}) {
-	Default.Infof(template, args...)
+	defaultLogger.Infof(template, args...)
 }
 
+// Infow logs a message with some additional context. The variadic key-value pairs are treated as they are in With.
 func Infow(msg string, keysAndValues ...interface{}) {
-	Default.Infow(msg, keysAndValues...)
+	defaultLogger.Infow(msg, keysAndValues...)
 }
 
+// Warn uses fmt.Sprint to construct and log a message.
 func Warn(args ...interface{}) {
-	Default.Warn(args...)
+	defaultLogger.Warn(args...)
 }
 
+// Warnf uses fmt.Sprintf to log a templated message.
 func Warnf(template string, args ...interface{}) {
-	Default.Warnf(template, args...)
+	defaultLogger.Warnf(template, args...)
 }
 
+// Warnw logs a message with some additional context. The variadic key-value pairs are treated as they are in With.
 func Warnw(msg string, keysAndValues ...interface{}) {
-	Default.Warnw(msg, keysAndValues...)
+	defaultLogger.Warnw(msg, keysAndValues...)
 }
 
+// Error uses fmt.Sprint to construct and log a message.
 func Error(args ...interface{}) {
-	Default.Error(args...)
+	defaultLogger.Error(args...)
 }
 
+// Errorf uses fmt.Sprintf to log a templated message.
 func Errorf(template string, args ...interface{}) {
-	Default.Errorf(template, args...)
+	defaultLogger.Errorf(template, args...)
 }
 
+// Errorw logs a message with some additional context. The variadic key-value pairs are treated as they are in With.
 func Errorw(msg string, keysAndValues ...interface{}) {
-	Default.Errorw(msg, keysAndValues...)
+	defaultLogger.Errorw(msg, keysAndValues...)
 }
 
+// DPanic uses fmt.Sprint to construct and log a message. In development, the logger then panics. (See DPanicLevel for details.)
 func DPanic(args ...interface{}) {
-	Default.DPanic(args...)
+	defaultLogger.DPanic(args...)
 }
 
+// DPanicf uses fmt.Sprintf to log a templated message. In development, the logger then panics. (See DPanicLevel for details.)
 func DPanicf(template string, args ...interface{}) {
-	Default.DPanicf(template, args...)
+	defaultLogger.DPanicf(template, args...)
 }
 
+// DPanicw logs a message with some additional context. In development, the logger then panics. (See DPanicLevel for details.) The variadic key-value pairs are treated as they are in With.
 func DPanicw(msg string, keysAndValues ...interface{}) {
-	Default.DPanicw(msg, keysAndValues...)
+	defaultLogger.DPanicw(msg, keysAndValues...)
 }
 
+// Panic uses fmt.Sprint to construct and log a message, then panics.
 func Panic(args ...interface{}) {
-	Default.Panic(args...)
+	defaultLogger.Panic(args...)
 }
 
+// Panicf uses fmt.Sprintf to log a templated message, then panics.
 func Panicf(template string, args ...interface{}) {
-	Default.Panicf(template, args...)
+	defaultLogger.Panicf(template, args...)
 }
 
+// Panicw logs a message with some additional context, then panics. The variadic key-value pairs are treated as they are in With.
 func Panicw(msg string, keysAndValues ...interface{}) {
-	Default.Panicw(msg, keysAndValues...)
+	defaultLogger.Panicw(msg, keysAndValues...)
 }
 
+// Fatal uses fmt.Sprint to construct and log a message, then calls os.Exit.
 func Fatal(args ...interface{}) {
-	Default.Fatal(args...)
+	defaultLogger.Fatal(args...)
 }
 
+// Fatalf uses fmt.Sprintf to log a templated message, then calls os.Exit.
 func Fatalf(template string, args ...interface{}) {
-	Default.Fatalf(template, args...)
+	defaultLogger.Fatalf(template, args...)
 }
 
+// Fatalw logs a message with some additional context, then calls os.Exit. The variadic key-value pairs are treated as they are in With.
 func Fatalw(msg string, keysAndValues ...interface{}) {
-	Default.Fatalw(msg, keysAndValues...)
+	defaultLogger.Fatalw(msg, keysAndValues...)
 }
 
+// Trace logs a message with trace prefix and return *zap.SugaredLogger.
 func Trace(ctx context.Context) *zap.SugaredLogger {
-	return Default.Trace(ctx)
+	return defaultLogger.Trace(ctx)
 }
 
+// TraceRaw logs a message with trace prefix and return *zap.Logger.
 func TraceRaw(ctx context.Context) *zap.Logger {
-	return Default.TraceRaw(ctx)
+	return defaultLogger.TraceRaw(ctx)
 }
 
+// Named adds a sub-scope to the logger's name. See Logger.Named for details.
 func Named(name string) *zap.SugaredLogger {
-	return Default.Named(name)
+	return defaultLogger.Named(name)
 }
 
+// Desugar unwraps a SugaredLogger, exposing the original Logger. Desugaring is quite inexpensive, so it's reasonable for a single application to use both Loggers and SugaredLoggers, converting between them on the boundaries of performance-sensitive code.
 func Desugar() *zap.Logger {
-	return Default.Desugar()
+	return defaultLogger.Desugar()
 }
