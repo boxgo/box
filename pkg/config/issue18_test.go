@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/config/source/env"
 	"github.com/boxgo/box/pkg/config/source/file"
 )
@@ -54,11 +53,7 @@ func TestIssue18(t *testing.T) {
 		),
 	)
 
-	actualHost := conf.GetString(&field.Field{
-		Path: "amqp.host",
-		Desc: "",
-		Def:  "backup",
-	})
+	actualHost := conf.Get("amqp.host").String("backup")
 	if actualHost != "rabbit.testing.com" {
 		t.Fatalf("Expected %v but got %v",
 			"rabbit.testing.com",

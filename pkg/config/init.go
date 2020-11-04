@@ -1,3 +1,5 @@
+// +build !configinit
+
 package config
 
 import (
@@ -43,7 +45,7 @@ func init() {
 		filepath.Join(wd, "box.json"),
 	}
 	if path = fputil.FirstExistFilePath(fps); path == "" {
-		panic(fmt.Errorf("config file\n%s\nnot found.", strings.Join(fps, "\n")))
+		panic(fmt.Errorf("config file\n%s\nnot found", strings.Join(fps, "\n")))
 	}
 
 	if err := firstInitCfg.Load(file.NewSource(file.WithPath(path))); err != nil {
