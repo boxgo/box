@@ -85,16 +85,15 @@ func (fs *Fields) parse(path, sub string, c interface{}) {
 		}
 
 		var (
-			field = typ.Field(i)
-			tag   = field.Tag
-			name  = tag.Get("config")
-			desc  = tag.Get("desc")
-			def   = val.Field(i).Interface()
+			typField = typ.Field(i)
+			valField = val.Field(i)
+			tagField = typField.Tag
+			name     = tagField.Get("config")
+			desc     = tagField.Get("desc")
+			def      = valField.Interface()
 		)
 
-		if field.Type.Kind() == reflect.Struct || (field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct) {
-			fs.parse(path, name, val.Field(i).Interface())
-		} else {
+		fn := func() {
 			if sub != "" {
 				name = sub + "." + name
 			}
@@ -107,6 +106,32 @@ func (fs *Fields) parse(path, sub string, c interface{}) {
 				Default: def,
 			})
 		}
+
+		if typField.Type.Kind() == reflect.Struct {
+			fs.parse(path, name, def)
+
+			if !hasExport(valField) {
+				fn()
+			}
+		} else if typField.Type.Kind() == reflect.Ptr && typField.Type.Elem().Kind() == reflect.Struct {
+			fs.parse(path, name, def)
+
+			if !hasExport(valField.Elem()) {
+				fn()
+			}
+		} else {
+			fn()
+		}
+	}
+}
+
+func hasExport(val reflect.Value) bool {
+	n := val.NumField()
+	for i := 0; i < n; i++ {
+		if val.Field(i).CanInterface() {
+			return true
+		}
 	}
 
+	return false
 }
