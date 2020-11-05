@@ -6,56 +6,44 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boxgo/box/pkg/metric"
 	"github.com/go-redis/redis/v8"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 type (
 	Metric struct {
-		addr   []string
-		master string
-		db     int
+		cfg *Config
 	}
-)
 
-const (
-	start = "start"
+	startKey struct{}
 )
 
 var (
-	cmdTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "redis_client_command_total",
-			Help: "redis command counter",
-		},
+	cmdTotal = metric.NewCounterVec(
+		"redis_client_command_total",
+		"redis command counter",
 		[]string{"address", "db", "masterName", "pipe", "cmd", "error"},
 	)
-	cmdElapsedSummary = prometheus.NewSummaryVec(
-		prometheus.SummaryOpts{
-			Name: "redis_client_command_duration_seconds",
-			Help: "redis command duration seconds",
-			Objectives: map[float64]float64{
-				0.25: 0.05,
-				0.5:  0.05,
-				0.75: 0.05,
-				0.9:  0.01,
-				0.99: 0.001,
-			},
-		},
+	cmdDuration = metric.NewSummaryVec(
+		"redis_client_command_duration_seconds",
+		"redis command duration seconds",
 		[]string{"address", "db", "masterName", "pipe", "cmd", "error"},
+		map[float64]float64{
+			0.25: 0.05,
+			0.5:  0.05,
+			0.75: 0.05,
+			0.9:  0.01,
+			0.99: 0.001,
+		},
 	)
 )
 
-func init() {
-	prometheus.MustRegister(cmdElapsedSummary, cmdTotal)
-}
-
 func (m *Metric) BeforeProcess(ctx context.Context, cmd redis.Cmder) (context.Context, error) {
-	return context.WithValue(ctx, start, time.Now()), nil
+	return context.WithValue(ctx, startKey{}, time.Now()), nil
 }
 
 func (m *Metric) AfterProcess(ctx context.Context, cmd redis.Cmder) error {
-	start := ctx.Value(start).(time.Time)
+	start := ctx.Value(startKey{}).(time.Time)
 	elapsed := time.Since(start)
 
 	m.report(false, elapsed, cmd)
@@ -64,11 +52,11 @@ func (m *Metric) AfterProcess(ctx context.Context, cmd redis.Cmder) error {
 }
 
 func (m *Metric) BeforeProcessPipeline(ctx context.Context, cmds []redis.Cmder) (context.Context, error) {
-	return context.WithValue(ctx, start, time.Now()), nil
+	return context.WithValue(ctx, startKey{}, time.Now()), nil
 }
 
 func (m *Metric) AfterProcessPipeline(ctx context.Context, cmds []redis.Cmder) error {
-	start := ctx.Value(start).(time.Time)
+	start := ctx.Value(startKey{}).(time.Time)
 	elapsed := time.Since(start)
 
 	m.report(true, elapsed, cmds...)
@@ -77,9 +65,9 @@ func (m *Metric) AfterProcessPipeline(ctx context.Context, cmds []redis.Cmder) e
 }
 
 func (m *Metric) report(pipe bool, elapsed time.Duration, cmds ...redis.Cmder) {
-	addressStr := strings.Join(m.addr, ",")
-	dbStr := fmt.Sprintf("%d", m.db)
-	masterNameStr := m.master
+	addressStr := strings.Join(m.cfg.Address, ",")
+	dbStr := fmt.Sprintf("%d", m.cfg.DB)
+	masterNameStr := m.cfg.MasterName
 	errStr := ""
 	cmdStr := ""
 	pipeStr := fmt.Sprintf("%t", pipe)
@@ -102,6 +90,6 @@ func (m *Metric) report(pipe bool, elapsed time.Duration, cmds ...redis.Cmder) {
 		errStr,
 	}
 
-	cmdElapsedSummary.WithLabelValues(values...).Observe(elapsed.Seconds())
+	cmdDuration.WithLabelValues(values...).Observe(elapsed.Seconds())
 	cmdTotal.WithLabelValues(values...).Inc()
 }

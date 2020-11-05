@@ -2,98 +2,48 @@ package redis
 
 import (
 	"context"
+	"errors"
 
-	"github.com/boxgo/box/pkg/config"
-	"github.com/boxgo/box/pkg/config/field"
 	"github.com/go-redis/redis/v8"
 )
 
 type (
 	Redis struct {
-		name           string
-		client         redis.UniversalClient
-		cfg            config.SubConfigurator
-		masterName     *field.Field
-		address        *field.Field
-		password       *field.Field
-		db             *field.Field
-		poolSize       *field.Field
-		minIdleConnCnt *field.Field
+		cfg    *Config
+		client redis.UniversalClient
 	}
-
-	Options struct {
-		name string
-		cfg  config.SubConfigurator
-	}
-
-	OptionFunc func(*Options)
 )
 
-const (
-	Nil         = redis.Nil
-	TxFailedErr = redis.TxFailedErr
-)
+func newRedis(cfg *Config) *Redis {
+	client := redis.NewUniversalClient(&redis.UniversalOptions{
+		MasterName:   cfg.MasterName,
+		Addrs:        cfg.Address,
+		Password:     cfg.Password,
+		DB:           cfg.DB,
+		PoolSize:     cfg.PoolSize,
+		MinIdleConns: cfg.MinIdleConnCnt,
+	})
 
-var (
-	Default   = New()
-	ErrClosed = redis.ErrClosed
-)
-
-func New(optionFunc ...OptionFunc) *Redis {
-	opts := &Options{}
-	for _, fn := range optionFunc {
-		fn(opts)
-	}
-
-	if opts.name == "" {
-		opts.name = "redis.default"
-	} else {
-		opts.name = "redis." + opts.name
-	}
-	if opts.cfg == nil {
-		opts.cfg = config.Default
-	}
+	client.AddHook(&Metric{cfg: cfg})
 
 	r := &Redis{
-		name:           opts.name,
-		cfg:            opts.cfg,
-		masterName:     field.New(false, opts.name, "masterName", "The sentinel master name. Only failover clients.", ""),
-		address:        field.New(false, opts.name, "address", "Either a single address or a seed list of host:port addresses of cluster/sentinel nodes.", []string{}),
-		password:       field.New(false, opts.name, "password", "Redis password", ""),
-		db:             field.New(false, opts.name, "db", "Database to be selected after connecting to the server. Only single-node and failover clients.", 0),
-		poolSize:       field.New(false, opts.name, "poolSize", "Connection pool size", 100),
-		minIdleConnCnt: field.New(false, opts.name, "minIdleConnCnt", "Min idle connections.", 50),
+		cfg:    cfg,
+		client: client,
 	}
-
-	opts.cfg.Mount(r.masterName, r.address, r.password, r.db, r.poolSize, r.minIdleConnCnt)
 
 	return r
 }
 
-func Client() redis.UniversalClient {
-	return Default.Client()
-}
-
 func (r *Redis) Name() string {
-	return r.name
+	return "redis"
 }
 
 func (r *Redis) Serve(ctx context.Context) error {
-	r.client = redis.NewUniversalClient(&redis.UniversalOptions{
-		MasterName:   r.cfg.GetString(r.masterName),
-		Addrs:        r.cfg.GetStringSlice(r.address),
-		Password:     r.cfg.GetString(r.password),
-		DB:           r.cfg.GetInt(r.db),
-		PoolSize:     r.cfg.GetInt(r.poolSize),
-		MinIdleConns: r.cfg.GetInt(r.minIdleConnCnt),
-	})
-	r.client.AddHook(&Metric{
-		addr:   r.cfg.GetStringSlice(r.address),
-		master: r.cfg.GetString(r.masterName),
-		db:     r.cfg.GetInt(r.db),
-	})
+	if r.client != nil {
+		return r.client.Ping(ctx).Err()
+	}
 
-	return r.client.Ping(ctx).Err()
+	return errors.New("redis client not init")
 }
 
 func (r *Redis) Shutdown(ctx context.Context) error {
@@ -101,7 +51,7 @@ func (r *Redis) Shutdown(ctx context.Context) error {
 		return r.client.Close()
 	}
 
-	return nil
+	return errors.New("redis client not init")
 }
 
 func (r *Redis) Client() redis.UniversalClient {
