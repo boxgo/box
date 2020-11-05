@@ -60,6 +60,21 @@ func Runtime() RuntimeStatus {
 	return Default.runtimeStatus
 }
 
+// IP return host ip
+func IP() string {
+	return Runtime().IP
+}
+
+// Hostname return hostname
+func Hostname() string {
+	return Runtime().Hostname
+}
+
+// StartAt return hostname
+func StartAt() time.Time {
+	return Runtime().StartAt
+}
+
 // ServiceName return application name
 func ServiceName() string {
 	return Default.config.Name
