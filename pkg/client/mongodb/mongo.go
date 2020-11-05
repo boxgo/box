@@ -3,9 +3,8 @@ package mongodb
 import (
 	"context"
 
-	"github.com/boxgo/box/pkg/config"
-	"github.com/boxgo/box/pkg/config/field"
-	"go.mongodb.org/mongo-driver/bson"
+	"github.com/boxgo/box/pkg/logger"
+	"github.com/boxgo/box/pkg/system"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -13,113 +12,47 @@ import (
 
 type (
 	Mongo struct {
-		name    string
-		cfg     config.SubConfigurator
 		client  *mongo.Client
-		uri     *field.Field
 		monitor *Monitor
+		cfg     *Config
 	}
-
-	Options struct {
-		name   string
-		isSet  int
-		enable bool
-		cfg    config.SubConfigurator
-	}
-
-	OptionFunc func(*Options)
-
-	A bson.A
-	D bson.D
-	E bson.E
-	M bson.M
 )
 
-var (
-	ErrClientDisconnected  = mongo.ErrClientDisconnected
-	ErrEmptySlice          = mongo.ErrEmptySlice
-	ErrInvalidIndexValue   = mongo.ErrInvalidIndexValue
-	ErrMissingResumeToken  = mongo.ErrMissingResumeToken
-	ErrMultipleIndexDrop   = mongo.ErrMultipleIndexDrop
-	ErrNilCursor           = mongo.ErrNilCursor
-	ErrNilDocument         = mongo.ErrNilDocument
-	ErrNoDocuments         = mongo.ErrNoDocuments
-	ErrNonStringIndexName  = mongo.ErrNonStringIndexName
-	ErrUnacknowledgedWrite = mongo.ErrUnacknowledgedWrite
-	ErrWrongClient         = mongo.ErrWrongClient
-)
-
-func WithName(name string) OptionFunc {
-	return func(options *Options) {
-		options.name = name
-	}
-}
-
-func WithEnableMonitor(enable bool) OptionFunc {
-	return func(options *Options) {
-		options.enable = enable
-		options.isSet = 1
-	}
-}
-
-func WithConfigurator(cfg config.SubConfigurator) OptionFunc {
-	return func(options *Options) {
-		options.cfg = cfg
-	}
-}
-
-func New(optionFunc ...OptionFunc) (*Mongo, error) {
-	opts := &Options{}
-	for _, fn := range optionFunc {
-		fn(opts)
-	}
-
-	if opts.name == "" {
-		opts.name = "mongo.default"
-	} else {
-		opts.name = "mongo." + opts.name
-	}
-	if opts.cfg == nil {
-		opts.cfg = config.Default
-	}
-	if opts.isSet == 0 {
-		opts.enable = true
-	}
-
-	uriField := field.New(false, opts.name, "uri", "mongodb connection uri.", "mongodb://127.0.0.1:27017")
-
-	// set override options
+func newMongo(cfg *Config) *Mongo {
 	clientOptions := options.Client()
-	clientOptions.ApplyURI(opts.cfg.GetString(uriField))
-	clientOptions.SetAppName(opts.cfg.GetBoxName())
+	clientOptions.ApplyURI(cfg.URI)
+	clientOptions.SetAppName(system.ServiceName())
 
-	var monitor *Monitor
-	if opts.enable {
-		monitor = newMonitor(opts.cfg)
-		clientOptions.Monitor = monitor.CommandMonitor()
-		clientOptions.PoolMonitor = monitor.PoolEventMonitor()
+	if cfg.commandMonitor == nil {
+		cfg.commandMonitor = defaultMonitor.CommandMonitor()
+	}
+	if cfg.poolMonitor == nil {
+		cfg.poolMonitor = defaultMonitor.PoolEventMonitor()
+	}
+
+	if cfg.EnableCommandMonitor {
+		clientOptions.Monitor = cfg.commandMonitor
+	}
+	if cfg.EnablePoolMonitor {
+		clientOptions.PoolMonitor = cfg.poolMonitor
 	}
 
 	client, err := mongo.NewClient(clientOptions)
 	if err != nil {
-		return nil, err
+		logger.Panicf("new mongodb client error: %w", err)
 	}
 
 	mgo := &Mongo{
-		name:    opts.name,
 		client:  client,
-		cfg:     opts.cfg,
-		uri:     uriField,
-		monitor: monitor,
+		cfg:     cfg,
+		monitor: defaultMonitor,
 	}
 
-	opts.cfg.Mount(mgo.uri)
-
-	return mgo, nil
+	return mgo
 }
 
 func (mgo *Mongo) Name() string {
-	return mgo.name
+	return "mongo"
 }
 
 func (mgo *Mongo) Serve(ctx context.Context) error {
@@ -142,18 +75,10 @@ func (mgo *Mongo) Shutdown(ctx context.Context) error {
 	return mgo.client.Disconnect(ctx)
 }
 
-func (mgo *Mongo) Database(name string, opts ...*options.DatabaseOptions) *mongo.Database {
-	return mgo.client.Database(name, opts...)
+func (mgo *Mongo) Client() *mongo.Client {
+	return mgo.client
 }
 
-func (mgo *Mongo) StartSession(opts ...*options.SessionOptions) (mongo.Session, error) {
-	return mgo.client.StartSession(opts...)
-}
-
-func (mgo *Mongo) UseSession(ctx context.Context, fn func(mongo.SessionContext) error) error {
-	return mgo.client.UseSession(ctx, fn)
-}
-
-func (mgo *Mongo) UseSessionWithOptions(ctx context.Context, opts *options.SessionOptions, fn func(mongo.SessionContext) error) error {
-	return mgo.client.UseSessionWithOptions(ctx, opts, fn)
+func (mgo *Mongo) DB(db string, opts ...*options.DatabaseOptions) *mongo.Database {
+	return mgo.client.Database(db, opts...)
 }

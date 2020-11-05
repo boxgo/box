@@ -4,9 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/logger"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/boxgo/box/pkg/metric"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -14,54 +13,37 @@ import (
 type (
 	Monitor struct {
 		stopWatch chan bool
-		cfg       config.SubConfigurator
 	}
 )
 
 var (
-	cmdTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "",
-			Subsystem: "",
-			Name:      "mongo_client_command_total",
-			Help:      "mongodb client command counter",
-		},
+	cmdTotal = metric.NewCounterVec(
+		"mongo_client_command_total",
+		"mongodb client command counter",
 		[]string{"command", "error"},
 	)
-	cmdDurationSummary = prometheus.NewSummaryVec(
-		prometheus.SummaryOpts{
-			Namespace: "",
-			Subsystem: "",
-			Name:      "mongo_client_command_duration_seconds",
-			Help:      "mongodb client command duration seconds",
-			Objectives: map[float64]float64{
-				0.25: 0.05,
-				0.5:  0.05,
-				0.75: 0.05,
-				0.9:  0.01,
-				0.99: 0.001,
-			},
-		},
+	cmdDuration = metric.NewSummaryVec(
+		"mongo_client_command_duration_seconds",
+		"mongodb client command duration seconds",
 		[]string{"command", "error"},
-	)
-	workingSession = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: "",
-			Subsystem: "",
-			Name:      "mongo_client_session_in_progress",
-			Help:      "mongo client session in progress gauge",
+		map[float64]float64{
+			0.25: 0.05,
+			0.5:  0.05,
+			0.75: 0.05,
+			0.9:  0.01,
+			0.99: 0.001,
 		},
+	)
+	workingSession = metric.NewGaugeVec(
+		"mongo_client_session_in_progress",
+		"mongo client session in progress gauge",
 		[]string{},
 	)
+	defaultMonitor = newMonitor()
 )
 
-func init() {
-	prometheus.MustRegister(cmdDurationSummary, cmdTotal, workingSession)
-}
-
-func newMonitor(cfg config.SubConfigurator) *Monitor {
+func newMonitor() *Monitor {
 	m := &Monitor{
-		cfg:       cfg,
 		stopWatch: make(chan bool),
 	}
 
@@ -89,7 +71,7 @@ func (mon *Monitor) started(ctx context.Context, ev *event.CommandStartedEvent) 
 func (mon *Monitor) succeeded(ctx context.Context, ev *event.CommandSucceededEvent) {
 	labels := []string{ev.CommandName, ""}
 	cmdTotal.WithLabelValues(labels...).Inc()
-	cmdDurationSummary.WithLabelValues(labels...).Observe(time.Duration(ev.DurationNanos).Seconds())
+	cmdDuration.WithLabelValues(labels...).Observe(time.Duration(ev.DurationNanos).Seconds())
 
 	logger.Trace(ctx).Debugf("mongo_command_success cmd: %s, reqId: %d, connId: %s, duration: %s", ev.CommandName, ev.RequestID, ev.ConnectionID, time.Duration(ev.DurationNanos))
 }
@@ -97,7 +79,7 @@ func (mon *Monitor) succeeded(ctx context.Context, ev *event.CommandSucceededEve
 func (mon *Monitor) failed(ctx context.Context, ev *event.CommandFailedEvent) {
 	labels := []string{ev.CommandName, ev.Failure}
 	cmdTotal.WithLabelValues(labels...).Inc()
-	cmdDurationSummary.WithLabelValues(labels...).Observe(time.Duration(ev.DurationNanos).Seconds())
+	cmdDuration.WithLabelValues(labels...).Observe(time.Duration(ev.DurationNanos).Seconds())
 
 	logger.Trace(ctx).Debugf("mongo_command_error cmd: %s, reqId: %d, connId: %s, duration: %d, error: %s", ev.CommandName, ev.RequestID, ev.ConnectionID, ev.DurationNanos, ev.Failure)
 }
