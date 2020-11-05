@@ -3,12 +3,10 @@ package metric
 import (
 	"context"
 	"net/http"
-	"os"
 	"time"
 
-	"github.com/boxgo/box/pkg/config"
-	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/logger"
+	"github.com/boxgo/box/pkg/system"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/client_golang/prometheus/push"
@@ -17,15 +15,9 @@ import (
 type (
 	// Metric config
 	Metric struct {
+		cfg  *Config
 		stop chan bool
-		cfg  config.SubConfigurator
 	}
-
-	Options struct {
-		cfg config.SubConfigurator
-	}
-
-	OptionFunc func(*Options)
 )
 
 const (
@@ -33,30 +25,13 @@ const (
 )
 
 var (
-	Default       = New()
-	Namespace     = field.New(false, name, "namespace", "metric namespace", "")
-	Subsystem     = field.New(false, name, "subsystem", "metric subsystem", "")
-	PushEnabled   = field.New(false, name, "pushEnabled", "enable push", false)
-	PushTargetURL = field.New(false, name, "pushTargetURL", "pushgateway url", "")
-	PushInterval  = field.New(false, name, "pushInterval", "push to a pushgateway interval, millisecond", time.Second*3)
+	Default = DefaultConfig().Build()
 )
 
-// New a metrics
-func New(optFunc ...OptionFunc) *Metric {
-	opts := &Options{}
-	for _, fn := range optFunc {
-		fn(opts)
-	}
-
-	if opts.cfg == nil {
-		opts.cfg = config.Default
-	}
-
+func newMetric(cfg *Config) *Metric {
 	m := &Metric{
-		cfg: opts.cfg,
+		cfg: cfg,
 	}
-
-	opts.cfg.Mount(Namespace, Subsystem, PushEnabled, PushTargetURL, PushInterval)
 
 	return m
 }
@@ -68,20 +43,18 @@ func (m *Metric) Name() string {
 
 // Serve start serve
 func (m *Metric) Serve(context.Context) error {
-	if !m.cfg.GetBool(PushEnabled) {
+	if !m.cfg.PushEnabled {
 		return nil
 	}
 
-	hostname, _ := os.Hostname()
-
 	go func() {
-		ticker := time.NewTicker(m.cfg.GetDuration(PushInterval))
+		ticker := time.NewTicker(m.cfg.PushInterval)
 		defer ticker.Stop()
 
 		pusher := push.
-			New(m.cfg.GetString(PushTargetURL), m.cfg.GetBoxName()).
+			New(m.cfg.PushTargetURL, system.ServiceName()).
 			Gatherer(prometheus.DefaultRegisterer.(prometheus.Gatherer)).
-			Grouping("instance", hostname)
+			Grouping("instance", system.Hostname())
 
 		for {
 			select {
@@ -102,7 +75,7 @@ func (m *Metric) Serve(context.Context) error {
 
 // Shutdown close clients when Shutdown
 func (m *Metric) Shutdown(context.Context) error {
-	if !m.cfg.GetBool(PushEnabled) {
+	if !m.cfg.PushEnabled {
 		return nil
 	}
 
@@ -113,7 +86,77 @@ func (m *Metric) Shutdown(context.Context) error {
 	return nil
 }
 
-// Metric metrics http
-func (m *Metric) Metrics() http.Handler {
+// Handler metrics http
+func (m *Metric) Handler() http.Handler {
 	return promhttp.Handler()
+}
+
+// NewCounterVec creates a new CounterVec based on the provided CounterOpts and partitioned by the given label names.
+func (m *Metric) NewCounterVec(name, help string, labels []string) *prometheus.CounterVec {
+	vec := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: m.cfg.Namespace,
+			Subsystem: m.cfg.Subsystem,
+			Name:      name,
+			Help:      help,
+		},
+		labels,
+	)
+
+	prometheus.MustRegister(vec)
+
+	return vec
+}
+
+// NewSummaryVec creates a new SummaryVec based on the provided SummaryOpts and partitioned by the given label names.
+func (m *Metric) NewSummaryVec(name, help string, labels []string, objectives map[float64]float64) *prometheus.SummaryVec {
+	vec := prometheus.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Namespace:  m.cfg.Namespace,
+			Subsystem:  m.cfg.Subsystem,
+			Name:       name,
+			Help:       help,
+			Objectives: objectives,
+		},
+		labels,
+	)
+
+	prometheus.MustRegister(vec)
+
+	return vec
+}
+
+// NewGaugeVec creates a new GaugeVec based on the provided GaugeOpts and partitioned by the given label names.
+func (m *Metric) NewGaugeVec(name, help string, labels []string) *prometheus.GaugeVec {
+	vec := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: m.cfg.Namespace,
+			Subsystem: m.cfg.Subsystem,
+			Name:      name,
+			Help:      help,
+		},
+		labels,
+	)
+
+	prometheus.MustRegister(vec)
+
+	return vec
+}
+
+// NewHistogramVec creates a new HistogramVec based on the provided HistogramOpts and partitioned by the given label names.
+func (m *Metric) NewHistogramVec(name, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
+	vec := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: m.cfg.Namespace,
+			Subsystem: m.cfg.Subsystem,
+			Name:      name,
+			Help:      help,
+			Buckets:   buckets,
+		},
+		labels,
+	)
+
+	prometheus.MustRegister(vec)
+
+	return vec
 }
