@@ -32,7 +32,7 @@ func WithPoolMonitor(monitor *event.PoolMonitor) OptionFunc {
 }
 
 func StdConfig(key string, optionFunc ...OptionFunc) *Config {
-	cfg := RawConfig(key)
+	cfg := DefaultConfig(key)
 	for _, fn := range optionFunc {
 		fn(cfg)
 	}
@@ -44,16 +44,9 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 	return cfg
 }
 
-func RawConfig(key string) *Config {
-	cfg := DefaultConfig()
-	cfg.path = "mongo." + key
-
-	return cfg
-}
-
-func DefaultConfig() *Config {
+func DefaultConfig(key string) *Config {
 	return &Config{
-		path:                 "mongo.default",
+		path:                 "mongo." + key,
 		URI:                  "mongodb://127.0.0.1:27017",
 		EnableCommandMonitor: true,
 		EnablePoolMonitor:    false,

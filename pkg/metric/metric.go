@@ -20,10 +20,6 @@ type (
 	}
 )
 
-const (
-	name = "metric"
-)
-
 var (
 	Default = DefaultConfig().Build()
 )
@@ -38,7 +34,7 @@ func newMetric(cfg *Config) *Metric {
 
 // Name config name
 func (m *Metric) Name() string {
-	return name
+	return "metric"
 }
 
 // Serve start serve

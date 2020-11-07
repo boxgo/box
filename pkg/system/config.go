@@ -1,6 +1,8 @@
 package system
 
 import (
+	"fmt"
+
 	"github.com/boxgo/box/pkg/config"
 )
 
@@ -31,9 +33,16 @@ func DefaultConfig() *Config {
 // StdConfig get from box file
 func StdConfig() *Config {
 	cfg := DefaultConfig()
-	config.Get("box").Scan(cfg)
+
+	if err := config.Scan(cfg); err != nil {
+		panic(fmt.Errorf("system build error: %w\n", err))
+	}
 
 	return cfg
+}
+
+func (c *Config) Path() string {
+	return "box"
 }
 
 // Build system

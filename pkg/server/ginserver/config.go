@@ -33,7 +33,7 @@ func DefaultConfig(key string) *Config {
 	return &Config{
 		path:         "gin." + key,
 		Mode:         gin.ReleaseMode,
-		Addr:         ":8080",
+		Addr:         ":8000",
 		ReadTimeout:  time.Minute,
 		WriteTimeout: time.Minute,
 		IdleTimeout:  time.Minute * 5,

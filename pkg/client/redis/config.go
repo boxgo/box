@@ -18,7 +18,7 @@ type (
 )
 
 func StdConfig(key string) *Config {
-	cfg := RawConfig(key)
+	cfg := DefaultConfig(key)
 	if err := config.Scan(cfg); err != nil {
 		logger.Panicf("redis build error: %w", err)
 	}
@@ -26,16 +26,9 @@ func StdConfig(key string) *Config {
 	return cfg
 }
 
-func RawConfig(key string) *Config {
-	cfg := DefaultConfig()
-	cfg.path = "redis." + key
-
-	return cfg
-}
-
-func DefaultConfig() *Config {
+func DefaultConfig(key string) *Config {
 	return &Config{
-		path:           "redis.default",
+		path:           "redis." + key,
 		MasterName:     "",
 		Address:        []string{"127.0.0.1:6379"},
 		Password:       "",

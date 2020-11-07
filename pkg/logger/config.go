@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"fmt"
+
 	"github.com/boxgo/box/pkg/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -46,18 +48,20 @@ type (
 )
 
 // StdConfig new a logger from config path "logger.{{name}}"
-func StdConfig(name string) *Config {
-	cfg := DefaultConfig("logger." + name)
+func StdConfig(key string) *Config {
+	cfg := DefaultConfig(key)
 
-	config.Scan(cfg)
+	if err := config.Scan(cfg); err != nil {
+		panic(fmt.Errorf("logger build error: %w\n", err))
+	}
 
 	return cfg
 }
 
 // DefaultConfig of logger
-func DefaultConfig(path string) *Config {
+func DefaultConfig(key string) *Config {
 	return &Config{
-		path:              path,
+		path:              "logger." + key,
 		Level:             zap.NewAtomicLevel(),
 		Development:       false,
 		Encoding:          "console",
