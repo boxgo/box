@@ -3,59 +3,27 @@ package reqid
 import (
 	"context"
 
-	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/grpc/wrapper"
+	"github.com/boxgo/box/pkg/system"
 	"github.com/boxgo/box/pkg/util/strutil"
-	"github.com/teris-io/shortid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
-type (
-	RequestId struct {
-		cfg config.SubConfigurator
-	}
-
-	Options struct {
-		cfg config.SubConfigurator
-	}
-
-	OptionFunc func(*Options)
-)
-
-var (
-	Default = New()
-)
-
-func New(optFunc ...OptionFunc) *RequestId {
-	opts := &Options{}
-	for _, fn := range optFunc {
-		fn(opts)
-	}
-
-	if opts.cfg == nil {
-		opts.cfg = config.Default
-	}
-
-	return &RequestId{
-		cfg: opts.cfg,
-	}
-}
-
-func (reqId *RequestId) UnaryRequestId() grpc.UnaryServerInterceptor {
+func UnaryRequestId() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			return handler(ctx, req)
 		}
 
-		newCtx := reqId.newCtx(ctx, &md)
+		newCtx := wrapCtx(ctx, md)
 
 		return handler(newCtx, req)
 	}
 }
 
-func (reqId *RequestId) StreamRequestId() grpc.StreamServerInterceptor {
+func StreamRequestId() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx := ss.Context()
 		md, ok := metadata.FromIncomingContext(ctx)
@@ -64,24 +32,30 @@ func (reqId *RequestId) StreamRequestId() grpc.StreamServerInterceptor {
 		}
 
 		wrapped := wrapper.WrapServerStream(ss)
-		wrapped.WrappedContext = reqId.newCtx(ctx, &md)
+		wrapped.WrappedContext = wrapCtx(ctx, md)
 
 		return handler(srv, wrapped)
 	}
 }
 
-func (reqId *RequestId) newCtx(ctx context.Context, md *metadata.MD) context.Context {
-	return context.WithValue(ctx, reqId.cfg.GetTraceReqId(), reqId.getReqId(md))
-}
+func wrapCtx(ctx context.Context, md metadata.MD) context.Context {
+	key := system.TraceReqID()
+	val, exist := getReqId(md)
 
-func (reqId *RequestId) getReqId(md *metadata.MD) (str string) {
-	if reqIdArr := md.Get(reqId.cfg.GetTraceReqId()); len(reqIdArr) > 0 && reqIdArr[0] != "" {
-		str = reqIdArr[0]
-	} else if id, err := shortid.Generate(); err == nil {
-		str = id
-	} else {
-		str = strutil.RandString(10)
+	if exist {
+		return ctx
 	}
 
-	return
+	newMd := md.Copy()
+	newMd.Set(key, val)
+
+	return metadata.NewIncomingContext(ctx, newMd)
+}
+
+func getReqId(md metadata.MD) (string, bool) {
+	if id := strutil.First(md.Get(system.TraceReqID())); id != "" {
+		return id, true
+	}
+
+	return strutil.ShortID(), false
 }

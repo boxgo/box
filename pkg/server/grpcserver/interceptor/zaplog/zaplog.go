@@ -2,61 +2,19 @@ package zaplog
 
 import (
 	"context"
-	"strings"
 
-	"github.com/boxgo/box/pkg/component"
-	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/logger"
+	"github.com/boxgo/box/pkg/system"
+	"github.com/boxgo/box/pkg/util/strutil"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
-type (
-	Logger struct {
-		component.NoopBox
-		cfg config.SubConfigurator
-	}
-
-	Options struct {
-		cfg config.SubConfigurator
-	}
-
-	OptionFunc func(*Options)
-)
-
-var (
-	Default = New()
-)
-
-func WithConfigurator(cfg config.SubConfigurator) OptionFunc {
-	return func(opts *Options) {
-		opts.cfg = cfg
-	}
-}
-
-func New(optionFunc ...OptionFunc) *Logger {
-	opts := &Options{}
-	for _, fn := range optionFunc {
-		fn(opts)
-	}
-
-	if opts.cfg == nil {
-		opts.cfg = config.Default
-	}
-
-	l := &Logger{
-		cfg: opts.cfg,
-	}
-
-	return l
-}
-
-func (l *Logger) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		md, _ := metadata.FromIncomingContext(ctx)
-
-		newCtx := l.ctx(ctx, md, info.FullMethod)
+		newCtx := wrapCtx(ctx, md, info.FullMethod)
 
 		logger.TraceRaw(newCtx).Info(">>>", []zap.Field{zap.Any("req", req)}...)
 
@@ -71,12 +29,13 @@ func (l *Logger) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-func (l *Logger) StreamServerInterceptor() grpc.StreamServerInterceptor {
+func StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx := ss.Context()
 		md, _ := metadata.FromIncomingContext(ctx)
+		newCtx := wrapCtx(ctx, md, info.FullMethod)
 
-		newCtx := l.ctx(ctx, md, info.FullMethod)
+		logger.TraceRaw(newCtx).Info(">>>")
 
 		err := handler(newCtx, ss)
 		if err != nil {
@@ -89,15 +48,15 @@ func (l *Logger) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-func (l *Logger) ctx(ctx context.Context, md metadata.MD, biz string) context.Context {
-	uidKey := l.cfg.GetTraceUid()
-	reqIdKey := l.cfg.GetTraceReqId()
-	bizIdKey := l.cfg.GetTraceBizId()
-	spanKey := l.cfg.GetTraceSpanId()
+func wrapCtx(ctx context.Context, md metadata.MD, biz string) context.Context {
+	uidKey := system.TraceUID()
+	reqIdKey := system.TraceReqID()
+	bizIdKey := system.TraceBizID()
+	spanKey := system.TraceSpanID()
 
-	uidVal := getFirst(md.Get(strings.ToLower(uidKey)))
-	reqIdVal := getFirst(md.Get(strings.ToLower(reqIdKey)))
-	spanVal := getFirst(md.Get(strings.ToLower(spanKey)))
+	uidVal := strutil.First(md.Get(uidKey))
+	reqIdVal := strutil.First(md.Get(reqIdKey))
+	spanVal := strutil.First(md.Get(spanKey))
 	bizIdVal := biz
 
 	newCtx := context.WithValue(ctx, uidKey, uidVal)
@@ -105,13 +64,12 @@ func (l *Logger) ctx(ctx context.Context, md metadata.MD, biz string) context.Co
 	newCtx = context.WithValue(newCtx, bizIdKey, bizIdVal)
 	newCtx = context.WithValue(newCtx, spanKey, spanVal)
 
-	return newCtx
-}
+	newMd := md.Copy()
+	newMd.Set(uidKey, uidVal)
+	newMd.Set(uidKey, uidVal)
+	newMd.Set(reqIdKey, reqIdVal)
+	newMd.Set(bizIdKey, bizIdVal)
+	newMd.Set(spanKey, spanVal)
 
-func getFirst(arr []string) string {
-	if len(arr) == 0 {
-		return ""
-	}
-
-	return arr[0]
+	return metadata.NewIncomingContext(newCtx, newMd)
 }
