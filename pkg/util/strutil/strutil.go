@@ -3,22 +3,63 @@ package strutil
 import (
 	"math/rand"
 	"time"
+
+	"github.com/teris-io/shortid"
+)
+
+const (
+	Number       = "0123456789"
+	Alphabet     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	Alphanumeric = Alphabet + Number
 )
 
 var (
-	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	numberRune       = []rune(Number)
+	alphabetRune     = []rune(Alphabet)
+	alphanumericRune = []rune(Alphanumeric)
 )
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// RandString return a random n length string
-func RandString(n int) string {
+// ShortID generate short id. Use RandomAlphanumeric(10) instead When short id generate fail.
+func ShortID() string {
+	if id, err := shortid.Generate(); err == nil {
+		return id
+	}
+
+	return RandomAlphanumeric(10)
+}
+
+// RandomNumber return a random n length string of number.
+func RandomNumber(n int) string {
 	b := make([]rune, n)
 
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+		b[i] = numberRune[rand.Intn(len(numberRune))]
+	}
+
+	return string(b)
+}
+
+// RandomAlphabet return a random n length string of alphabet.
+func RandomAlphabet(n int) string {
+	b := make([]rune, n)
+
+	for i := range b {
+		b[i] = alphabetRune[rand.Intn(len(alphabetRune))]
+	}
+
+	return string(b)
+}
+
+// RandomAlphanumeric return a random n length string of alphanumeric.
+func RandomAlphanumeric(n int) string {
+	b := make([]rune, n)
+
+	for i := range b {
+		b[i] = alphanumericRune[rand.Intn(len(alphanumericRune))]
 	}
 
 	return string(b)
