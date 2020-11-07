@@ -42,6 +42,7 @@ require (
 	github.com/prometheus/procfs v0.1.3 // indirect
 	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/soheilhy/cmux v0.1.4 // indirect
+	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20200122045848-3419fae592fc // indirect
 	github.com/ugorji/go v1.1.7 // indirect
