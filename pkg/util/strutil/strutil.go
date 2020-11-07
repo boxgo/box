@@ -5,11 +5,13 @@ import (
 	"time"
 )
 
+var (
+	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+)
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
-
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // RandString return a random n length string
 func RandString(n int) string {
@@ -20,4 +22,23 @@ func RandString(n int) string {
 	}
 
 	return string(b)
+}
+
+// First return first element of string array.
+func First(array []string) string {
+	return Nth(array, 0)
+}
+
+// Last return last element of string array.
+func Last(array []string) string {
+	return Nth(array, len(array)-1)
+}
+
+// Nth return the nth element. if index beyond the length, return "".
+func Nth(array []string, idx int) string {
+	if idx < len(array) {
+		return array[idx]
+	}
+
+	return ""
 }
