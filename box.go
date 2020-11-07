@@ -25,7 +25,6 @@ type (
 		shutdownTimeout int
 		boxes           []component.Box
 		quit            chan os.Signal
-		cfg             config.Configurator
 	}
 
 	boxErr struct {
@@ -155,23 +154,15 @@ func New(options ...Option) Application {
 	}
 	if !opts.Silent {
 		fmt.Print(banner)
-		fmt.Print(config.SprintFields())
+		fmt.Print(config.Fields().Table())
+		fmt.Printf("%s\n", config.Byte())
 	}
 
 	app := &application{
 		quit:            make(chan os.Signal),
 		startupTimeout:  opts.StartupTimeout,
 		shutdownTimeout: opts.ShutdownTimeout,
-		cfg:             opts.Configurator,
 		boxes:           opts.Boxes,
-	}
-
-	if app.cfg == nil {
-		logger.Fatal("configurator is required")
-	} else if err := app.cfg.Sync(); err != nil {
-		logger.Fatalf("configurator sync error: %v\n", err)
-	} else {
-		logger.Infof("configurator: %s", app.cfg.Bytes())
 	}
 
 	signal.Notify(app.quit, syscall.SIGINT, syscall.SIGTERM)
