@@ -35,8 +35,7 @@ var (
 )
 
 var (
-	ErrrModDBReadTimeout    = ModDB.Build(1, "db read timeout")
-	ErrrModDBWriteTimeout   = ModDB.Build(2, "db write timeout")
-	ErrrModDBDeleteTimeout  = ModDB.Build(3, "db delete timeout")
-	ErrrModDBDeleteTimeout1 = ModDB.Build(3, "db delete timeout")
+	ErrrModDBReadTimeout   = ModDB.Build(1, "db read timeout")
+	ErrrModDBWriteTimeout  = ModDB.Build(2, "db write timeout")
+	ErrrModDBDeleteTimeout = ModDB.Build(3, "db delete timeout")
 )

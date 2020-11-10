@@ -21,7 +21,7 @@ func (f *Field) Row() []string {
 
 func (f *Field) String() string {
 	if f.Name != "" {
-		return f.Name + "." + f.Path
+		return f.Path + "." + f.Name
 	}
 
 	return f.Path
