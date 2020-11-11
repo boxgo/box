@@ -5,5 +5,7 @@ import (
 )
 
 func TestErrCode(t *testing.T) {
-	t.Log(ErrrModDBDeleteTimeout1.Code(), ErrrModDBDeleteTimeout1.Message())
+	if ErrrModDBReadTimeout.Code() != 100100001 {
+		t.Fatalf("errcode should be %d", ErrrModDBReadTimeout.Code())
+	}
 }

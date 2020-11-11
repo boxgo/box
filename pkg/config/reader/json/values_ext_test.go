@@ -18,15 +18,15 @@ type (
 	}
 
 	fooStruct struct {
-		String          string            `box:"string"`
-		StringSlice     []string          `box:"string_slice"`
-		StringMapString map[string]string `box:"string_map_string"`
-		Int             int               `box:"int"`
-		Uint            uint              `box:"uint"`
-		Bool            bool              `box:"bool"`
-		Float64         float64           `box:"float64"`
-		Duration        time.Duration     `box:"duration"`
-		Duration1       time.Duration     `box:"duration1"`
+		String          string            `config:"string"`
+		StringSlice     []string          `config:"string_slice"`
+		StringMapString map[string]string `config:"string_map_string"`
+		Int             int               `config:"int"`
+		Uint            uint              `config:"uint"`
+		Bool            bool              `config:"bool"`
+		Float64         float64           `config:"float64"`
+		Duration        time.Duration     `config:"duration"`
+		Duration1       time.Duration     `config:"duration1"`
 	}
 )
 
@@ -224,4 +224,8 @@ func TestExtValueScan(t *testing.T) {
 			testcase{path: []string{"duration1"}, typ: "duration", exp: foo.Duration1, def: time.Duration(0)},
 		}...,
 	)
+}
+
+func (foo *fooStruct) Path() string {
+	return ""
 }
