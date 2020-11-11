@@ -13,6 +13,7 @@ import (
 	"github.com/boxgo/box/pkg/config/source/env"
 	"github.com/boxgo/box/pkg/config/source/etcd"
 	"github.com/boxgo/box/pkg/config/source/file"
+	"github.com/boxgo/box/pkg/config/source/redis"
 	"github.com/boxgo/box/pkg/util/fputil"
 )
 
@@ -70,6 +71,8 @@ func init() {
 			sources = append(sources, env.NewSource(env.WithConfig(cfgData)...))
 		case "file":
 			sources = append(sources, file.NewSource(file.WithConfig(cfgData)...))
+		case "redis":
+			sources = append(sources, redis.NewSource(redis.WithConfig(cfgData)...))
 		}
 	}
 

@@ -83,3 +83,15 @@ func Nth(array []string, idx int) string {
 
 	return ""
 }
+
+func Compact(array []string) []string {
+	var newArr []string
+
+	for _, arr := range array {
+		if arr != "" {
+			newArr = append(newArr, arr)
+		}
+	}
+
+	return newArr
+}
