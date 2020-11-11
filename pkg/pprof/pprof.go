@@ -8,8 +8,7 @@ import (
 
 type (
 	PProf struct {
-		cfg  *Config
-		stop chan bool
+		cfg *Config
 	}
 )
 

@@ -35,7 +35,11 @@ func newLogger(cfg *Config) (*Logger, error) {
 			cfg:   cfg,
 		}
 
-		go logger.watch()
+		go func() {
+			if err := logger.watch(); err != nil {
+				logger.Errorf("logger config watch error: %w", err)
+			}
+		}()
 
 		return logger, nil
 	} else {
