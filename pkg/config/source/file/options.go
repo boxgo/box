@@ -13,7 +13,7 @@ type filePathKey struct{}
 func WithConfig(data []byte) []source.Option {
 	type (
 		opt struct {
-			Path string
+			Path string `config:"path"`
 		}
 	)
 

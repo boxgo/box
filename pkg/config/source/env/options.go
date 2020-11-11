@@ -15,8 +15,8 @@ type prefixKey struct{}
 func WithConfig(data []byte) []source.Option {
 	type (
 		opt struct {
-			Prefix      string
-			StripPrefix string
+			Prefix      string `config:"prefix"`
+			StripPrefix string `config:"stripPrefix"`
 		}
 	)
 

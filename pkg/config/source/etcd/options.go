@@ -21,11 +21,11 @@ type authCreds struct {
 func WithConfig(data []byte) []source.Option {
 	type (
 		opt struct {
-			UserName    string
-			Password    string
-			Address     string
-			Prefix      string
-			StripPrefix bool
+			UserName    string `config:"username"`
+			Password    string `config:"password"`
+			Address     string `config:"address"`
+			Prefix      string `config:"prefix"`
+			StripPrefix bool   `config:"stripPrefix"`
 		}
 	)
 
