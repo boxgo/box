@@ -19,7 +19,7 @@ require (
 	github.com/go-redis/redis/v8 v8.3.3
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/btree v1.0.0 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
@@ -60,6 +60,7 @@ require (
 	golang.org/x/tools v0.0.0-20201105220310-78b158585360 // indirect
 	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	google.golang.org/grpc v1.26.0
+	google.golang.org/protobuf v1.23.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect

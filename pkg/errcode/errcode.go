@@ -2,10 +2,9 @@ package errcode
 
 import (
 	"github.com/boxgo/box/pkg/util/protoutil"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/genproto/googleapis/rpc/status"
-	gst "google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type (
@@ -18,21 +17,21 @@ type (
 	}
 )
 
-func Parse(err error) *gst.Status {
-	return gst.Convert(err)
+func ParseStatus(err error) *status.Status {
+	return protoutil.ConvertToStatus(err).Proto()
 }
 
 func (builder *ErrorCodeBuilder) Build(inputs ...interface{}) error {
 	if details, err := builder.convert2Details(inputs...); err != nil {
-		return gst.Convert(err).Err()
+		return protoutil.ConvertToStatusError(err)
 	} else {
 		s := &status.Status{
 			Code:    builder.Code(),
-			Message: builder.msg,
+			Message: builder.Message(),
 			Details: details,
 		}
 
-		return gst.ErrorProto(s)
+		return protoutil.ErrorProto(s)
 	}
 }
 
@@ -44,13 +43,13 @@ func (builder *ErrorCodeBuilder) Message() string {
 	return builder.msg
 }
 
-func (builder *ErrorCodeBuilder) convert2Details(inputs ...interface{}) ([]*any.Any, error) {
-	details := make([]*any.Any, len(inputs))
+func (builder *ErrorCodeBuilder) convert2Details(inputs ...interface{}) ([]*anypb.Any, error) {
+	details := make([]*anypb.Any, len(inputs))
 
 	for idx, input := range inputs {
 		var (
 			err    error
-			detail *any.Any
+			detail *anypb.Any
 		)
 
 		switch val := input.(type) {
