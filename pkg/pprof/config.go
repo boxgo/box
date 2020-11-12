@@ -7,7 +7,6 @@ import (
 
 type (
 	Config struct {
-		Addr string `config:"addr" desc:"pprof http server listen addr"`
 	}
 )
 
@@ -22,9 +21,7 @@ func StdConfig() *Config {
 }
 
 func DefaultConfig() *Config {
-	return &Config{
-		Addr: ":9091",
-	}
+	return &Config{}
 }
 
 func (c *Config) Path() string {

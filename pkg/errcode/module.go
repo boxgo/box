@@ -3,7 +3,8 @@ package errcode
 import (
 	"errors"
 	"fmt"
-	"sync"
+
+	"github.com/boxgo/box/pkg/logger"
 )
 
 type (
@@ -17,21 +18,19 @@ var (
 	ErrModNoInvalid = errors.New("mod no should in range 100-999")
 	ErrSubNoInvalid = errors.New("sub no should in range 0-999")
 	ErrBizNoInvalid = errors.New("biz no should in range 0-999")
-	registered      sync.Map
-	regDup          = func(key string) error { return fmt.Errorf("errcode %s is registered", key) }
 )
 
 func Build(modNo, subNo uint) *ModuleErrorBuilder {
 	if modNo < 100 || modNo > 999 {
-		panic(ErrModNoInvalid)
+		logger.Panic(ErrModNoInvalid)
 	}
 	if subNo > 999 {
-		panic(ErrSubNoInvalid)
+		logger.Panic(ErrSubNoInvalid)
 	}
 
 	key := fmt.Sprintf("%d%d", modNo, subNo)
 	if _, exist := registered.Load(key); exist {
-		panic(regDup(key))
+		logger.Panic(registerError(key))
 	}
 	registered.Store(key, 0)
 
@@ -43,12 +42,12 @@ func Build(modNo, subNo uint) *ModuleErrorBuilder {
 
 func (builder *ModuleErrorBuilder) Build(bizNo uint, msg string) *ErrorCodeBuilder {
 	if bizNo > 999 {
-		panic(ErrBizNoInvalid)
+		logger.Panic(ErrBizNoInvalid)
 	}
 
 	key := fmt.Sprintf("%d%d%d", builder.modNo, builder.subNo, bizNo)
 	if _, exist := registered.Load(key); exist {
-		panic(regDup(key))
+		logger.Panic(registerError(key))
 	}
 
 	ecb := &ErrorCodeBuilder{

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/boxgo/box/pkg/insight"
 	"github.com/boxgo/box/pkg/logger"
 	"github.com/boxgo/box/pkg/system"
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,6 +29,8 @@ func newMetric(cfg *Config) *Metric {
 	m := &Metric{
 		cfg: cfg,
 	}
+
+	insight.GetH("/metric", m.Handler())
 
 	return m
 }

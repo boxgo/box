@@ -97,3 +97,7 @@ func (server *GinServer) PUT(relativePath string, handlers ...gin.HandlerFunc) g
 func (server *GinServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	server.engine.ServeHTTP(w, req)
 }
+
+func (server *GinServer) RoutesInfo() gin.RoutesInfo {
+	return server.engine.Routes()
+}

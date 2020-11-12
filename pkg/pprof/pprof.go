@@ -2,8 +2,9 @@ package pprof
 
 import (
 	"context"
-	"net/http"
 	"net/http/pprof"
+
+	"github.com/boxgo/box/pkg/insight"
 )
 
 type (
@@ -21,6 +22,18 @@ func newPProf(cfg *Config) *PProf {
 		cfg: cfg,
 	}
 
+	insight.GetF("/debug/pprof/", pprof.Index)
+	insight.GetF("/debug/pprof/allocs", pprof.Index)
+	insight.GetF("/debug/pprof/block", pprof.Index)
+	insight.GetF("/debug/pprof/cmdline", pprof.Cmdline)
+	insight.GetF("/debug/pprof/goroutine", pprof.Index)
+	insight.GetF("/debug/pprof/heap", pprof.Index)
+	insight.GetF("/debug/pprof/mutex", pprof.Index)
+	insight.GetF("/debug/pprof/profile", pprof.Profile)
+	insight.GetF("/debug/pprof/threadcreate", pprof.Index)
+	insight.GetF("/debug/pprof/symbol", pprof.Symbol)
+	insight.GetF("/debug/pprof/trace", pprof.Trace)
+
 	return pp
 }
 
@@ -29,14 +42,7 @@ func (pp *PProf) Name() string {
 }
 
 func (pp *PProf) Serve(ctx context.Context) error {
-	serveMux := http.NewServeMux()
-	serveMux.HandleFunc("/debug/pprof/", pprof.Index)
-	serveMux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	serveMux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	serveMux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	serveMux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-
-	return http.ListenAndServe(pp.cfg.Addr, serveMux)
+	return nil
 }
 
 func (pp *PProf) Shutdown(ctx context.Context) error {
