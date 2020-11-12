@@ -14,7 +14,7 @@ var (
 
 func init() {
 	if logger, err := StdConfig("default").Build(); err != nil {
-		panic(fmt.Errorf("logger init error: %w", err))
+		panic(fmt.Errorf("logger init error: %s", err))
 	} else {
 		defaultLogger = logger
 	}

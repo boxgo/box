@@ -14,7 +14,7 @@ func StdConfig() *Config {
 	cfg := DefaultConfig()
 
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("pprof build error: %w", err)
+		logger.Panicf("pprof build error: %s", err)
 	}
 
 	return cfg

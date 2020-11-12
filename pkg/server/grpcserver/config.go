@@ -45,7 +45,7 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 	}
 
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("gRPC server build error: %w", err)
+		logger.Panicf("gRPC server build error: %s", err)
 	}
 
 	return cfg

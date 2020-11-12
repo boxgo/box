@@ -37,7 +37,7 @@ func init() {
 	)
 
 	if wd, err = os.Getwd(); err != nil {
-		panic(fmt.Errorf("get work dir error: %w", err))
+		panic(fmt.Errorf("get work dir error: %s", err))
 	}
 
 	fps := []string{
@@ -50,15 +50,15 @@ func init() {
 	}
 
 	if err := firstInitCfg.Load(file.NewSource(file.WithPath(path))); err != nil {
-		panic(fmt.Errorf("config load error: %w", err))
+		panic(fmt.Errorf("config load error: %s", err))
 	}
 
 	if err := firstInitCfg.Sync(); err != nil {
-		panic(fmt.Errorf("config sync error: %w", err))
+		panic(fmt.Errorf("config sync error: %s", err))
 	}
 
 	if err := firstInitCfg.Get().Scan(&firstInitCfgCfg); err != nil {
-		panic(fmt.Errorf("config scan error: %w", err))
+		panic(fmt.Errorf("config scan error: %s", err))
 	}
 
 	for idx, sour := range firstInitCfgCfg.Source {
@@ -77,6 +77,6 @@ func init() {
 	}
 
 	if err := Default.Load(sources...); err != nil {
-		panic(fmt.Errorf("default config load error: %w", err))
+		panic(fmt.Errorf("default config load error: %s", err))
 	}
 }

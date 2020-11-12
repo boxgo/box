@@ -35,7 +35,7 @@ func StdConfig() *Config {
 	cfg := DefaultConfig()
 
 	if err := config.Scan(cfg); err != nil {
-		panic(fmt.Errorf("system build error: %w\n", err))
+		panic(fmt.Errorf("system build error: %s", err))
 	}
 
 	return cfg

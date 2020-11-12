@@ -39,7 +39,7 @@ func newMongo(cfg *Config) *Mongo {
 
 	client, err := mongo.NewClient(clientOptions)
 	if err != nil {
-		logger.Panicf("new mongodb client error: %w", err)
+		logger.Panicf("new mongodb client error: %s", err)
 	}
 
 	mgo := &Mongo{

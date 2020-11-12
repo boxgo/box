@@ -52,7 +52,7 @@ func StdConfig(key string) *Config {
 	cfg := DefaultConfig(key)
 
 	if err := config.Scan(cfg); err != nil {
-		panic(fmt.Errorf("logger build error: %w\n", err))
+		panic(fmt.Errorf("logger build error: %s", err))
 	}
 
 	return cfg

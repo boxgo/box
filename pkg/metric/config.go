@@ -31,7 +31,7 @@ func (c *Config) Build() *Metric {
 	cfg := DefaultConfig()
 
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("metric build error: %w", err)
+		logger.Panicf("metric build error: %s", err)
 	}
 
 	return newMetric(cfg)

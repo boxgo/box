@@ -38,7 +38,7 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 	}
 
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("mongodb client build error: %w", err)
+		logger.Panicf("mongodb client build error: %s", err)
 	}
 
 	return cfg
