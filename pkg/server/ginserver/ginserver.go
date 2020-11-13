@@ -33,6 +33,10 @@ func newGinServer(cfg *Config) *GinServer {
 
 	gin.SetMode(cfg.Mode)
 
+	if cfg.BasicAuth != nil && len(cfg.BasicAuth) != 0 {
+		engine.Use(gin.BasicAuth(cfg.BasicAuth))
+	}
+
 	return &GinServer{
 		cfg:    cfg,
 		engine: engine,

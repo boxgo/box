@@ -11,11 +11,12 @@ import (
 type (
 	Config struct {
 		path         string
-		Mode         string        `config:"mode" desc:"Gin mode: debug,release,test. default is release"`
-		Addr         string        `config:"addr"`
-		ReadTimeout  time.Duration `config:"readTimeout"`
-		WriteTimeout time.Duration `config:"writeTimeout"`
-		IdleTimeout  time.Duration `config:"idleTimeout"`
+		Mode         string            `config:"mode" desc:"Gin mode: debug,release,test. default is release"`
+		Addr         string            `config:"addr" desc:"server listen addr, format is ip:port"`
+		BasicAuth    map[string]string `config:"basicAuth" desc:"basicAuth. key is username, value is password"`
+		ReadTimeout  time.Duration     `config:"readTimeout"`
+		WriteTimeout time.Duration     `config:"writeTimeout"`
+		IdleTimeout  time.Duration     `config:"idleTimeout"`
 	}
 )
 
@@ -41,6 +42,7 @@ func DefaultConfig(key string) *Config {
 		path:         "gin." + key,
 		Mode:         gin.ReleaseMode,
 		Addr:         addr,
+		BasicAuth:    nil,
 		ReadTimeout:  time.Minute,
 		WriteTimeout: time.Minute,
 		IdleTimeout:  time.Minute * 5,
