@@ -32,6 +32,7 @@ func newPProf(cfg *Config) *PProf {
 	insight.GetF("/debug/pprof/profile", pprof.Profile)
 	insight.GetF("/debug/pprof/threadcreate", pprof.Index)
 	insight.GetF("/debug/pprof/symbol", pprof.Symbol)
+	insight.PostF("/debug/pprof/symbol", pprof.Symbol)
 	insight.GetF("/debug/pprof/trace", pprof.Trace)
 
 	return pp
