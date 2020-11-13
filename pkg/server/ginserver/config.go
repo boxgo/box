@@ -30,10 +30,17 @@ func StdConfig(key string) *Config {
 }
 
 func DefaultConfig(key string) *Config {
+	var addr string
+	if key == "insight" {
+		addr = ":9999"
+	} else {
+		addr = ":9000"
+	}
+
 	return &Config{
 		path:         "gin." + key,
 		Mode:         gin.ReleaseMode,
-		Addr:         ":8000",
+		Addr:         addr,
 		ReadTimeout:  time.Minute,
 		WriteTimeout: time.Minute,
 		IdleTimeout:  time.Minute * 5,

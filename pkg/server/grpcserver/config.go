@@ -55,7 +55,7 @@ func DefaultConfig(key string) *Config {
 	return &Config{
 		path:    "grpc.server." + key,
 		Network: "tcp4",
-		Addr:    ":9000",
+		Addr:    ":9001",
 	}
 }
 
