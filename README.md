@@ -141,14 +141,6 @@ $ go run main.go # 启动程序
 
 ![a](./docs/boot.png)
 
-```sh
-#
-$ 2020-11-13T00:03:50.285+0800	INFO	shutdown start...
-$ 2020-11-13T00:03:50.285+0800	INFO	shutdown GinServer
-$ 2020-11-13T00:03:50.285+0800	INFO	shutdown done...
-```
-
-
 通过`go run main.go`命令启动我们的程序，可以看到如上所示界面，这个表格是我们程序所使用到的配置描述。紧跟其后的是程序启动时的配置信息。再往下，我们就看到了`box启动器`开始启动（"server start"），`box启动器`启动GinServer服务（"serve GinServer"），由于我们没有挂载其他组件，这时候启动器启动完成（"serve done"）。
 
 通过输入 `ctrl + c` 我们看到启动器开始停止工作，然后GinServer被关闭。
