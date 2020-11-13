@@ -155,7 +155,6 @@ func New(options ...Option) Application {
 	if !opts.Silent {
 		fmt.Print(banner)
 		fmt.Print(config.Fields().Table())
-		fmt.Printf("%s\n", config.Byte())
 	}
 
 	app := &application{

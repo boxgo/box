@@ -40,7 +40,7 @@ func (fs *Fields) Table() string {
 
 	builder := &strings.Builder{}
 	table := tablewriter.NewWriter(builder)
-	table.SetHeader([]string{"Name", "Path", "Type", "Default", "Description"})
+	table.SetHeader([]string{"Name", "Path", "Type", "Value", "Default", "Description"})
 	table.SetAutoMergeCellsByColumnIndex([]int{0})
 	table.SetAutoFormatHeaders(false)
 	table.SetRowLine(true)
@@ -104,6 +104,7 @@ func (fs *Fields) parse(path, sub string, c interface{}) {
 				Type:    fmt.Sprintf("%T", def),
 				Desc:    desc,
 				Default: def,
+				Value:   valField,
 			})
 		}
 
