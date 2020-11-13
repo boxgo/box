@@ -2,6 +2,9 @@
 package config
 
 import (
+	"fmt"
+	"sync"
+
 	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/config/reader"
 	"github.com/boxgo/box/pkg/config/source"
@@ -43,7 +46,9 @@ type (
 
 var (
 	// Default Config Manager
-	Default = NewConfig()
+	Default        = NewConfig()
+	defaultSources []source.Source
+	defaultOnce    sync.Once
 )
 
 // NewConfig returns new config
@@ -58,6 +63,7 @@ func Load(source ...source.Source) error {
 
 // Sync force a source changeset sync
 func Sync() error {
+	lazyLoad()
 	return Default.Sync()
 }
 
@@ -68,24 +74,44 @@ func Close() error {
 
 // Byte return config raw data
 func Byte() []byte {
+	lazyLoad()
 	return Default.Bytes()
 }
 
 // Scan config to val
 func Scan(val Config) error {
+	lazyLoad()
 	return Default.Scan(val)
 }
 
 // Watch a value for changes
 func Watch(path ...string) (Watcher, error) {
+	lazyLoad()
 	return Default.Watch(path...)
 }
 
 // Get a value from the config
 func Get(path ...string) reader.Value {
+	lazyLoad()
 	return Default.Get(path...)
 }
 
 func Fields() *field.Fields {
+	lazyLoad()
 	return Default.Fields()
+}
+
+func lazyLoad() {
+	defaultOnce.Do(func() {
+		var validSources []source.Source
+		for _, s := range defaultSources {
+			if s != nil && s.String() != "" {
+				validSources = append(validSources, s)
+			}
+		}
+
+		if err := Default.Load(validSources...); err != nil {
+			panic(fmt.Errorf("default load %s error: %s", validSources, err))
+		}
+	})
 }

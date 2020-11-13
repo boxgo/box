@@ -1,4 +1,4 @@
-// +build !configinit
+// +build !no_config_init
 
 package config
 
@@ -10,30 +10,36 @@ import (
 	"strings"
 
 	"github.com/boxgo/box/pkg/config/source"
-	"github.com/boxgo/box/pkg/config/source/env"
-	"github.com/boxgo/box/pkg/config/source/etcd"
 	"github.com/boxgo/box/pkg/config/source/file"
-	"github.com/boxgo/box/pkg/config/source/redis"
 	"github.com/boxgo/box/pkg/util/fputil"
 )
 
-var (
-	firstInitCfg    = NewConfig()
-	firstInitCfgCfg = struct {
-		Loader string `config:"loader"`
-		Reader string `config:"reader"`
-		Source []struct {
-			Type string `config:"type"`
-		} `config:"source"`
-	}{}
+type (
+	sourceConfig struct {
+		idx  int
+		name string
+		data []byte
+	}
 )
 
-func init() {
+var (
+	bootOK        = bootConfig()
+	sourceConfigs []sourceConfig
+)
+
+func bootConfig() bool {
 	var (
-		wd      string
-		path    string
-		err     error
-		sources []source.Source
+		err        error
+		wd         string
+		path       string
+		bootCfg    = NewConfig()
+		bootCfgCfg = struct {
+			Loader string `config:"loader"`
+			Reader string `config:"reader"`
+			Source []struct {
+				Type string `config:"type"`
+			} `config:"source"`
+		}{}
 	)
 
 	if wd, err = os.Getwd(); err != nil {
@@ -41,6 +47,7 @@ func init() {
 	}
 
 	fps := []string{
+		filepath.Join(wd, "box.yml"),
 		filepath.Join(wd, "box.yaml"),
 		filepath.Join(wd, "box.toml"),
 		filepath.Join(wd, "box.json"),
@@ -49,34 +56,27 @@ func init() {
 		panic(fmt.Errorf("config file\n%s\nnot found", strings.Join(fps, "\n")))
 	}
 
-	if err := firstInitCfg.Load(file.NewSource(file.WithPath(path))); err != nil {
+	if err := bootCfg.Load(file.NewSource(file.WithPath(path))); err != nil {
 		panic(fmt.Errorf("config load error: %s", err))
 	}
 
-	if err := firstInitCfg.Sync(); err != nil {
+	if err := bootCfg.Sync(); err != nil {
 		panic(fmt.Errorf("config sync error: %s", err))
 	}
 
-	if err := firstInitCfg.Get().Scan(&firstInitCfgCfg); err != nil {
+	if err := bootCfg.Get().Scan(&bootCfgCfg); err != nil {
 		panic(fmt.Errorf("config scan error: %s", err))
 	}
 
-	for idx, sour := range firstInitCfgCfg.Source {
-		cfgData := firstInitCfg.Get("source", strconv.Itoa(idx)).Bytes()
-
-		switch sour.Type {
-		case "etcd":
-			sources = append(sources, etcd.NewSource(etcd.WithConfig(cfgData)...))
-		case "env":
-			sources = append(sources, env.NewSource(env.WithConfig(cfgData)...))
-		case "file":
-			sources = append(sources, file.NewSource(file.WithConfig(cfgData)...))
-		case "redis":
-			sources = append(sources, redis.NewSource(redis.WithConfig(cfgData)...))
+	defaultSources = make([]source.Source, len(bootCfgCfg.Source))
+	sourceConfigs = make([]sourceConfig, len(bootCfgCfg.Source))
+	for idx, sour := range bootCfgCfg.Source {
+		sourceConfigs[idx] = sourceConfig{
+			idx:  idx,
+			name: sour.Type,
+			data: bootCfg.Get("source", strconv.Itoa(idx)).Bytes(),
 		}
 	}
 
-	if err := Default.Load(sources...); err != nil {
-		panic(fmt.Errorf("default config load error: %s", err))
-	}
+	return true
 }
