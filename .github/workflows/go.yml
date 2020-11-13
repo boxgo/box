@@ -32,7 +32,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Run tests
-        run: go test -v -tags configinit -covermode=count ./...
+        run: make test
 
   coverage:
     runs-on: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Calc coverage
-        run: go test -v  -tags configinit -covermode=count -coverprofile=coverage.out ./...
+        run: make coverage
       - name: Convert coverage to lcov
         uses: jandelgado/gcov2lcov-action@v1.0.2
         with:

@@ -4,7 +4,7 @@ lint:
 test:
 	go test -v -tags no_config_init ./pkg/...
 
-cover:
+coverage:
 	go test -v -tags no_config_init -race -coverprofile=coverage.txt -covermode=atomic ./pkg/...
 
 .IGNORE:
