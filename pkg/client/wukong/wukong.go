@@ -118,25 +118,25 @@ func (wk *WuKong) do(req *Request) (resp *Response) {
 
 	for i := 0; i < 1; i++ {
 		if err != nil {
-			resp = NewResponse(err, nil)
+			resp = NewResponse(err, req, nil)
 			break
 		}
 
 		rawReq, err = req.RawRequest()
 		if err != nil {
-			resp = NewResponse(err, nil)
+			resp = NewResponse(err, req, nil)
 			break
 		}
 
 		rawResp, err = wk.client.Do(rawReq)
 		req.TraceInfo.ElapsedTime = time.Since(startAt)
 
-		resp = NewResponse(err, rawResp)
+		resp = NewResponse(err, req, rawResp)
 	}
 
 	for _, after := range wk.after {
 		if err = after(req, resp); err != nil {
-			resp = NewResponse(err, rawResp)
+			resp = NewResponse(err, req, rawResp)
 			break
 		}
 	}

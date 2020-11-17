@@ -18,7 +18,11 @@ type (
 
 const (
 	MimeTypeJSON       = "application/json"
+	MimeTypeJSON1      = "text/json"
+	MimeTypeJSON2      = "json"
 	MimeTypeXML        = "application/xml"
+	MimeTypeXML1       = "text/xml"
+	MimeTypeXML2       = "/xml"
 	MimeTypeFormData   = "application/x-www-form-urlencoded"
 	MimeTypeUrlencoded = "application/x-www-form-urlencoded"
 	MimeTypeHTML       = "text/html"
@@ -34,9 +38,9 @@ var (
 func Decode(contentType string, val interface{}) ([]byte, error) {
 	var coder Encoder
 	switch contentType {
-	case MimeTypeJSON:
+	case MimeTypeJSON, MimeTypeJSON1, MimeTypeJSON2:
 		coder = jsonEncoder
-	case MimeTypeXML:
+	case MimeTypeXML, MimeTypeXML1, MimeTypeXML2:
 		coder = xmlEncoder
 	default:
 		coder = jsonEncoder
@@ -48,9 +52,9 @@ func Decode(contentType string, val interface{}) ([]byte, error) {
 func Encode(contentType string, data []byte, val interface{}) error {
 	var coder Encoder
 	switch contentType {
-	case MimeTypeJSON:
+	case MimeTypeJSON, MimeTypeJSON1, MimeTypeJSON2:
 		coder = jsonEncoder
-	case MimeTypeXML:
+	case MimeTypeXML, MimeTypeXML1, MimeTypeXML2:
 		coder = xmlEncoder
 	default:
 		coder = jsonEncoder

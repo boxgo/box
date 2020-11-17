@@ -3,6 +3,7 @@ package wukong
 import (
 	"io"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"strings"
 )
@@ -10,6 +11,7 @@ import (
 type (
 	Response struct {
 		err      error
+		req      *Request
 		resp     *http.Response
 		bodyData []byte
 	}
@@ -20,10 +22,11 @@ type (
 	}
 )
 
-func NewResponse(err error, resp *http.Response) *Response {
+func NewResponse(err error, req *Request, resp *http.Response) *Response {
 	if err != nil {
 		return &Response{
 			err:  err,
+			req:  req,
 			resp: resp,
 		}
 	}
@@ -32,6 +35,7 @@ func NewResponse(err error, resp *http.Response) *Response {
 
 	return &Response{
 		err:      err,
+		req:      req,
 		resp:     resp,
 		bodyData: body,
 	}
@@ -163,7 +167,7 @@ func (resp *Response) BindBody(data interface{}) *Response {
 		return resp
 	}
 
-	contentType := resp.resp.Header.Get("Content-Type")
+	contentType := resp.contentType()
 	if err := Encode(contentType, resp.bodyData, data); err != nil {
 		resp.err = err
 	}
@@ -176,8 +180,7 @@ func (resp *Response) ConditionBindBody(check func(interface{}) bool, data ...in
 		return resp
 	}
 
-	contentType := resp.resp.Header.Get("Content-Type")
-
+	contentType := resp.contentType()
 	for _, d := range data {
 		if err := Encode(contentType, resp.bodyData, d); err != nil {
 			resp.err = err
@@ -190,4 +193,14 @@ func (resp *Response) ConditionBindBody(check func(interface{}) bool, data ...in
 	}
 
 	return resp
+}
+
+func (resp *Response) contentType() string {
+	contentType := resp.resp.Header.Get("Content-Type")
+
+	if mediaType, _, err := mime.ParseMediaType(contentType); err != nil || mediaType == "" {
+		return resp.req.ContentType
+	} else {
+		return mediaType
+	}
 }
