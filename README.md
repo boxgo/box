@@ -170,3 +170,8 @@ $ pong
 * 接口文档生成
 * 请求表单自动校验
 * 一站式管控平台
+
+# Thanks
+感谢 [Jetbrains](https://www.jetbrains.com/?from=box) 为本项目提供License。
+
+[![Jetbrains](./docs/jetbrains.png)](https://www.jetbrains.com/?from=box)
