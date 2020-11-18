@@ -11,11 +11,11 @@ func init() {
 		return
 	}
 
-	for _, cfg := range sourceConfigs {
+	for idx, cfg := range bootCfg.Source {
 		if cfg.name != "env" || len(cfg.data) == 0 {
 			continue
 		}
 
-		defaultSources[cfg.idx] = env.NewSource(env.WithConfig(cfg.data)...)
+		defaultSources[idx] = env.NewSource(env.WithConfig(cfg.data)...)
 	}
 }

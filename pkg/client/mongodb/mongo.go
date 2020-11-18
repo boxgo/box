@@ -3,8 +3,8 @@ package mongodb
 import (
 	"context"
 
+	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/logger"
-	"github.com/boxgo/box/pkg/system"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -21,7 +21,7 @@ type (
 func newMongo(cfg *Config) *Mongo {
 	clientOptions := options.Client()
 	clientOptions.ApplyURI(cfg.URI)
-	clientOptions.SetAppName(system.ServiceName())
+	clientOptions.SetAppName(config.ServiceName())
 
 	if cfg.commandMonitor == nil {
 		cfg.commandMonitor = defaultMonitor.CommandMonitor()

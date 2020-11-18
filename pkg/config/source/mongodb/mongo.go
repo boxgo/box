@@ -18,9 +18,11 @@ type (
 		client     *mongo.Client
 		db         string
 		collection string
+		service    string
 	}
 
 	Config struct {
+		Name   string
 		Format string
 		Config string
 	}
@@ -32,10 +34,11 @@ func NewSource(opts ...source.Option) source.Source {
 		client     *mongo.Client
 		db         string
 		collection string
+		name       string
 	)
 
 	if val, ok := sOpts.Context.Value(mongoURIKey{}).(string); !ok {
-		log.Panic("config source mongo is not set.")
+		log.Panic("service source mongo is not set.")
 	} else {
 		clientOptions := options.Client()
 		clientOptions.ApplyURI(val)
@@ -49,15 +52,17 @@ func NewSource(opts ...source.Option) source.Source {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	if err := client.Connect(ctx); err != nil {
-		log.Panicf("config connnect to mongodb error %s", err)
+		log.Panicf("service connnect to mongodb error %s", err)
 	}
 
 	if val, ok := sOpts.Context.Value(mongoDBKey{}).(string); ok && val != "" {
 		db = val
 	}
-
 	if val, ok := sOpts.Context.Value(mongoCollectionKey{}).(string); ok && val != "" {
 		collection = val
+	}
+	if val, ok := sOpts.Context.Value(mongoServiceKey{}).(string); ok && val != "" {
+		name = val
 	}
 
 	return &mongoSource{
@@ -66,6 +71,7 @@ func NewSource(opts ...source.Option) source.Source {
 		client:     client,
 		db:         db,
 		collection: collection,
+		service:    name,
 	}
 }
 
@@ -74,15 +80,8 @@ func (rs *mongoSource) Read() (*source.ChangeSet, error) {
 		return nil, rs.err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
-	defer cancel()
-
-	cfg := &Config{}
-	if err := rs.client.
-		Database(rs.db).
-		Collection(rs.collection).
-		FindOne(ctx, bson.D{}).
-		Decode(cfg); err != nil {
+	cfg, err := loadConfig(rs.client, rs.db, rs.collection, rs.service)
+	if err != nil {
 		return nil, err
 	}
 
@@ -106,9 +105,23 @@ func (rs *mongoSource) Watch() (source.Watcher, error) {
 		return nil, rs.err
 	}
 
-	return newWatcher(rs.db, rs.collection, rs.client, rs.opts)
+	return newWatcher(rs.db, rs.collection, rs.service, rs.client, rs.opts)
 }
 
 func (rs *mongoSource) String() string {
 	return "mongodb"
+}
+
+func loadConfig(client *mongo.Client, db, col, svc string) (*Config, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+
+	cfg := &Config{}
+	err := client.
+		Database(db).
+		Collection(col).
+		FindOne(ctx, bson.M{"service": svc}).
+		Decode(cfg)
+
+	return cfg, err
 }

@@ -14,32 +14,16 @@ import (
 	"github.com/boxgo/box/pkg/util/fputil"
 )
 
-type (
-	sourceConfig struct {
-		idx  int
-		name string
-		data []byte
-	}
-)
-
 var (
-	bootOK        = bootConfig()
-	sourceConfigs []sourceConfig
+	bootOK = loadBootConfig()
 )
 
-func bootConfig() bool {
+func loadBootConfig() bool {
 	var (
-		err        error
-		wd         string
-		path       string
-		bootCfg    = NewConfig()
-		bootCfgCfg = struct {
-			Loader string `config:"loader"`
-			Reader string `config:"reader"`
-			Source []struct {
-				Type string `config:"type"`
-			} `config:"source"`
-		}{}
+		err  error
+		wd   string
+		path string
+		cfg  = NewConfig()
 	)
 
 	if wd, err = os.Getwd(); err != nil {
@@ -56,26 +40,23 @@ func bootConfig() bool {
 		panic(fmt.Errorf("config file\n%s\nnot found", strings.Join(fps, "\n")))
 	}
 
-	if err := bootCfg.Load(file.NewSource(file.WithPath(path))); err != nil {
+	if err := cfg.Load(file.NewSource(file.WithPath(path))); err != nil {
 		panic(fmt.Errorf("config load error: %s", err))
 	}
 
-	if err := bootCfg.Sync(); err != nil {
+	if err := cfg.Sync(); err != nil {
 		panic(fmt.Errorf("config sync error: %s", err))
 	}
 
-	if err := bootCfg.Get().Scan(&bootCfgCfg); err != nil {
+	if err := cfg.Get().Scan(&bootCfg); err != nil {
 		panic(fmt.Errorf("config scan error: %s", err))
+	} else {
+		defaultSources = make([]source.Source, len(bootCfg.Source))
 	}
 
-	defaultSources = make([]source.Source, len(bootCfgCfg.Source))
-	sourceConfigs = make([]sourceConfig, len(bootCfgCfg.Source))
-	for idx, sour := range bootCfgCfg.Source {
-		sourceConfigs[idx] = sourceConfig{
-			idx:  idx,
-			name: sour.Type,
-			data: bootCfg.Get("source", strconv.Itoa(idx)).Bytes(),
-		}
+	for idx, sour := range bootCfg.Source {
+		bootCfg.Source[idx].name = sour.Type
+		bootCfg.Source[idx].data = cfg.Get("source", strconv.Itoa(idx)).Bytes()
 	}
 
 	return true

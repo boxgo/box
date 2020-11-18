@@ -11,11 +11,11 @@ func init() {
 		return
 	}
 
-	for _, cfg := range sourceConfigs {
+	for idx, cfg := range bootCfg.Source {
 		if cfg.name != "mongodb" || len(cfg.data) == 0 {
 			continue
 		}
 
-		defaultSources[cfg.idx] = mongodb.NewSource(mongodb.WithConfig(cfg.data)...)
+		defaultSources[idx] = mongodb.NewSource(mongodb.WithConfig(cfg.data)...)
 	}
 }

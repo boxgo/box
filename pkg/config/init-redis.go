@@ -11,11 +11,11 @@ func init() {
 		return
 	}
 
-	for _, cfg := range sourceConfigs {
+	for idx, cfg := range bootCfg.Source {
 		if cfg.name != "redis" || len(cfg.data) == 0 {
 			continue
 		}
 
-		defaultSources[cfg.idx] = redis.NewSource(redis.WithConfig(cfg.data)...)
+		defaultSources[idx] = redis.NewSource(redis.WithConfig(cfg.data)...)
 	}
 }

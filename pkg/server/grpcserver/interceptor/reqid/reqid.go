@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/boxgo/box/pkg/grpc/wrapper"
-	"github.com/boxgo/box/pkg/system"
+	"github.com/boxgo/box/pkg/trace"
 	"github.com/boxgo/box/pkg/util/strutil"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -39,7 +39,7 @@ func StreamRequestId() grpc.StreamServerInterceptor {
 }
 
 func wrapCtx(ctx context.Context, md metadata.MD) context.Context {
-	key := system.TraceReqID()
+	key := trace.ReqID()
 	val, exist := getReqId(md)
 
 	if exist {
@@ -53,7 +53,7 @@ func wrapCtx(ctx context.Context, md metadata.MD) context.Context {
 }
 
 func getReqId(md metadata.MD) (string, bool) {
-	if id := strutil.First(md.Get(system.TraceReqID())); id != "" {
+	if id := strutil.First(md.Get(trace.ReqID())); id != "" {
 		return id, true
 	}
 

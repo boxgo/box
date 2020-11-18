@@ -11,11 +11,11 @@ func init() {
 		return
 	}
 
-	for _, cfg := range sourceConfigs {
+	for idx, cfg := range bootCfg.Source {
 		if cfg.name != "file" || len(cfg.data) == 0 {
 			continue
 		}
 
-		defaultSources[cfg.idx] = file.NewSource(file.WithConfig(cfg.data)...)
+		defaultSources[idx] = file.NewSource(file.WithConfig(cfg.data)...)
 	}
 }

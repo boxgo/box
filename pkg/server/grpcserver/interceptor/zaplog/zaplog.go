@@ -5,7 +5,7 @@ import (
 
 	"github.com/boxgo/box/pkg/grpc/wrapper"
 	"github.com/boxgo/box/pkg/logger"
-	"github.com/boxgo/box/pkg/system"
+	"github.com/boxgo/box/pkg/trace"
 	"github.com/boxgo/box/pkg/util/strutil"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -52,10 +52,10 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 }
 
 func wrapCtx(ctx context.Context, md metadata.MD, biz string) context.Context {
-	uidKey := system.TraceUID()
-	reqIdKey := system.TraceReqID()
-	bizIdKey := system.TraceBizID()
-	spanKey := system.TraceSpanID()
+	uidKey := trace.ID()
+	reqIdKey := trace.ReqID()
+	bizIdKey := trace.BizID()
+	spanKey := trace.SpanID()
 
 	uidVal := strutil.First(md.Get(uidKey))
 	reqIdVal := strutil.First(md.Get(reqIdKey))

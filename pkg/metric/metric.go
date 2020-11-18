@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/insight"
 	"github.com/boxgo/box/pkg/logger"
 	"github.com/boxgo/box/pkg/system"
@@ -51,7 +52,7 @@ func (m *Metric) Serve(context.Context) error {
 		defer ticker.Stop()
 
 		pusher := push.
-			New(m.cfg.PushTargetURL, system.ServiceName()).
+			New(m.cfg.PushTargetURL, config.ServiceName()).
 			Gatherer(prometheus.DefaultRegisterer.(prometheus.Gatherer)).
 			Grouping("instance", system.Hostname())
 

@@ -2,14 +2,12 @@ package mongodb
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/boxgo/box/pkg/config/source"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -24,13 +22,15 @@ type watcher struct {
 	client     *mongo.Client
 	db         string
 	collection string
+	service    string
 }
 
-func newWatcher(db, collection string, client *mongo.Client, opts source.Options) (source.Watcher, error) {
+func newWatcher(db, collection, service string, client *mongo.Client, opts source.Options) (source.Watcher, error) {
 	w := &watcher{
-		name:       "mongo",
+		name:       "mongodb",
 		db:         db,
 		collection: collection,
+		service:    service,
 		opts:       opts,
 		cs:         nil,
 		rsp:        make(chan string),
@@ -70,21 +70,13 @@ func (w *watcher) watch() {
 		case <-w.exit:
 			return
 		default:
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
-
-			cfg := &Config{}
-			err := w.client.Database(w.db).
-				Collection(w.collection).
-				FindOne(ctx, bson.D{}).
-				Decode(cfg)
+			cfg, err := loadConfig(w.client, w.db, w.collection, w.service)
 
 			if err != nil {
-				log.Printf("config redis watch error: %#v", err)
+				log.Printf("service redis watch error: %#v", err)
 			} else if cfg.Config != "" {
 				w.handle(cfg)
 			}
-
-			cancel()
 		}
 	}
 }
@@ -100,7 +92,7 @@ func (w *watcher) handle(cfg *Config) {
 
 	var val map[string]interface{}
 	if err := w.opts.Encoder.Decode([]byte(cfg.Config), &val); err != nil {
-		log.Printf("config mongo watch handler decode error: %#v", err)
+		log.Printf("service mongo watch handler decode error: %#v", err)
 		return
 	}
 

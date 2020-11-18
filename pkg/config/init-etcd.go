@@ -11,11 +11,11 @@ func init() {
 		return
 	}
 
-	for _, cfg := range sourceConfigs {
+	for idx, cfg := range bootCfg.Source {
 		if cfg.name != "etcd" || len(cfg.data) == 0 {
 			continue
 		}
 
-		defaultSources[cfg.idx] = etcd.NewSource(etcd.WithConfig(cfg.data)...)
+		defaultSources[idx] = etcd.NewSource(etcd.WithConfig(cfg.data)...)
 	}
 }

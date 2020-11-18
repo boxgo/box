@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/boxgo/box/pkg/config"
-	"github.com/boxgo/box/pkg/system"
+	"github.com/boxgo/box/pkg/trace"
 	"github.com/boxgo/box/pkg/util/jsonutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -181,10 +181,10 @@ func (logger *Logger) watch() error {
 func (logger *Logger) trace(ctx context.Context) *zap.SugaredLogger {
 	var uid, requestID, spanID, bizID string
 
-	traceUID := system.TraceUID()
-	traceRequestID := system.TraceReqID()
-	traceSpanID := system.TraceSpanID()
-	traceBizID := system.TraceBizID()
+	traceUID := trace.ID()
+	traceRequestID := trace.ReqID()
+	traceSpanID := trace.SpanID()
+	traceBizID := trace.BizID()
 
 	if uidStr, ok := ctx.Value(traceUID).(string); ok {
 		uid = uidStr

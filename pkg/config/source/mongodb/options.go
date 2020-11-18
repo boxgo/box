@@ -12,11 +12,13 @@ type (
 	mongoURIKey        struct{}
 	mongoDBKey         struct{}
 	mongoCollectionKey struct{}
+	mongoServiceKey    struct{}
 
 	mongoConfig struct {
 		URI        string `json:"uri" desc:"mongodb connection uri."`
 		DB         string `json:"db"`
 		Collection string `json:"collection"`
+		Service    string `json:"service"`
 	}
 )
 
@@ -24,13 +26,14 @@ func WithConfig(data []byte) []source.Option {
 	v := &mongoConfig{}
 
 	if err := json.Unmarshal(data, v); err != nil {
-		log.Panicf("config mongo build error: %#v", err)
+		log.Panicf("service mongo build error: %#v", err)
 	}
 
 	return []source.Option{
 		WithURI(v.URI),
 		WithDB(v.DB),
 		WithCollection(v.Collection),
+		WithService(v.Service),
 	}
 }
 
@@ -61,5 +64,15 @@ func WithCollection(collection string) source.Option {
 		}
 
 		o.Context = context.WithValue(o.Context, mongoCollectionKey{}, collection)
+	}
+}
+
+func WithService(service string) source.Option {
+	return func(o *source.Options) {
+		if o.Context == nil {
+			o.Context = context.Background()
+		}
+
+		o.Context = context.WithValue(o.Context, mongoServiceKey{}, service)
 	}
 }

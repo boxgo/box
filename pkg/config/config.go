@@ -42,13 +42,26 @@ type (
 		// Scanned fields
 		Fields() *field.Fields
 	}
+
+	bootConfig struct {
+		Name    string `config:"name"`
+		Version string `config:"version"`
+		Loader  string `config:"loader"`
+		Reader  string `config:"reader"`
+		Source  []struct {
+			Type string `config:"type"`
+			name string
+			data []byte
+		} `config:"source"`
+	}
 )
 
 var (
 	// Default Config Manager
 	Default        = NewConfig()
-	defaultSources []source.Source
+	bootCfg        = bootConfig{}
 	defaultOnce    sync.Once
+	defaultSources []source.Source
 )
 
 // NewConfig returns new config
@@ -99,6 +112,14 @@ func Get(path ...string) reader.Value {
 func Fields() *field.Fields {
 	lazyLoad()
 	return Default.Fields()
+}
+
+func ServiceName() string {
+	return bootCfg.Name
+}
+
+func ServiceVersion() string {
+	return bootCfg.Version
 }
 
 func lazyLoad() {
