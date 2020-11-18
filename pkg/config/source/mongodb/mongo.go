@@ -22,9 +22,9 @@ type (
 	}
 
 	Config struct {
-		Name   string
-		Format string
-		Config string
+		Service string
+		Format  string
+		Config  string
 	}
 )
 
@@ -34,11 +34,11 @@ func NewSource(opts ...source.Option) source.Source {
 		client     *mongo.Client
 		db         string
 		collection string
-		name       string
+		service    string
 	)
 
 	if val, ok := sOpts.Context.Value(mongoURIKey{}).(string); !ok {
-		log.Panic("service source mongo is not set.")
+		log.Panic("config source mongo is not set.")
 	} else {
 		clientOptions := options.Client()
 		clientOptions.ApplyURI(val)
@@ -62,7 +62,7 @@ func NewSource(opts ...source.Option) source.Source {
 		collection = val
 	}
 	if val, ok := sOpts.Context.Value(mongoServiceKey{}).(string); ok && val != "" {
-		name = val
+		service = val
 	}
 
 	return &mongoSource{
@@ -71,7 +71,7 @@ func NewSource(opts ...source.Option) source.Source {
 		client:     client,
 		db:         db,
 		collection: collection,
-		service:    name,
+		service:    service,
 	}
 }
 

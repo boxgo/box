@@ -73,7 +73,7 @@ func (w *watcher) watch() {
 			cfg, err := loadConfig(w.client, w.db, w.collection, w.service)
 
 			if err != nil {
-				log.Printf("service redis watch error: %#v", err)
+				log.Printf("config redis watch error: %#v", err)
 			} else if cfg.Config != "" {
 				w.handle(cfg)
 			}
@@ -92,7 +92,7 @@ func (w *watcher) handle(cfg *Config) {
 
 	var val map[string]interface{}
 	if err := w.opts.Encoder.Decode([]byte(cfg.Config), &val); err != nil {
-		log.Printf("service mongo watch handler decode error: %#v", err)
+		log.Printf("config mongo watch handler decode error: %#v", err)
 		return
 	}
 
