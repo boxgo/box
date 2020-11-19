@@ -21,3 +21,14 @@ func FirstExistFilePath(paths []string) string {
 
 	return ""
 }
+
+// IsFile checks whether the path is a file,
+// it returns false when it's a directory or does not exist.
+func IsFile(f string) bool {
+	fi, e := os.Stat(f)
+	if e != nil {
+		return false
+	}
+
+	return !fi.IsDir()
+}

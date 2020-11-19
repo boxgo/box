@@ -20,22 +20,35 @@ var (
 
 func loadBootConfig() bool {
 	var (
-		err  error
-		wd   string
 		path string
+		fps  []string
 		cfg  = NewConfig()
 	)
 
-	if wd, err = os.Getwd(); err != nil {
-		panic(fmt.Errorf("get work dir error: %s", err))
+	if bootCfg := os.Getenv("BOX_BOOT_CONFIG"); fputil.IsFile(bootCfg) {
+		fps = []string{bootCfg}
+	} else {
+		wd, err := os.Getwd()
+		if err != nil {
+			panic(fmt.Errorf("get work dir error: %s", err))
+		}
+
+		if bootCfg == "" {
+			bootCfg = "box"
+		}
+
+		fps = []string{
+			filepath.Join(wd, bootCfg+".yml"),
+			filepath.Join(wd, bootCfg+".yaml"),
+			filepath.Join(wd, bootCfg+".toml"),
+			filepath.Join(wd, bootCfg+".json"),
+			filepath.Join(wd, "config", bootCfg+".yml"),
+			filepath.Join(wd, "config", bootCfg+".yaml"),
+			filepath.Join(wd, "config", bootCfg+".toml"),
+			filepath.Join(wd, "config", bootCfg+".json"),
+		}
 	}
 
-	fps := []string{
-		filepath.Join(wd, "box.yml"),
-		filepath.Join(wd, "box.yaml"),
-		filepath.Join(wd, "box.toml"),
-		filepath.Join(wd, "box.json"),
-	}
 	if path = fputil.FirstExistFilePath(fps); path == "" {
 		panic(fmt.Errorf("config file\n%s\nnot found", strings.Join(fps, "\n")))
 	}
