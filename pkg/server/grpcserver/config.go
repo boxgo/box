@@ -53,7 +53,7 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 
 func DefaultConfig(key string) *Config {
 	return &Config{
-		path:    "grpc.server." + key,
+		path:    "grpc_server." + key,
 		Network: "tcp4",
 		Addr:    ":9001",
 	}

@@ -28,7 +28,7 @@ func newGRpcServer(cfg *Config) *Server {
 }
 
 func (server *Server) Name() string {
-	return "gRPCServer"
+	return "gRPC-server"
 }
 
 func (server *Server) Serve(ctx context.Context) error {

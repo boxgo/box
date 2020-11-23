@@ -45,7 +45,7 @@ func newGinServer(cfg *Config) *GinServer {
 }
 
 func (server *GinServer) Name() string {
-	return "GinServer"
+	return "gin-server"
 }
 
 func (server *GinServer) Serve(ctx context.Context) error {
