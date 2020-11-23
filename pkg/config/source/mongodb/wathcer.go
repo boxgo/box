@@ -73,7 +73,7 @@ func (w *watcher) watch() {
 			cfg, err := loadConfig(w.client, w.db, w.collection, w.service)
 
 			if err != nil {
-				log.Printf("config redis watch error: %#v", err)
+				log.Printf("config mongodb watch error: %#v", err)
 			} else if cfg.Config != "" {
 				w.handle(cfg)
 			}
