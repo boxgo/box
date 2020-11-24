@@ -16,6 +16,11 @@ func init() {
 			continue
 		}
 
-		defaultSources[idx] = redis.NewSource(redis.WithConfig(cfg.data)...)
+		defaultSources[idx] = redis.NewSource(
+			append(
+				redis.WithConfig(cfg.data),
+				redis.WithPrefix(bootCfg.Name),
+			)...,
+		)
 	}
 }

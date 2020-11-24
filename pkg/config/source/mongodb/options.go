@@ -18,7 +18,6 @@ type (
 		URI        string `json:"uri" desc:"mongodb connection uri."`
 		DB         string `json:"db"`
 		Collection string `json:"collection"`
-		Service    string `json:"service"`
 	}
 )
 
@@ -33,7 +32,6 @@ func WithConfig(data []byte) []source.Option {
 		WithURI(v.URI),
 		WithDB(v.DB),
 		WithCollection(v.Collection),
-		WithService(v.Service),
 	}
 }
 

@@ -3,6 +3,8 @@
 package config
 
 import (
+	"strings"
+
 	"github.com/boxgo/box/pkg/config/source/env"
 )
 
@@ -16,6 +18,7 @@ func init() {
 			continue
 		}
 
-		defaultSources[idx] = env.NewSource(env.WithConfig(cfg.data)...)
+		prefix := strings.ToUpper(bootCfg.Name)
+		defaultSources[idx] = env.NewSource(env.WithStrippedPrefix(prefix))
 	}
 }

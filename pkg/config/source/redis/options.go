@@ -23,21 +23,13 @@ type (
 )
 
 func WithConfig(data []byte) []source.Option {
-	type (
-		opt struct {
-			Prefix string      `config:"prefix" desc:"config prefix, eg: {{prefix}}.config"`
-			Redis  redisConfig `config:"redis" desc:"redis connect config"`
-		}
-	)
-
-	v := &opt{}
-	if err := json.Unmarshal(data, v); err != nil {
+	v := redisConfig{}
+	if err := json.Unmarshal(data, &v); err != nil {
 		log.Panicf("config redis build error: %#v", err)
 	}
 
 	return []source.Option{
-		WithRedisConfig(v.Redis),
-		WithPrefix(v.Prefix),
+		WithRedisConfig(v),
 	}
 }
 

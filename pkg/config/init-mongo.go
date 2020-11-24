@@ -16,6 +16,11 @@ func init() {
 			continue
 		}
 
-		defaultSources[idx] = mongodb.NewSource(mongodb.WithConfig(cfg.data)...)
+		defaultSources[idx] = mongodb.NewSource(
+			append(
+				mongodb.WithConfig(cfg.data),
+				mongodb.WithService(bootCfg.Name),
+			)...,
+		)
 	}
 }

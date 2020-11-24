@@ -16,6 +16,12 @@ func init() {
 			continue
 		}
 
-		defaultSources[idx] = etcd.NewSource(etcd.WithConfig(cfg.data)...)
+		defaultSources[idx] = etcd.NewSource(
+			append(
+				etcd.WithConfig(cfg.data),
+				etcd.WithPrefix(bootCfg.Name),
+				etcd.StripPrefix(true),
+			)...,
+		)
 	}
 }
