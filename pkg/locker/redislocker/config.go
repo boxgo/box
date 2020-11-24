@@ -17,7 +17,7 @@ func StdConfig(key string) *Config {
 	cfg := DefaultConfig(key)
 
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("gin server build error: %s", err)
+		logger.Panicf("redis locker build error: %s", err)
 	}
 
 	return cfg
