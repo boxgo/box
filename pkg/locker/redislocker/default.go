@@ -1,17 +1,20 @@
 package redislocker
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 var (
 	Default = StdConfig("default").Build()
 )
 
-func Lock(key string, expire time.Duration) (bool, error) {
-	return Default.Lock(key, expire)
+func Lock(ctx context.Context, key string, expire time.Duration) (bool, error) {
+	return Default.Lock(ctx, key, expire)
 }
-func IsLocked(key string) (bool, error) {
-	return Default.IsLocked(key)
+func IsLocked(ctx context.Context, key string) (bool, error) {
+	return Default.IsLocked(ctx, key)
 }
-func UnLock(key string) error {
-	return Default.UnLock(key)
+func UnLock(ctx context.Context, key string) error {
+	return Default.UnLock(ctx, key)
 }

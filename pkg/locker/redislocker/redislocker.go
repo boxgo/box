@@ -26,13 +26,13 @@ func newLocker(cfg *Config) locker.MutexLocker {
 }
 
 // Lock key
-func (l *Locker) Lock(key string, duration time.Duration) (bool, error) {
-	return l.client.Client().SetNX(context.TODO(), locker.UnifiedKey(key), time.Now().Unix(), duration).Result()
+func (l *Locker) Lock(ctx context.Context, key string, duration time.Duration) (bool, error) {
+	return l.client.Client().SetNX(ctx, locker.UnifiedKey(key), time.Now().Unix(), duration).Result()
 }
 
 // IsLocked return is is locked
-func (l *Locker) IsLocked(key string) (bool, error) {
-	result, err := l.client.Client().Exists(context.TODO(), locker.UnifiedKey(key)).Result()
+func (l *Locker) IsLocked(ctx context.Context, key string) (bool, error) {
+	result, err := l.client.Client().Exists(ctx, locker.UnifiedKey(key)).Result()
 
 	if err == redis.Nil {
 		return false, nil
@@ -44,8 +44,8 @@ func (l *Locker) IsLocked(key string) (bool, error) {
 }
 
 // UnLock unlock key
-func (l *Locker) UnLock(key string) error {
-	_, err := l.client.Client().Del(context.TODO(), locker.UnifiedKey(key)).Result()
+func (l *Locker) UnLock(ctx context.Context, key string) error {
+	_, err := l.client.Client().Del(ctx, locker.UnifiedKey(key)).Result()
 
 	return err
 }

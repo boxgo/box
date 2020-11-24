@@ -1,6 +1,7 @@
 package locker
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,9 +10,9 @@ import (
 
 type (
 	MutexLocker interface {
-		Lock(string, time.Duration) (bool, error)
-		IsLocked(string) (bool, error)
-		UnLock(string) error
+		Lock(context.Context, string, time.Duration) (bool, error)
+		IsLocked(context.Context, string) (bool, error)
+		UnLock(context.Context, string) error
 	}
 )
 
