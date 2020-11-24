@@ -59,7 +59,7 @@ type (
 var (
 	// Default Config Manager
 	Default        = NewConfig()
-	bootCfg        = bootConfig{}
+	bootCfg        = bootConfig{Name: "box", Version: "unknown"}
 	defaultOnce    sync.Once
 	defaultSources []source.Source
 )
