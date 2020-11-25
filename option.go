@@ -7,7 +7,6 @@ import (
 type (
 	// Options new box options
 	Options struct {
-		Silent          bool
 		StartupTimeout  int
 		ShutdownTimeout int
 		Boxes           []component.Box
@@ -16,12 +15,6 @@ type (
 	// Option setter
 	Option func(ops *Options)
 )
-
-func WithSilent(silent bool) Option {
-	return func(ops *Options) {
-		ops.Silent = silent
-	}
-}
 
 func WithStartupTimeout(timeout int) Option {
 	return func(ops *Options) {

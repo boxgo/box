@@ -2,14 +2,12 @@ package box
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/boxgo/box/pkg/component"
-	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/logger"
 	"golang.org/x/sync/errgroup"
 )
@@ -151,10 +149,6 @@ func New(options ...Option) Application {
 	}
 	if opts.ShutdownTimeout == 0 {
 		opts.ShutdownTimeout = 5000
-	}
-	if !opts.Silent {
-		fmt.Print(banner)
-		fmt.Print(config.Fields().Table())
 	}
 
 	app := &application{
