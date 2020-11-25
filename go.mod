@@ -35,6 +35,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5-0.20200416053754-163badb3bac6
 	github.com/prometheus/client_golang v1.6.0
 	github.com/prometheus/procfs v0.1.3 // indirect
+	github.com/robfig/cron v1.2.0
 	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/soheilhy/cmux v0.1.4 // indirect
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
