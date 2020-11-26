@@ -7,6 +7,7 @@ import (
 
 	"github.com/boxgo/box/pkg/cache"
 	"github.com/boxgo/box/pkg/client/redis"
+	"github.com/boxgo/box/pkg/metric"
 )
 
 type (
@@ -15,6 +16,14 @@ type (
 		cfg    *Config
 		client *redis.Redis
 	}
+)
+
+var (
+	cacheHitCounter = metric.NewCounterVec(
+		"cache_hit_total",
+		"cache hit counter",
+		[]string{"key", "hit"},
+	)
 )
 
 func newCache(cfg *Config) cache.Cache {
@@ -40,10 +49,12 @@ func (l *redisCache) Set(ctx context.Context, key string, val interface{}, durat
 func (l *redisCache) Get(ctx context.Context, key string, val interface{}) error {
 	data, err := l.client.Client().Get(ctx, cache.UnifiedKey(key)).Bytes()
 	if err == redis.Nil {
+		cacheHitCounter.WithLabelValues(key, "false").Inc()
 		return nil
 	} else if err != nil {
 		return nil
 	}
 
+	cacheHitCounter.WithLabelValues(key, "true").Inc()
 	return json.Unmarshal(data, val)
 }
