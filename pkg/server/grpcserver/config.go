@@ -14,6 +14,7 @@ type (
 		streamServerInterceptor []grpc.StreamServerInterceptor
 		Network                 string `config:"network" desc:"The network must be \"tcp\", \"tcp4\", \"tcp6\", \"unix\" or \"unixpacket\""`
 		Addr                    string `config:"addr" desc:"format: host:port"`
+		Reflection              bool   `config:"reflection" desc:"Enable server reflection service"`
 	}
 
 	OptionFunc func(*Config)
@@ -53,9 +54,10 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 
 func DefaultConfig(key string) *Config {
 	return &Config{
-		path:    "grpc_server." + key,
-		Network: "tcp4",
-		Addr:    ":9001",
+		path:       "grpc_server." + key,
+		Network:    "tcp4",
+		Addr:       ":9001",
+		Reflection: false,
 	}
 }
 

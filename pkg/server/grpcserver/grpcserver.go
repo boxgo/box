@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type (
@@ -21,9 +22,15 @@ func newGRpcServer(cfg *Config) *Server {
 		grpc.StreamInterceptor(ChainStreamServer(cfg.streamServerInterceptor...)),
 	)
 
+	server := grpc.NewServer(serverOpts...)
+
+	if cfg.Reflection {
+		reflection.Register(server)
+	}
+
 	return &Server{
 		cfg:    cfg,
-		server: grpc.NewServer(serverOpts...),
+		server: server,
 	}
 }
 
