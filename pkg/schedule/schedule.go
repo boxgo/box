@@ -2,10 +2,12 @@ package schedule
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/boxgo/box/pkg/locker"
 	"github.com/boxgo/box/pkg/locker/redislocker"
 	"github.com/boxgo/box/pkg/logger"
+	"github.com/boxgo/box/pkg/metric"
 	"github.com/robfig/cron"
 )
 
@@ -19,6 +21,24 @@ type (
 	}
 
 	Handler func() error
+)
+
+var (
+	scheduleSuccessCounter = metric.NewCounterVec(
+		"schedule_success_total",
+		"success schedule counter",
+		[]string{"task"},
+	)
+	scheduleErrorCounter = metric.NewCounterVec(
+		"schedule_error_total",
+		"error schedule counter",
+		[]string{"task", "error"},
+	)
+	schedulePanicCounter = metric.NewCounterVec(
+		"schedule_panic_total",
+		"panic schedule counter",
+		[]string{"task", "panic"},
+	)
 )
 
 func newSchedule(cfg *Config) *Schedule {
@@ -85,6 +105,7 @@ func (sch *Schedule) exec(handler Handler) {
 			}
 
 			if err := recover(); err != nil {
+				schedulePanicCounter.WithLabelValues(sch.cfg.key, fmt.Sprintf("%s", err)).Inc()
 				logger.Errorf("Schedule [%s] crash: %s", sch.cfg.key, err)
 				return
 			}
@@ -106,8 +127,10 @@ func (sch *Schedule) exec(handler Handler) {
 		logger.Infof("Schedule [%s] run start", sch.cfg.key)
 
 		if err := handler(); err != nil {
+			scheduleErrorCounter.WithLabelValues(sch.cfg.key, err.Error()).Inc()
 			logger.Errorf("Schedule [%s] run error: [%s]", sch.cfg.key, err)
 		} else {
+			scheduleSuccessCounter.WithLabelValues(sch.cfg.key).Inc()
 			logger.Infof("Schedule [%s] run success", sch.cfg.key)
 		}
 	}()
