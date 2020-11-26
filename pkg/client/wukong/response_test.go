@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/boxgo/box/pkg/util/testutil"
 )
 
 func TestResponseIsTimeout(t *testing.T) {
@@ -21,7 +23,7 @@ func TestResponseIsTimeout(t *testing.T) {
 
 	resp := New(ts.URL).Get("/").WithCTX(ctx).End()
 
-	AssertEqual(t, true, resp.IsTimeout())
+	testutil.ExpectEqual(t, true, resp.IsTimeout())
 }
 
 func TestResponseIsCancel(t *testing.T) {
@@ -40,7 +42,7 @@ func TestResponseIsCancel(t *testing.T) {
 
 	resp := New(ts.URL).Get("/").WithCTX(ctx).End()
 
-	AssertEqual(t, true, resp.IsCancel())
+	testutil.ExpectEqual(t, true, resp.IsCancel())
 }
 
 func TestResponseBindJson(t *testing.T) {
@@ -62,11 +64,11 @@ func TestResponseBindJson(t *testing.T) {
 
 	resp := New(ts.URL).Get("/").WithCTX(ctx).End().BindBody(d)
 
-	AssertEqual(t, resp.Error(), nil)
-	AssertEqual(t, d.String, "string")
-	AssertEqual(t, d.Int, 1)
-	AssertEqual(t, d.Float, 2.3)
-	AssertEqual(t, d.Bool, true)
+	testutil.ExpectEqual(t, resp.Error(), nil)
+	testutil.ExpectEqual(t, d.String, "string")
+	testutil.ExpectEqual(t, d.Int, 1)
+	testutil.ExpectEqual(t, d.Float, 2.3)
+	testutil.ExpectEqual(t, d.Bool, true)
 }
 
 func TestResponseConditionBindJson(t *testing.T) {
@@ -110,13 +112,13 @@ func TestResponseConditionBindJson(t *testing.T) {
 		)
 		e := New(ts.URL).Get("/").End().ConditionBindBody(condition, &err, &data).Error()
 
-		AssertEqual(t, e, nil)
-		AssertEqual(t, err.ErrCode, 0)
-		AssertEqual(t, err.ErrMsg, "")
-		AssertEqual(t, data.Bool, true)
-		AssertEqual(t, data.String, "string")
-		AssertEqual(t, data.Int, 1)
-		AssertEqual(t, data.Float, 2.3)
+		testutil.ExpectEqual(t, e, nil)
+		testutil.ExpectEqual(t, err.ErrCode, 0)
+		testutil.ExpectEqual(t, err.ErrMsg, "")
+		testutil.ExpectEqual(t, data.Bool, true)
+		testutil.ExpectEqual(t, data.String, "string")
+		testutil.ExpectEqual(t, data.Int, 1)
+		testutil.ExpectEqual(t, data.Float, 2.3)
 	}
 
 	{
@@ -126,12 +128,12 @@ func TestResponseConditionBindJson(t *testing.T) {
 		)
 		e := New(ts.URL).Post("/").End().ConditionBindBody(condition, &err, &data).Error()
 
-		AssertEqual(t, e, nil)
-		AssertEqual(t, err.ErrCode, 1)
-		AssertEqual(t, err.ErrMsg, "not ok")
-		AssertEqual(t, data.Bool, false)
-		AssertEqual(t, data.String, "")
-		AssertEqual(t, data.Int, 0)
-		AssertEqual(t, data.Float, 0.0)
+		testutil.ExpectEqual(t, e, nil)
+		testutil.ExpectEqual(t, err.ErrCode, 1)
+		testutil.ExpectEqual(t, err.ErrMsg, "not ok")
+		testutil.ExpectEqual(t, data.Bool, false)
+		testutil.ExpectEqual(t, data.String, "")
+		testutil.ExpectEqual(t, data.Int, 0)
+		testutil.ExpectEqual(t, data.Float, 0.0)
 	}
 }

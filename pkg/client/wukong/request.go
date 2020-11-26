@@ -10,6 +10,8 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"reflect"
+
+	"github.com/boxgo/box/pkg/util/urlutil"
 )
 
 type (
@@ -146,7 +148,7 @@ func (request *Request) RawRequest() (*http.Request, error) {
 		return req, err
 	}
 
-	targetUrl, err := UrlJoin(request.BaseUrl, request.Url)
+	targetUrl, err := urlutil.UrlJoin(request.BaseUrl, request.Url)
 	if err != nil {
 		return req, err
 	}
@@ -159,7 +161,7 @@ func (request *Request) RawRequest() (*http.Request, error) {
 		}
 	}
 
-	if req, err = http.NewRequest(request.Method, UrlFormat(targetUrl, request.ParamData), reader); err != nil {
+	if req, err = http.NewRequest(request.Method, urlutil.UrlFormat(targetUrl, request.ParamData), reader); err != nil {
 		return req, err
 	}
 

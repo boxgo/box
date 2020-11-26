@@ -1,22 +1,12 @@
-package wukong
+package urlutil
 
 import (
 	"fmt"
 	"net/url"
 	"path"
-	"reflect"
 	"regexp"
 	"strings"
-	"testing"
 )
-
-func AssertEqual(t *testing.T, received interface{}, expected interface{}) {
-	if received == expected {
-		return
-	}
-
-	t.Errorf("Received %v (type %v), expected %v (type %v)", received, reflect.TypeOf(received), expected, reflect.TypeOf(expected))
-}
 
 func UrlJoin(baseUrl string, segments ...string) (string, error) {
 	u, err := url.Parse(baseUrl)

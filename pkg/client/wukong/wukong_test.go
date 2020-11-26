@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/boxgo/box/pkg/util/testutil"
 )
 
 func TestSample(t *testing.T) {
@@ -41,11 +43,11 @@ func TestSample(t *testing.T) {
 		BindBody(&bodyData).
 		Error()
 
-	AssertEqual(t, err, nil)
-	AssertEqual(t, statusCode, 200)
-	AssertEqual(t, statusMsg, "200 OK")
-	AssertEqual(t, isTimeout, false)
-	AssertEqual(t, isCancel, false)
+	testutil.ExpectEqual(t, err, nil)
+	testutil.ExpectEqual(t, statusCode, 200)
+	testutil.ExpectEqual(t, statusMsg, "200 OK")
+	testutil.ExpectEqual(t, isTimeout, false)
+	testutil.ExpectEqual(t, isCancel, false)
 }
 
 func TestUseBefore(t *testing.T) {
@@ -79,11 +81,11 @@ func TestUseBefore(t *testing.T) {
 		BindIsCancel(&isCancel).
 		BindError(&err)
 
-	AssertEqual(t, err.Error(), "before")
-	AssertEqual(t, statusCode, 0)
-	AssertEqual(t, statusMsg, "")
-	AssertEqual(t, isTimeout, false)
-	AssertEqual(t, isCancel, false)
+	testutil.ExpectEqual(t, err.Error(), "before")
+	testutil.ExpectEqual(t, statusCode, 0)
+	testutil.ExpectEqual(t, statusMsg, "")
+	testutil.ExpectEqual(t, isTimeout, false)
+	testutil.ExpectEqual(t, isCancel, false)
 }
 
 func TestUseAfter(t *testing.T) {
@@ -117,9 +119,9 @@ func TestUseAfter(t *testing.T) {
 		BindIsCancel(&isCancel).
 		BindError(&err)
 
-	AssertEqual(t, err.Error(), "after")
-	AssertEqual(t, statusCode, 400)
-	AssertEqual(t, statusMsg, "400 Bad Request")
-	AssertEqual(t, isTimeout, false)
-	AssertEqual(t, isCancel, false)
+	testutil.ExpectEqual(t, err.Error(), "after")
+	testutil.ExpectEqual(t, statusCode, 400)
+	testutil.ExpectEqual(t, statusMsg, "400 Bad Request")
+	testutil.ExpectEqual(t, isTimeout, false)
+	testutil.ExpectEqual(t, isCancel, false)
 }

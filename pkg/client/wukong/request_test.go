@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/boxgo/box/pkg/util/testutil"
 )
 
 func TestWithTimeoutCTX(t *testing.T) {
@@ -55,8 +57,8 @@ func TestWithCancelCTX(t *testing.T) {
 
 func TestSetHeader(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		AssertEqual(t, r.Header.Get("header_key1"), "header_value1")
-		AssertEqual(t, r.Header.Get("header_key2"), "header_value2")
+		testutil.ExpectEqual(t, r.Header.Get("header_key1"), "header_value1")
+		testutil.ExpectEqual(t, r.Header.Get("header_key2"), "header_value2")
 
 		w.WriteHeader(200)
 	}))
@@ -78,9 +80,9 @@ func TestAddCookie(t *testing.T) {
 			t.Error(err)
 		}
 
-		AssertEqual(t, len(r.Cookies()), 1)
-		AssertEqual(t, cookie.Name, "session_id")
-		AssertEqual(t, cookie.Value, "abc")
+		testutil.ExpectEqual(t, len(r.Cookies()), 1)
+		testutil.ExpectEqual(t, cookie.Name, "session_id")
+		testutil.ExpectEqual(t, cookie.Value, "abc")
 
 		w.WriteHeader(200)
 	}))
@@ -99,7 +101,7 @@ func TestAddCookie(t *testing.T) {
 
 func TestParam(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		AssertEqual(t, r.URL.String(), "/users/uid_123/friends/fid_456/images/1")
+		testutil.ExpectEqual(t, r.URL.String(), "/users/uid_123/friends/fid_456/images/1")
 
 		w.WriteHeader(200)
 	}))
@@ -118,7 +120,7 @@ func TestParam(t *testing.T) {
 
 func TestQuery(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		AssertEqual(t, r.URL.String(), "/?bool=true&float32=2.3&float64=4.5&int=1&int_array=1&int_array=2&interface_array=0&interface_array=true&interface_array=1.1&interface_array=string&string=string&string_array=a&string_array=b&uint=0")
+		testutil.ExpectEqual(t, r.URL.String(), "/?bool=true&float32=2.3&float64=4.5&int=1&int_array=1&int_array=2&interface_array=0&interface_array=true&interface_array=1.1&interface_array=string&string=string&string_array=a&string_array=b&uint=0")
 
 		w.WriteHeader(200)
 	}))
@@ -147,7 +149,7 @@ func TestSendJsonMap(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		AssertEqual(t, string(data), `{"fid":"fid_456","imgId":1,"uid":"uid_123"}`)
+		testutil.ExpectEqual(t, string(data), `{"fid":"fid_456","imgId":1,"uid":"uid_123"}`)
 
 		w.WriteHeader(200)
 	}))
@@ -170,7 +172,7 @@ func TestSendJsonStruct(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		AssertEqual(t, string(data), `{"uid":"uid_123","fid":"fid_456","imgId":1}`)
+		testutil.ExpectEqual(t, string(data), `{"uid":"uid_123","fid":"fid_456","imgId":1}`)
 
 		w.WriteHeader(200)
 	}))
@@ -199,7 +201,7 @@ func TestSendXmlStruct(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		AssertEqual(t, string(data), `<Test><uid>uid_123</uid><fid>fid_456</fid><imgId>1</imgId></Test>`)
+		testutil.ExpectEqual(t, string(data), `<Test><uid>uid_123</uid><fid>fid_456</fid><imgId>1</imgId></Test>`)
 
 		w.WriteHeader(200)
 	}))
