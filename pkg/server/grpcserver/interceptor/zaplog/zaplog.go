@@ -7,7 +7,6 @@ import (
 	"github.com/boxgo/box/pkg/logger"
 	"github.com/boxgo/box/pkg/trace"
 	"github.com/boxgo/box/pkg/util/strutil"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -17,14 +16,14 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		md, _ := metadata.FromIncomingContext(ctx)
 		newCtx := wrapCtx(ctx, md, info.FullMethod)
 
-		logger.TraceRaw(newCtx).Info(">>>", []zap.Field{zap.Any("req", req)}...)
+		logger.Trace(newCtx).Infow(">>>", "req", req)
 
 		resp, err = handler(newCtx, req)
 		if err != nil {
-			logger.TraceRaw(newCtx).Info("xxx", []zap.Field{zap.Any("err", err)}...)
+			logger.Trace(newCtx).Infow("xxx", "err", err)
 		}
 
-		logger.TraceRaw(newCtx).Info("<<<", []zap.Field{zap.Any("resp", resp)}...)
+		logger.Trace(newCtx).Infow("<<<", "resp", resp)
 
 		return resp, err
 	}
@@ -38,14 +37,14 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 		wrapped := wrapper.WrapServerStream(ss)
 		wrapped.WrappedContext = wrapCtx(ctx, md, info.FullMethod)
 
-		logger.TraceRaw(wrapped.WrappedContext).Info(">>>")
+		logger.Trace(wrapped.WrappedContext).Info(">>>")
 
 		err := handler(srv, wrapped)
 		if err != nil {
-			logger.TraceRaw(wrapped.WrappedContext).Info("xxx", []zap.Field{zap.Any("err", err)}...)
+			logger.Trace(wrapped.WrappedContext).Infow("xxx", "err", err)
 		}
 
-		logger.TraceRaw(wrapped.WrappedContext).Info("<<<")
+		logger.Trace(wrapped.WrappedContext).Info("<<<")
 
 		return err
 	}
