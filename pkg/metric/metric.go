@@ -31,7 +31,7 @@ func newMetric(cfg *Config) *Metric {
 		cfg: cfg,
 	}
 
-	insight.GetH("/metric", m.Handler())
+	insight.GetH("/metrics", m.Handler())
 
 	return m
 }

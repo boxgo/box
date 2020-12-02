@@ -14,7 +14,7 @@ var (
 	panicCounter = metric.NewCounterVec(
 		"grpc_server_panic_total",
 		"grpc server panic counter",
-		[]string{"fullMethod", "panic"},
+		[]string{"method", "panic"},
 	)
 )
 

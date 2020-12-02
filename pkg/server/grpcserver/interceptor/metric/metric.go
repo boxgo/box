@@ -69,6 +69,6 @@ func report(method, typ string, start time.Time, err error) {
 		labels = []string{method, typ, "0"}
 	}
 
-	handledCounter.WithLabelValues(labels...)
+	handledCounter.WithLabelValues(labels...).Inc()
 	handledSeconds.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
 }
