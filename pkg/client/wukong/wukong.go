@@ -26,6 +26,8 @@ type (
 func New(baseUrl string) *WuKong {
 	w := &WuKong{
 		baseUrl: baseUrl,
+		before:  []Before{metricStart},
+		after:   []After{metricEnd},
 		client: &http.Client{
 			Transport: DefaultTransport,
 		},
