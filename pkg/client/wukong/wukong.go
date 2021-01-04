@@ -29,7 +29,7 @@ func New(baseUrl string) *WuKong {
 		before:  []Before{metricStart},
 		after:   []After{metricEnd},
 		client: &http.Client{
-			Transport: DefaultTransport,
+			Transport: http.DefaultTransport,
 		},
 	}
 

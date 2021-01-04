@@ -37,7 +37,7 @@ type (
 func NewRequest(client *WuKong, method, path string) *Request {
 	req := &Request{
 		client:      client,
-		Context:     nil,
+		Context:     context.TODO(),
 		Error:       nil,
 		Method:      method,
 		BaseUrl:     client.baseUrl,
