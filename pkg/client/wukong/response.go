@@ -1,6 +1,7 @@
 package wukong
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"mime"
@@ -31,7 +32,14 @@ func NewResponse(err error, req *Request, resp *http.Response) *Response {
 		}
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	b := bytes.NewBuffer(make([]byte, 0))
+	reader := io.TeeReader(resp.Body, b)
+
+	body, err := ioutil.ReadAll(reader)
+
+	defer resp.Body.Close()
+
+	resp.Body = ioutil.NopCloser(b)
 
 	return &Response{
 		err:      err,

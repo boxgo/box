@@ -98,6 +98,10 @@ func (wk *WuKong) Timeout(t time.Duration) *WuKong {
 	return wk
 }
 
+func (wk *WuKong) Client() *http.Client {
+	return wk.client
+}
+
 func (wk *WuKong) initRequest(request *Request) *Request {
 	request.SetBasicAuth(wk.basicAuth)
 

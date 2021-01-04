@@ -100,10 +100,13 @@ func (request *Request) Param(param map[string]interface{}) *Request {
 //		1.map[string]interface{} {"key": "value", "key1": 1}
 func (request *Request) Query(query interface{}) *Request {
 	switch v := reflect.ValueOf(query); v.Kind() {
-	case reflect.Map:
+	case reflect.Map, reflect.Struct:
 		request.queryMapOrStruct(request.QueryData, v.Interface())
-	case reflect.Struct:
-		request.queryMapOrStruct(request.QueryData, v.Interface())
+	case reflect.Ptr:
+		switch v.Elem().Kind() {
+		case reflect.Map, reflect.Struct:
+			request.queryMapOrStruct(request.QueryData, v.Interface())
+		}
 	}
 
 	return request
@@ -111,10 +114,13 @@ func (request *Request) Query(query interface{}) *Request {
 
 func (request *Request) Form(form interface{}) *Request {
 	switch v := reflect.ValueOf(form); v.Kind() {
-	case reflect.Map:
+	case reflect.Map, reflect.Struct:
 		request.queryMapOrStruct(request.FormData, v.Interface())
-	case reflect.Struct:
-		request.queryMapOrStruct(request.FormData, v.Interface())
+	case reflect.Ptr:
+		switch v.Elem().Kind() {
+		case reflect.Map, reflect.Struct:
+			request.queryMapOrStruct(request.QueryData, v.Interface())
+		}
 	}
 
 	request.Type(MimeTypeFormData)
