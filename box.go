@@ -9,6 +9,7 @@ import (
 
 	"github.com/boxgo/box/pkg/component"
 	"github.com/boxgo/box/pkg/logger"
+	"github.com/boxgo/box/pkg/util/procsutil"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -149,6 +150,10 @@ func New(options ...Option) Application {
 	}
 	if opts.ShutdownTimeout == 0 {
 		opts.ShutdownTimeout = 5000
+	}
+
+	if opts.AutoMaxProcs == nil || *opts.AutoMaxProcs {
+		procsutil.EnableAutoMaxProcs()
 	}
 
 	app := &application{

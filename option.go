@@ -9,6 +9,7 @@ type (
 	Options struct {
 		StartupTimeout  int
 		ShutdownTimeout int
+		AutoMaxProcs    *bool
 		Boxes           []component.Box
 	}
 
@@ -26,6 +27,13 @@ func WithStartupTimeout(timeout int) Option {
 func WithShutdownTimeout(timeout int) Option {
 	return func(ops *Options) {
 		ops.ShutdownTimeout = timeout
+	}
+}
+
+// WithAutoMaxProcs
+func WithAutoMaxProcs(autoMaxProcs bool) Option {
+	return func(ops *Options) {
+		ops.AutoMaxProcs = &autoMaxProcs
 	}
 }
 

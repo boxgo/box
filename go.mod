@@ -45,21 +45,21 @@ require (
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	go.etcd.io/bbolt v1.3.5 // indirect
 	go.mongodb.org/mongo-driver v1.4.1
+	go.uber.org/automaxprocs v1.3.0
 	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
+	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
+	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/net v0.0.0-20201031054903-ff519b6c9102
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
-	golang.org/x/sys v0.0.0-20201106081118-db71ae66460a // indirect
 	golang.org/x/text v0.3.4 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	golang.org/x/tools v0.0.0-20201105220310-78b158585360 // indirect
 	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	google.golang.org/grpc v1.26.0
 	google.golang.org/protobuf v1.23.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
-	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
+	honnef.co/go/tools v0.1.1 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
