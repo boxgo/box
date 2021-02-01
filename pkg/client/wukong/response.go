@@ -11,10 +11,11 @@ import (
 
 type (
 	Response struct {
-		err      error
-		req      *Request
-		resp     *http.Response
-		bodyData []byte
+		err             error
+		req             *Request
+		resp            *http.Response
+		bodyData        []byte
+		ignoreEncodeErr bool
 	}
 
 	ConditionBind struct {
@@ -47,6 +48,12 @@ func NewResponse(err error, req *Request, resp *http.Response) *Response {
 		resp:     resp,
 		bodyData: body,
 	}
+}
+
+func (resp *Response) IgnoreEncodeErr() *Response {
+	resp.ignoreEncodeErr = true
+
+	return resp
 }
 
 func (resp *Response) Error() error {
@@ -176,7 +183,7 @@ func (resp *Response) BindBody(data interface{}) *Response {
 	}
 
 	contentType := resp.contentType()
-	if err := Encode(contentType, resp.bodyData, data); err != nil {
+	if err := Encode(contentType, resp.bodyData, data); err != nil && !resp.ignoreEncodeErr {
 		resp.err = err
 	}
 
@@ -190,7 +197,7 @@ func (resp *Response) ConditionBindBody(check func(interface{}) bool, data ...in
 
 	contentType := resp.contentType()
 	for _, d := range data {
-		if err := Encode(contentType, resp.bodyData, d); err != nil {
+		if err := Encode(contentType, resp.bodyData, d); err != nil && !resp.ignoreEncodeErr {
 			resp.err = err
 			break
 		}
