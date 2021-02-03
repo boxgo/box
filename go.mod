@@ -19,6 +19,7 @@ require (
 	github.com/prometheus/client_golang v1.6.0
 	github.com/prometheus/procfs v0.1.3 // indirect
 	github.com/robfig/cron v1.2.0
+	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/ugorji/go v1.1.7 // indirect
@@ -36,4 +37,5 @@ require (
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 	honnef.co/go/tools v0.1.1 // indirect
+	moul.io/http2curl v1.0.0
 )

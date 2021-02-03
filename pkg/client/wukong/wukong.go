@@ -3,6 +3,8 @@ package wukong
 import (
 	"net/http"
 	"time"
+
+	"github.com/boxgo/box/pkg/logger"
 )
 
 type (
@@ -10,6 +12,8 @@ type (
 		baseUrl   string
 		client    *http.Client
 		basicAuth BasicAuth
+		query     map[string]string
+		header    map[string]string
 		before    []Before
 		after     []After
 	}
@@ -26,8 +30,8 @@ type (
 func New(baseUrl string) *WuKong {
 	w := &WuKong{
 		baseUrl: baseUrl,
-		before:  []Before{metricStart},
-		after:   []After{metricEnd},
+		before:  []Before{loggerStart, metricStart},
+		after:   []After{loggerAfter, metricEnd},
 		client: &http.Client{
 			Transport: http.DefaultTransport,
 		},
@@ -56,6 +60,18 @@ func (wk *WuKong) SetTransport(transport *http.Transport) *WuKong {
 
 func (wk *WuKong) SetBasicAuth(auth BasicAuth) *WuKong {
 	wk.basicAuth = auth
+
+	return wk
+}
+
+func (wk *WuKong) SetQuery(query map[string]string) *WuKong {
+	wk.query = query
+
+	return wk
+}
+
+func (wk *WuKong) SetHeader(header map[string]string) *WuKong {
+	wk.header = header
 
 	return wk
 }
@@ -104,6 +120,11 @@ func (wk *WuKong) Client() *http.Client {
 
 func (wk *WuKong) initRequest(request *Request) *Request {
 	request.SetBasicAuth(wk.basicAuth)
+	request.Query(wk.query)
+
+	for k, v := range wk.header {
+		request.SetHeader(k, v)
+	}
 
 	return request
 }
@@ -118,6 +139,7 @@ func (wk *WuKong) do(req *Request) (resp *Response) {
 
 	for _, before := range wk.before {
 		if err = before(req); err != nil {
+			logger.Trace(req.Context).Errorw("http_before_hook_error", "err", err)
 			break
 		}
 	}
@@ -142,9 +164,14 @@ func (wk *WuKong) do(req *Request) (resp *Response) {
 
 	for _, after := range wk.after {
 		if err = after(req, resp); err != nil {
+			logger.Trace(req.Context).Errorw("http_after_hook_error", "err", err)
 			resp = NewResponse(err, req, rawResp)
 			break
 		}
+	}
+
+	if err != nil {
+		logger.Trace(req.Context).Errorw("http_error", "err", err)
 	}
 
 	return resp
