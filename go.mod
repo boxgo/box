@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/BurntSushi/toml v0.3.1
+	github.com/Shopify/sarama v1.27.2
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -12,7 +13,6 @@ require (
 	github.com/go-redis/redis/v8 v8.4.11
 	github.com/imdario/mergo v0.3.9
 	github.com/json-iterator/go v1.1.10
-	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/olekukonko/tablewriter v0.0.5-0.20200416053754-163badb3bac6
