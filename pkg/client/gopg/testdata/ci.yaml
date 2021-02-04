@@ -3,4 +3,4 @@ version: 1.0.0
 
 pg:
   default:
-    uri: postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=disable
+    uri: postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable

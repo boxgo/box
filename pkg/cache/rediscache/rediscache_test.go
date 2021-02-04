@@ -1,30 +1,39 @@
-package rediscache
+package rediscache_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"testing"
+	"fmt"
 	"time"
 
+	"github.com/boxgo/box/pkg/cache/rediscache"
 	"github.com/boxgo/box/pkg/util/strutil"
-	"github.com/boxgo/box/pkg/util/testutil"
 )
 
-func TestCacheGetSetSimple(t *testing.T) {
+var (
+	inst = rediscache.StdConfig("default").Build()
+)
+
+func Example() {
+	val := ""
 	ctx := context.Background()
 	testKey := strutil.RandomAlphabet(10)
 	testVal := strutil.RandomAlphabet(100)
 
-	err := Set(ctx, testKey, testVal, time.Second*5)
-	testutil.ExpectEqual(t, err, nil)
+	if err := inst.Set(ctx, testKey, testVal, time.Second*5); err != nil {
+		panic(err)
+	}
 
-	val := ""
-	err = Get(ctx, testKey, &val)
-	testutil.ExpectEqual(t, err, nil)
-	testutil.ExpectEqual(t, val, testVal)
+	if err := inst.Get(ctx, testKey, &val); err != nil {
+		panic(err)
+	}
+
+	fmt.Println(testVal == val)
+	// Output: true
 }
 
-func TestCacheGetSetStruct(t *testing.T) {
+func ExampleGet() {
 	type (
 		testStruct struct {
 			String      string
@@ -52,13 +61,16 @@ func TestCacheGetSetStruct(t *testing.T) {
 		},
 	}
 
-	err := Set(ctx, testKey, testVal, time.Second*5)
-	testutil.ExpectEqual(t, err, nil)
+	err := inst.Set(ctx, testKey, testVal, time.Second*5)
+	if err != nil {
+		panic(err)
+	}
 
 	val := testStruct{}
-	err = Get(ctx, testKey, &val)
+	err = inst.Get(ctx, testKey, &val)
 	a, _ := json.Marshal(val)
 	b, _ := json.Marshal(testVal)
-	testutil.ExpectEqual(t, err, nil)
-	testutil.ExpectEqual(t, a, b)
+
+	fmt.Println(bytes.Compare(a, b) == 0)
+	// Output: true
 }

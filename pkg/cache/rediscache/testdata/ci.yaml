@@ -1,0 +1,7 @@
+name: box
+version: 1.0.0
+
+redis:
+  default:
+    address:
+      - redis:6379
