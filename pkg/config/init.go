@@ -67,6 +67,17 @@ func loadBootConfig() bool {
 		defaultSources = make([]source.Source, len(bootCfg.Source))
 	}
 
+	if len(bootCfg.Source) == 0 { // if no source, use input file as config.
+		defaultSources = make([]source.Source, 1)
+		bootCfg.Source = append([]Source{}, Source{
+			Type: "file",
+			name: "file",
+			data: []byte(fmt.Sprintf("{\"path\":\"%s\",\"type\":\"file\"}", path)),
+		})
+
+		return true
+	}
+
 	for idx, sour := range bootCfg.Source {
 		bootCfg.Source[idx].name = sour.Type
 		bootCfg.Source[idx].data = cfg.Get("source", strconv.Itoa(idx)).Bytes()

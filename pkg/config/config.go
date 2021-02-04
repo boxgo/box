@@ -44,15 +44,17 @@ type (
 	}
 
 	bootConfig struct {
-		Name    string `config:"name"`
-		Version string `config:"version"`
-		Loader  string `config:"loader"`
-		Reader  string `config:"reader"`
-		Source  []struct {
-			Type string `config:"type"`
-			name string
-			data []byte
-		} `config:"source"`
+		Name    string   `config:"name"`
+		Version string   `config:"version"`
+		Loader  string   `config:"loader"`
+		Reader  string   `config:"reader"`
+		Source  []Source `config:"source"`
+	}
+
+	Source struct {
+		Type string `config:"type"`
+		name string
+		data []byte
 	}
 )
 

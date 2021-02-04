@@ -93,6 +93,13 @@ func (fs *Fields) parse(path, sub string, c interface{}) {
 			def      = valField.Interface()
 		)
 
+		if name == "-" {
+			continue
+		}
+		if name == "" {
+			name = typField.Name
+		}
+
 		fn := func() {
 			if sub != "" {
 				name = sub + "." + name
