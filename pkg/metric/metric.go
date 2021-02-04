@@ -163,6 +163,6 @@ func (m *Metric) NewHistogramVec(name, help string, labels []string, buckets []f
 
 func register(cs prometheus.Collector) {
 	if err := prometheus.Register(cs); err != nil {
-		logger.Errorw("metric register error", "err", err)
+		logger.Warnw("metric register error", "err", err)
 	}
 }
