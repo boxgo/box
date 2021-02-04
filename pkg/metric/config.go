@@ -15,9 +15,27 @@ type (
 		PushTargetURL string        `config:"pushTargetURL"`
 		PushInterval  time.Duration `config:"pushInterval"`
 	}
+
+	// OptionFunc is option function.
+	OptionFunc func(*Config)
 )
 
-func DefaultConfig() *Config {
+// StdConfig load config from config center.
+func StdConfig(key string, optionFunc ...OptionFunc) *Config {
+	cfg := DefaultConfig(key)
+	for _, fn := range optionFunc {
+		fn(cfg)
+	}
+
+	if err := config.Scan(cfg); err != nil {
+		logger.Panicf("Metric load config error: %s", err)
+	}
+
+	return cfg
+}
+
+// DefaultConfig is default config.
+func DefaultConfig(key string) *Config {
 	return &Config{
 		Namespace:     "",
 		Subsystem:     "",
@@ -27,16 +45,12 @@ func DefaultConfig() *Config {
 	}
 }
 
+// Build a instance.
 func (c *Config) Build() *Metric {
-	cfg := DefaultConfig()
-
-	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("metric build error: %s", err)
-	}
-
-	return newMetric(cfg)
+	return newMetric(c)
 }
 
+// Path is config path.
 func (c *Config) Path() string {
 	return "metric"
 }

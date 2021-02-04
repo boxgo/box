@@ -23,7 +23,7 @@ type (
 )
 
 var (
-	Default = DefaultConfig().Build()
+	Default = DefaultConfig("").Build()
 )
 
 func newMetric(cfg *Config) *Metric {
@@ -103,7 +103,7 @@ func (m *Metric) NewCounterVec(name, help string, labels []string) *prometheus.C
 		labels,
 	)
 
-	prometheus.MustRegister(vec)
+	register(vec)
 
 	return vec
 }
@@ -121,7 +121,7 @@ func (m *Metric) NewSummaryVec(name, help string, labels []string, objectives ma
 		labels,
 	)
 
-	prometheus.MustRegister(vec)
+	register(vec)
 
 	return vec
 }
@@ -138,7 +138,7 @@ func (m *Metric) NewGaugeVec(name, help string, labels []string) *prometheus.Gau
 		labels,
 	)
 
-	prometheus.MustRegister(vec)
+	register(vec)
 
 	return vec
 }
@@ -156,7 +156,13 @@ func (m *Metric) NewHistogramVec(name, help string, labels []string, buckets []f
 		labels,
 	)
 
-	prometheus.MustRegister(vec)
+	register(vec)
 
 	return vec
+}
+
+func register(cs prometheus.Collector) {
+	if err := prometheus.Register(cs); err != nil {
+		logger.Errorw("metric register error", "err", err)
+	}
 }
