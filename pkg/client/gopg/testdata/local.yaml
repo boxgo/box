@@ -1,0 +1,6 @@
+name: box
+version: 1.0.0
+
+pg:
+  default:
+    uri: postgres://weechat:Test_123com@10.2.145.92:25007/weechat?sslmode=disable

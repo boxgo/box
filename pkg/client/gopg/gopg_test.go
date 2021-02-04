@@ -1,7 +1,7 @@
 package gopg_test
 
 import (
-	"testing"
+	"fmt"
 
 	"github.com/boxgo/box/pkg/client/gopg"
 )
@@ -13,8 +13,8 @@ type (
 	}
 )
 
-func TestModel(t *testing.T) {
-	pg := (&gopg.Config{URI: "postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=disable"}).Build()
+func Example() {
+	pg := gopg.StdConfig("default").Build()
 
 	ts := &TestUserinfo{
 		UserName: "box",
@@ -24,14 +24,13 @@ func TestModel(t *testing.T) {
 		IfNotExists: true,
 		Temp:        false,
 	}); err != nil {
-		t.Fatalf("create table error %#v", err)
-	} else {
-		t.Log("create table success")
+		panic(err)
 	}
 
-	if result, err := pg.Model(ts).Insert(); err != nil {
-		t.Fatalf("insert error %#v", err)
-	} else {
-		t.Logf("insert success %#v", result)
+	if _, err := pg.Model(ts).Insert(); err != nil {
+		panic(err)
 	}
+
+	fmt.Println(pg.Model(ts).DropTable(&gopg.DropTableOptions{}))
+	// output: <nil>
 }
