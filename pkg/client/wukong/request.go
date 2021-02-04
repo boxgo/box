@@ -17,6 +17,7 @@ import (
 type (
 	Request struct {
 		client      *WuKong
+		rawReq      *http.Request
 		TraceInfo   TraceInfo
 		Context     context.Context
 		BasicAuth   BasicAuth
@@ -37,6 +38,7 @@ type (
 func NewRequest(client *WuKong, method, path string) *Request {
 	req := &Request{
 		client:      client,
+		rawReq:      nil,
 		Context:     context.TODO(),
 		Error:       nil,
 		Method:      method,
@@ -153,6 +155,9 @@ func (request *Request) RawRequest() (*http.Request, error) {
 	if err = request.Error; err != nil {
 		return req, err
 	}
+	if request.rawReq != nil {
+		return request.rawReq, nil
+	}
 
 	targetUrl, err := urlutil.UrlJoin(request.BaseUrl, request.Url)
 	if err != nil {
@@ -189,6 +194,8 @@ func (request *Request) RawRequest() (*http.Request, error) {
 	if request.BasicAuth.Username != "" || request.BasicAuth.Password != "" {
 		req.SetBasicAuth(request.BasicAuth.Username, request.BasicAuth.Password)
 	}
+
+	request.rawReq = req
 
 	return req, err
 }
