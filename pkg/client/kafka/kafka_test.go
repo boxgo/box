@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -47,12 +48,13 @@ func Example() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 
-	cnt := 0
+	var cnt int32
+
 	go func() {
 		for {
 			select {
 			case <-partitionConsumer.Messages():
-				cnt++
+				atomic.AddInt32(&cnt, 1)
 			case <-signals:
 				break
 			}
@@ -69,6 +71,6 @@ func Example() {
 
 	time.Sleep(time.Second)
 
-	fmt.Println(offset > 0, partition == 0, cnt > 0)
+	fmt.Println(offset > 0, partition == 0, atomic.LoadInt32(&cnt) > 0)
 	// Output: true true true
 }

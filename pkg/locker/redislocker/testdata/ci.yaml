@@ -1,0 +1,11 @@
+name: box
+version: 1.0.0
+
+locker:
+  default:
+    config: default
+
+redis:
+  default:
+    address:
+      - localhost:6379
