@@ -1,0 +1,12 @@
+name: box
+version: 1.0.0
+
+kafka:
+  default:
+    addrs:
+      - 10.128.3.172:31304
+      - 10.128.3.178:31305
+      - 10.128.3.174:31306
+    producer:
+      returnSuccesses: true
+      returnErrors: true

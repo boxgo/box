@@ -1,0 +1,10 @@
+name: box
+version: 1.0.0
+
+kafka:
+  default:
+    addrs:
+      - localhost:9092
+    producer:
+      returnSuccesses: true
+      returnErrors: true
