@@ -1,16 +1,20 @@
+TEST_DIR?="./pkg/..."
+CONF_CI?="./testdata/ci.yaml"
+CONF_LOCAL?="./testdata/local.yaml"
+
 lint:
-	golangci-lint run pkg/...
+	golangci-lint run $(TEST_DIR)
 
 test:
-	go test -v -tags no_config_init ./pkg/...
+	BOX_BOOT_CONFIG=$(CONF_CI) go test -v -race -coverprofile=coverage.out -covermode=atomic $(TEST_DIR)
 
-coverage:
-	go test -v -tags no_config_init -race -coverprofile=coverage.out -covermode=atomic ./pkg/...
+local:
+	BOX_BOOT_CONFIG=$(CONF_LOCAL) go test -v -race $(TEST_DIR)
 
 .IGNORE:
 doc:
 	pkill godoc
-	godoc -http=":6060"&
+	godoc -http=":6060" -play&
 	@echo wait 3 second
 	sleep 3
 	open http://127.0.0.1:6060/pkg/github.com/boxgo/box/
