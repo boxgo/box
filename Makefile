@@ -9,7 +9,7 @@ test:
 	BOX_BOOT_CONFIG=$(CONF_CI) go test -race -coverprofile=coverage.out -covermode=atomic $(TEST_DIR)
 
 local:
-	BOX_BOOT_CONFIG=$(CONF_LOCAL) go test -v -race $(TEST_DIR)
+	BOX_BOOT_CONFIG=$(CONF_LOCAL) go test -race $(TEST_DIR)
 
 .IGNORE:
 doc:
