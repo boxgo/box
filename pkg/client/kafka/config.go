@@ -11,13 +11,16 @@ import (
 type (
 	// Config 配置
 	Config struct {
-		path     string
-		kfkCfg   *sarama.Config
-		Addrs    []string       `config:"addrs"`
-		Net      Net            `config:"net"`
-		Metadata Metadata       `config:"metadata"`
-		Producer ProducerConfig `config:"producer"`
-		Consumer ConsumerConfig `config:"consumer"`
+		path              string
+		kfkCfg            *sarama.Config
+		Addrs             []string            `config:"addrs"`
+		Net               Net                 `config:"net"`
+		Metadata          Metadata            `config:"metadata"`
+		Producer          ProducerConfig      `config:"producer"`
+		Consumer          ConsumerConfig      `config:"consumer"`
+		ClientID          string              `config:"clientId"`
+		ChannelBufferSize int                 `config:"channelBufferSize"`
+		Version           sarama.KafkaVersion `config:"version"`
 	}
 
 	Net struct {
@@ -147,6 +150,9 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 	cfg.kfkCfg.Consumer.Offsets.AutoCommit.Interval = cfg.Consumer.OffsetAutoCommitInterval
 	cfg.kfkCfg.Consumer.IsolationLevel = cfg.Consumer.IsolationLevel
 	cfg.kfkCfg.Consumer.Interceptors = cfg.Consumer.Interceptors
+	cfg.kfkCfg.ClientID = cfg.ClientID
+	cfg.kfkCfg.ChannelBufferSize = cfg.ChannelBufferSize
+	cfg.kfkCfg.Version = cfg.Version
 
 	if err := cfg.kfkCfg.Validate(); err != nil {
 		logger.Panicf("Kafka config invalid error: %s", err)
@@ -168,6 +174,14 @@ func DefaultConfig(key string) *Config {
 			ReadTimeout:     kfkCfg.Net.ReadTimeout,
 			WriteTimeout:    kfkCfg.Net.WriteTimeout,
 			KeepAlive:       kfkCfg.Net.KeepAlive,
+		},
+		Metadata: Metadata{
+			RetryMax:         kfkCfg.Metadata.Retry.Max,
+			RetryBackoff:     kfkCfg.Metadata.Retry.Backoff,
+			RetryBackoffFunc: kfkCfg.Metadata.Retry.BackoffFunc,
+			RefreshFrequency: kfkCfg.Metadata.RefreshFrequency,
+			Full:             kfkCfg.Metadata.Full,
+			Timeout:          kfkCfg.Metadata.Timeout,
 		},
 		Producer: ProducerConfig{
 			MaxMessageBytes:  kfkCfg.Producer.MaxMessageBytes,
@@ -212,7 +226,10 @@ func DefaultConfig(key string) *Config {
 			IsolationLevel:             kfkCfg.Consumer.IsolationLevel,
 			Interceptors:               kfkCfg.Consumer.Interceptors,
 		},
-		kfkCfg: kfkCfg,
+		ClientID:          kfkCfg.ClientID,
+		ChannelBufferSize: kfkCfg.ChannelBufferSize,
+		Version:           kfkCfg.Version,
+		kfkCfg:            kfkCfg,
 	}
 }
 
