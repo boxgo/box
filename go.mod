@@ -9,8 +9,8 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.3.0
-	github.com/go-pg/pg/v10 v10.7.4
-	github.com/go-redis/redis/v8 v8.4.11
+	github.com/go-pg/pg/v10 v10.7.7
+	github.com/go-redis/redis/v8 v8.6.0
 	github.com/imdario/mergo v0.3.9
 	github.com/json-iterator/go v1.1.10
 	github.com/mattn/go-isatty v0.0.12 // indirect
@@ -26,10 +26,12 @@ require (
 	go.mongodb.org/mongo-driver v1.4.1
 	go.uber.org/automaxprocs v1.3.0
 	go.uber.org/zap v1.15.0
+	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43 // indirect
 	golang.org/x/text v0.3.5 // indirect
 	google.golang.org/genproto v0.0.0-20210120162456-f5e8c5e2aaf2
 	google.golang.org/grpc v1.35.0
