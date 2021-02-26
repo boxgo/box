@@ -1,0 +1,4 @@
+redis:
+  default:
+    address:
+      - localhost:6379
