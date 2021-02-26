@@ -24,6 +24,10 @@ func newPostgreSQL(c *Config) *PostgreSQL {
 
 	db := pg.Connect(opts)
 
+	if c.Debug {
+		db.AddQueryHook(DebugHook{Verbose: true})
+	}
+
 	return &PostgreSQL{
 		db: db,
 	}

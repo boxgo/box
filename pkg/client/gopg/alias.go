@@ -6,6 +6,7 @@ import (
 )
 
 type (
+	Error                  = pg.Error
 	CreateTableOptions     = orm.CreateTableOptions
 	CreateCompositeOptions = orm.CreateCompositeOptions
 	DropCompositeOptions   = orm.DropCompositeOptions

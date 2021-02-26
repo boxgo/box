@@ -8,8 +8,9 @@ import (
 type (
 	// Config 配置
 	Config struct {
-		path string
-		URI  string `config:"uri" desc:"pg connection url. example: postgres://user:pass@localhost:5432/db_name?k=v"`
+		path  string
+		Debug bool   `config:"debug" desc:"print all queries (even those without an error)"`
+		URI   string `config:"uri" desc:"pg connection url. example: postgres://user:pass@localhost:5432/db_name?k=v"`
 	}
 
 	// OptionFunc 选项信息
@@ -33,8 +34,9 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 // DefaultConfig 默认配置
 func DefaultConfig(key string) *Config {
 	return &Config{
-		path: "pg." + key,
-		URI:  "postgres://user:pass@localhost:5432/db_name",
+		path:  "pg." + key,
+		Debug: false,
+		URI:   "postgres://user:pass@localhost:5432/db_name",
 	}
 }
 
