@@ -6,10 +6,10 @@ import (
 )
 
 type (
-	A bson.A
-	D bson.D
-	E bson.E
-	M bson.M
+	A = bson.A
+	D = bson.D
+	E = bson.E
+	M = bson.M
 )
 
 var (
