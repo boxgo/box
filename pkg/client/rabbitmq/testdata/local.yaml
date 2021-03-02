@@ -1,0 +1,5 @@
+name: box
+version: 1.0.0
+
+rabbitmq:
+  default:

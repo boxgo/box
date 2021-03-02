@@ -20,6 +20,7 @@ require (
 	github.com/prometheus/procfs v0.1.3 // indirect
 	github.com/robfig/cron v1.2.0
 	github.com/smartystreets/goconvey v1.6.4 // indirect
+	github.com/streadway/amqp v1.0.0
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/ugorji/go v1.1.7 // indirect
