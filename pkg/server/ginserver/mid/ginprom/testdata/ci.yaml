@@ -1,0 +1,16 @@
+name: box
+version: 1.0.0
+
+logger:
+  default:
+    level: error
+    outputPaths:
+      - stdout
+    errorOutputPaths:
+      - stderr
+
+gin:
+  default:
+    addr: ":9000"
+    middlewares:
+      prom:
