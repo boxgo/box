@@ -15,10 +15,6 @@ type (
 	}
 )
 
-var (
-	Default = StdConfig("default").Build()
-)
-
 func newGinServer(cfg *Config) *GinServer {
 	gin.SetMode(gin.ReleaseMode) // init mode is release.
 
