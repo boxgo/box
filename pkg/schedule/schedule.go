@@ -90,6 +90,20 @@ func (sch *Schedule) Shutdown(context.Context) error {
 	return nil
 }
 
+// ExecOnce exec once handler immediately
+func (sch *Schedule) ExecOnce() {
+	sch.execOnce()
+}
+
+// ExecTiming exec timing handler immediately
+func (sch *Schedule) ExecTiming() {
+	if sch.timingHandler == nil {
+		return
+	}
+
+	sch.exec(sch.timingHandler)
+}
+
 func (sch *Schedule) execOnce() {
 	if sch.onceHandler == nil {
 		return
