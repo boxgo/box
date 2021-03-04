@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/boxgo/box/pkg/logger"
+	"github.com/boxgo/box/pkg/trace"
 	"github.com/boxgo/box/pkg/util/strutil"
 	"github.com/gin-gonic/gin"
 )
@@ -31,12 +32,16 @@ func (log *GinLog) Logger() func(ctx *gin.Context) {
 
 		var (
 			fields []interface{}
+			reqId  = ctx.GetHeader(trace.ReqID())
 			start  = time.Now()
 			method = ctx.Request.Method
 			path   = ctx.Request.URL.Path
 			writer *bodyWriter
 		)
 
+		if reqId == "" {
+			reqId = strutil.RandomAlphanumeric(10)
+		}
 		if log.cfg.RequestIP {
 			fields = append(fields, "ip", ctx.ClientIP())
 		}
@@ -57,7 +62,10 @@ func (log *GinLog) Logger() func(ctx *gin.Context) {
 			ctx.Writer = writer
 		}
 
-		logger.Trace(ctx).Infow(fmt.Sprintf("http_server_req|%s|%s", method, path), fields...)
+		ctx.Set(trace.ReqID(), reqId)
+		ctx.Set(trace.BizID(), fmt.Sprintf("%s|%s", method, path))
+
+		logger.Trace(ctx).Infow("http_server_req", fields...)
 
 		ctx.Next()
 
@@ -66,6 +74,6 @@ func (log *GinLog) Logger() func(ctx *gin.Context) {
 			fields = append(fields, "resp", writer.body.String())
 		}
 
-		logger.Trace(ctx).Infow(fmt.Sprintf("http_server_resp|%s|%s", method, path), fields...)
+		logger.Trace(ctx).Infow("http_server_rsp", fields...)
 	}
 }
