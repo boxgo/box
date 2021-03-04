@@ -1,0 +1,15 @@
+name: box
+version: 1.0.0
+
+gin:
+  default:
+    addr: ":9000"
+    middlewares:
+      session:
+        redis: default
+        keyPair: hello world
+
+redis:
+  default:
+    address:
+      - localhost:6379
