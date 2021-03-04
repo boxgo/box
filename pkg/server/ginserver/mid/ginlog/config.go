@@ -11,12 +11,13 @@ type (
 	// Config 配置
 	Config struct {
 		path          string
-		UserAgent     bool `config:"useragent" desc:"log user-agent"`
-		RequestIP     bool `config:"requestIp" desc:"log request ip"`
-		RequestHeader bool `config:"requestHeader" desc:"log request header"`
-		RequestQuery  bool `config:"requestQuery" desc:"log request query"`
-		RequestBody   bool `config:"requestBody" desc:"log request body"`
-		ResponseBody  bool `config:"responseBody" desc:"log response body"`
+		Skips         []string `config:"skips" desc:"skip urls"`
+		UserAgent     bool     `config:"useragent" desc:"log user-agent"`
+		RequestIP     bool     `config:"requestIp" desc:"log request ip"`
+		RequestHeader bool     `config:"requestHeader" desc:"log request header"`
+		RequestQuery  bool     `config:"requestQuery" desc:"log request query"`
+		RequestBody   bool     `config:"requestBody" desc:"log request body"`
+		ResponseBody  bool     `config:"responseBody" desc:"log response body"`
 	}
 
 	// OptionFunc 选项信息
@@ -40,7 +41,11 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 // DefaultConfig 默认配置
 func DefaultConfig(key string) *Config {
 	return &Config{
-		path:          fmt.Sprintf("gin.%s.middlewares.logger", key),
+		path: fmt.Sprintf("gin.%s.middlewares.logger", key),
+		Skips: []string{
+			"/swagger",
+			"/health",
+		},
 		UserAgent:     true,
 		RequestIP:     true,
 		RequestHeader: false,

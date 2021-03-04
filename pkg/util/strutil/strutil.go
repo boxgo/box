@@ -2,7 +2,9 @@ package strutil
 
 import (
 	"math/rand"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/teris-io/shortid"
 )
@@ -84,6 +86,7 @@ func Nth(array []string, idx int) string {
 	return ""
 }
 
+// Compact remove empty string element.
 func Compact(array []string) []string {
 	var newArr []string
 
@@ -94,4 +97,54 @@ func Compact(array []string) []string {
 	}
 
 	return newArr
+}
+
+// HasPrefix check any element in arr has prefix
+func HasPrefix(arr []string, prefix string) (b bool) {
+	return ContainsBy(arr, func(str string) bool {
+		return strings.HasPrefix(str, prefix)
+	})
+}
+
+// HasSuffix check any element in arr has suffix
+func HasSuffix(arr []string, suffix string) (b bool) {
+	return ContainsBy(arr, func(str string) bool {
+		return strings.HasSuffix(str, suffix)
+	})
+}
+
+// Contains check any element in arr equal to flag
+func Contains(arr []string, flag string) (b bool) {
+	return ContainsBy(arr, func(str string) bool {
+		return str == flag
+	})
+}
+
+// Contained check any element in arr contained by flag
+func Contained(arr []string, flag string) (b bool) {
+	return ContainsBy(arr, func(str string) bool {
+		return strings.Contains(flag, str)
+	})
+}
+
+// ContainsBy check any element in arr by fn
+func ContainsBy(arr []string, fn func(str string) bool) (b bool) {
+	for _, r := range arr {
+		if fn(r) {
+			b = true
+			break
+		}
+	}
+
+	return
+}
+
+// ContainsChineseChar check str contains chinese char
+func ContainsChineseChar(str string) bool {
+	for _, r := range str {
+		if unicode.Is(unicode.Scripts["Han"], r) {
+			return true
+		}
+	}
+	return false
 }

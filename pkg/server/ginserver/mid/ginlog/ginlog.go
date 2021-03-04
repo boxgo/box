@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/boxgo/box/pkg/logger"
+	"github.com/boxgo/box/pkg/util/strutil"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,15 +24,18 @@ func newGinLog(c *Config) *GinLog {
 
 func (log *GinLog) Logger() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		var (
-			fields     []interface{}
-			start      = time.Now()
-			method     = ctx.Request.Method
-			path       = ctx.Request.URL.Path
-			bodyWriter = newBodyWriter(ctx)
-		)
+		if strutil.Contained(log.cfg.Skips, ctx.Request.URL.Path) {
+			ctx.Next()
+			return
+		}
 
-		ctx.Writer = bodyWriter
+		var (
+			fields []interface{}
+			start  = time.Now()
+			method = ctx.Request.Method
+			path   = ctx.Request.URL.Path
+			writer *bodyWriter
+		)
 
 		if log.cfg.RequestIP {
 			fields = append(fields, "ip", ctx.ClientIP())
@@ -48,14 +52,18 @@ func (log *GinLog) Logger() func(ctx *gin.Context) {
 		if log.cfg.RequestHeader {
 			fields = append(fields, "header", ctx.Request.Header)
 		}
+		if log.cfg.ResponseBody {
+			writer = newBodyWriter(ctx)
+			ctx.Writer = writer
+		}
 
 		logger.Trace(ctx).Infow(fmt.Sprintf("http_server_req|%s|%s", method, path), fields...)
 
 		ctx.Next()
 
 		fields = append(fields, "status", ctx.Writer.Status(), "latency", time.Since(start))
-		if log.cfg.ResponseBody {
-			fields = append(fields, "resp", bodyWriter.body.String())
+		if log.cfg.ResponseBody && writer != nil {
+			fields = append(fields, "resp", writer.body.String())
 		}
 
 		logger.Trace(ctx).Infow(fmt.Sprintf("http_server_resp|%s|%s", method, path), fields...)
