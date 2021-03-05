@@ -121,7 +121,7 @@ func (request *Request) Form(form interface{}) *Request {
 	case reflect.Ptr:
 		switch v.Elem().Kind() {
 		case reflect.Map, reflect.Struct:
-			request.queryMapOrStruct(request.QueryData, v.Interface())
+			request.queryMapOrStruct(request.FormData, v.Interface())
 		}
 	}
 
@@ -189,6 +189,13 @@ func (request *Request) RawRequest() (*http.Request, error) {
 
 	if len(request.QueryData) != 0 {
 		req.URL.RawQuery = request.QueryData.Encode()
+	}
+	if len(request.FormData) != 0 {
+		if req.URL.RawQuery != "" {
+			req.URL.RawQuery += "&" + request.FormData.Encode()
+		} else {
+			req.URL.RawQuery = request.FormData.Encode()
+		}
 	}
 
 	if request.BasicAuth.Username != "" || request.BasicAuth.Password != "" {
