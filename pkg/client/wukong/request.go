@@ -10,6 +10,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"reflect"
+	"strings"
 
 	"github.com/boxgo/box/pkg/util/urlutil"
 )
@@ -148,9 +149,10 @@ func (request *Request) End() *Response {
 
 func (request *Request) RawRequest() (*http.Request, error) {
 	var (
-		err    error
-		req    *http.Request
-		reader io.Reader
+		err       error
+		targetUrl string
+		req       *http.Request
+		reader    io.Reader
 	)
 	if err = request.Error; err != nil {
 		return req, err
@@ -159,9 +161,14 @@ func (request *Request) RawRequest() (*http.Request, error) {
 		return request.rawReq, nil
 	}
 
-	targetUrl, err := urlutil.UrlJoin(request.BaseUrl, request.Url)
-	if err != nil {
-		return req, err
+	if strings.HasPrefix(request.BaseUrl, "http") {
+		if target, err := urlutil.UrlJoin(request.BaseUrl, request.Url); err != nil {
+			return req, err
+		} else {
+			targetUrl = target
+		}
+	} else {
+		targetUrl = request.Url
 	}
 
 	if request.BodyData != nil {

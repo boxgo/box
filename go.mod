@@ -11,9 +11,11 @@ require (
 	github.com/gin-contrib/sessions v0.0.3
 	github.com/gin-gonic/gin v1.5.0
 	github.com/go-pg/pg/v10 v10.7.7
+	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-redis/redis/v8 v8.6.0
 	github.com/imdario/mergo v0.3.9
 	github.com/json-iterator/go v1.1.10
+	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/olekukonko/tablewriter v0.0.5-0.20200416053754-163badb3bac6

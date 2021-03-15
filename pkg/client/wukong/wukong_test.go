@@ -17,7 +17,7 @@ func TestSimple(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client := New(ts.URL)
+	client := New("")
 
 	type Body struct {
 		String string  `json:"string"`
@@ -34,7 +34,7 @@ func TestSimple(t *testing.T) {
 		isTimeout  bool
 		isCancel   bool
 	)
-	err := client.Get("/").End().
+	err := client.Get(ts.URL).End().
 		BindStatusCode(&statusCode).
 		BindStatus(&statusMsg).
 		BindHeader(&header).
