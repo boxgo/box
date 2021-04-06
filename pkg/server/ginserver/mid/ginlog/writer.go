@@ -21,13 +21,13 @@ func newBodyWriter(ctx *gin.Context) *bodyWriter {
 	return &bodyWriter{body: bytes.NewBufferString(""), ResponseWriter: ctx.Writer}
 }
 
-func readBody(ctx *gin.Context) []byte {
+func readBody(ctx *gin.Context) string {
 	if ctx.Request.Body == nil {
-		return nil
+		return ""
 	}
 
 	body, _ := ioutil.ReadAll(ctx.Request.Body)
 	ctx.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
-	return body
+	return string(body)
 }
