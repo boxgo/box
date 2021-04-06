@@ -9,6 +9,7 @@ import (
 type (
 	Config struct {
 		path       string
+		Prefix     string `config:"prefix" desc:"cache key prefix. if empty, auto prefix with format: ${serviceName}.cache.${key}."`
 		Marshaller string `config:"marshaller" desc:"support json only"`
 		Config     string `config:"config" desc:"redis config path. eg: 'default' means use 'redis.default' config"`
 	}

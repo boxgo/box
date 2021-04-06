@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +14,10 @@ type (
 		Get(context.Context, string, interface{}) error
 		Set(context.Context, string, interface{}, time.Duration) error
 	}
+)
+
+var (
+	ErrCacheMiss = errors.New("cache: key is missing")
 )
 
 func UnifiedKey(key string) string {

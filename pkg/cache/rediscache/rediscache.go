@@ -42,19 +42,28 @@ func (l *redisCache) Set(ctx context.Context, key string, val interface{}, durat
 		return err
 	}
 
-	return l.client.Client().Set(ctx, cache.UnifiedKey(key), data, duration).Err()
+	return l.client.Client().Set(ctx, l.cacheKey(key), data, duration).Err()
 }
 
 // UnLock unlock key
 func (l *redisCache) Get(ctx context.Context, key string, val interface{}) error {
-	data, err := l.client.Client().Get(ctx, cache.UnifiedKey(key)).Bytes()
+	data, err := l.client.Client().Get(ctx, l.cacheKey(key)).Bytes()
 	if err == redis.Nil {
 		cacheHitCounter.WithLabelValues(key, "false").Inc()
-		return nil
+		return cache.ErrCacheMiss
 	} else if err != nil {
 		return nil
 	}
 
 	cacheHitCounter.WithLabelValues(key, "true").Inc()
 	return json.Unmarshal(data, val)
+}
+
+func (l redisCache) cacheKey(key string) string {
+	cacheKey := l.cfg.Prefix
+	if cacheKey == "" {
+		cacheKey = cache.UnifiedKey(key)
+	}
+
+	return cacheKey
 }
