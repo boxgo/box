@@ -11,6 +11,8 @@ type (
 	WuKong struct {
 		baseUrl   string
 		client    *http.Client
+		logger    bool
+		metric    bool
 		basicAuth BasicAuth
 		query     map[string]string
 		header    map[string]string
@@ -30,6 +32,8 @@ type (
 func New(baseUrl string) *WuKong {
 	w := &WuKong{
 		baseUrl: baseUrl,
+		logger:  true,
+		metric:  true,
 		before:  []Before{loggerStart, metricStart},
 		after:   []After{loggerAfter, metricEnd},
 		client: &http.Client{
@@ -72,6 +76,18 @@ func (wk *WuKong) SetQuery(query map[string]string) *WuKong {
 
 func (wk *WuKong) SetHeader(header map[string]string) *WuKong {
 	wk.header = header
+
+	return wk
+}
+
+func (wk *WuKong) Logger(enable bool) *WuKong {
+	wk.logger = enable
+
+	return wk
+}
+
+func (wk *WuKong) Metric(enable bool) *WuKong {
+	wk.metric = enable
 
 	return wk
 }
@@ -121,6 +137,8 @@ func (wk *WuKong) Client() *http.Client {
 func (wk *WuKong) initRequest(request *Request) *Request {
 	request.SetBasicAuth(wk.basicAuth)
 	request.Query(wk.query)
+	request.Logger(wk.logger)
+	request.Metric(wk.metric)
 
 	for k, v := range wk.header {
 		request.SetHeader(k, v)
