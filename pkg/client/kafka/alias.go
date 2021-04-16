@@ -29,6 +29,9 @@ type (
 	ConsumerMessage               = sarama.ConsumerMessage
 	ConsumerMetadataRequest       = sarama.ConsumerMetadataRequest
 	ConsumerMetadataResponse      = sarama.ConsumerMetadataResponse
+	ByteEncoder                   = sarama.ByteEncoder
+	StringEncoder                 = sarama.StringEncoder
+	RecordHeader                  = sarama.RecordHeader
 )
 
 const (
