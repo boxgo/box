@@ -11,7 +11,7 @@ type (
 	WuKong struct {
 		baseUrl   string
 		client    *http.Client
-		logger    bool
+		logger    LoggerLevel
 		metric    bool
 		basicAuth BasicAuth
 		query     map[string]string
@@ -32,7 +32,7 @@ type (
 func New(baseUrl string) *WuKong {
 	w := &WuKong{
 		baseUrl: baseUrl,
-		logger:  true,
+		logger:  LoggerResponse | LoggerRequest,
 		metric:  true,
 		before:  []Before{loggerStart, metricStart},
 		after:   []After{loggerAfter, metricEnd},
@@ -80,8 +80,8 @@ func (wk *WuKong) SetHeader(header map[string]string) *WuKong {
 	return wk
 }
 
-func (wk *WuKong) Logger(enable bool) *WuKong {
-	wk.logger = enable
+func (wk *WuKong) Logger(lv LoggerLevel) *WuKong {
+	wk.logger = lv
 
 	return wk
 }

@@ -68,8 +68,8 @@ func (request *Request) Set(key, value interface{}) *Request {
 	return request
 }
 
-func (request *Request) Logger(enable bool) *Request {
-	return request.Set(loggerSwitchKey, enable)
+func (request *Request) Logger(level LoggerLevel) *Request {
+	return request.Set(loggerLevelKey, level)
 }
 
 func (request *Request) Metric(enable bool) *Request {
