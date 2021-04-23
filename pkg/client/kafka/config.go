@@ -34,7 +34,7 @@ type (
 	Metadata struct {
 		RetryMax         int                                         `config:"retryMax"`
 		RetryBackoff     time.Duration                               `config:"retryBackoff"`
-		RetryBackoffFunc func(retries, maxRetries int) time.Duration `config:"-"`
+		RetryBackoffFunc func(retries, maxRetries int) time.Duration `config:"-" json:"-"`
 		RefreshFrequency time.Duration                               `config:"refreshFrequency"`
 		Full             bool                                        `config:"full"`
 		Timeout          time.Duration                               `config:"timeout"`
@@ -46,7 +46,7 @@ type (
 		Timeout          time.Duration                               `config:"timeout"`
 		Compression      sarama.CompressionCodec                     `config:"compression"`
 		CompressionLevel int                                         `config:"compressionLevel"`
-		Partitioner      sarama.PartitionerConstructor               `config:"-"`
+		Partitioner      sarama.PartitionerConstructor               `config:"-" json:"-"`
 		Idempotent       bool                                        `config:"idempotent"`
 		ReturnSuccesses  bool                                        `config:"returnSuccesses"`
 		ReturnErrors     bool                                        `config:"returnErrors"`
@@ -56,20 +56,20 @@ type (
 		FlushMaxMessages int                                         `config:"FlushMaxMessages"`
 		RetryMax         int                                         `config:"retryMax"`
 		RetryBackoff     time.Duration                               `config:"retryBackoff"`
-		RetryBackoffFunc func(retries, maxRetries int) time.Duration `config:"-"`
-		Interceptors     []sarama.ProducerInterceptor                `config:"-"`
+		RetryBackoffFunc func(retries, maxRetries int) time.Duration `config:"-" json:"-"`
+		Interceptors     []sarama.ProducerInterceptor                `config:"-" json:"-"`
 	}
 
 	ConsumerConfig struct {
 		GroupSessionTimeout        time.Duration                   `config:"groupSessionTimeout"`
 		GroupHeartbeatInterval     time.Duration                   `config:"groupHeartbeatInterval"`
-		GroupRebalanceStrategy     sarama.BalanceStrategy          `config:"groupRebalanceStrategy"`
+		GroupRebalanceStrategy     sarama.BalanceStrategy          `config:"groupRebalanceStrategy" json:"-"`
 		GroupRebalanceTimeout      time.Duration                   `config:"groupRebalanceTimeout"`
 		GroupRebalanceRetryMax     int                             `config:"groupRebalanceRetryMax"`
 		GroupRebalanceRetryBackoff time.Duration                   `config:"groupRebalanceRetryBackoff"`
 		GroupMemberUserData        []byte                          `config:"groupMemberUserData"`
 		RetryBackoff               time.Duration                   `config:"retryBackoff"`
-		RetryBackoffFunc           func(retries int) time.Duration `config:"-"`
+		RetryBackoffFunc           func(retries int) time.Duration `config:"-" json:"-"`
 		FetchMin                   int32                           `config:"fetchMin"`
 		FetchMax                   int32                           `config:"fetchMax"`
 		FetchDefault               int32                           `config:"fetchDefault"`
@@ -83,7 +83,7 @@ type (
 		OffsetAutoCommitEnable     bool                            `config:"offsetAutoCommitEnable"`
 		OffsetAutoCommitInterval   time.Duration                   `config:"offsetAutoCommitInterval"`
 		IsolationLevel             sarama.IsolationLevel           `config:"isolationLevel"`
-		Interceptors               []sarama.ConsumerInterceptor    `config:"-"`
+		Interceptors               []sarama.ConsumerInterceptor    `config:"-" json:"-"`
 	}
 
 	// OptionFunc 选项信息

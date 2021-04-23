@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	testTopic = "wechat_event"
+	testTopic = "test"
 )
 
 func Example() {
