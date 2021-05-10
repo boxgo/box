@@ -7,6 +7,13 @@ import (
 
 type (
 	Error                  = pg.Error
+	DB                     = pg.DB
+	PgConn                 = pg.Conn
+	Tx                     = pg.Tx
+	Result                 = pg.Result
+	Stmt                   = pg.Stmt
+	Options                = pg.Options
+	PgQuery                = orm.Query
 	CreateTableOptions     = orm.CreateTableOptions
 	CreateCompositeOptions = orm.CreateCompositeOptions
 	DropCompositeOptions   = orm.DropCompositeOptions
