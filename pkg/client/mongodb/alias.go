@@ -101,12 +101,48 @@ var (
 )
 
 var (
-	CompareTimestamp          = primitive.CompareTimestamp
-	NewDateTimeFromTime       = primitive.NewDateTimeFromTime
-	NewDecimal128             = primitive.NewDecimal128
-	ParseDecimal128           = primitive.ParseDecimal128
-	ParseDecimal128FromBigInt = primitive.ParseDecimal128FromBigInt
-	NewObjectID               = primitive.NewObjectID
-	NewObjectIDFromTimestamp  = primitive.NewObjectIDFromTimestamp
-	ObjectIDFromHex           = primitive.ObjectIDFromHex
+	CompareTimestamp             = primitive.CompareTimestamp
+	NewDateTimeFromTime          = primitive.NewDateTimeFromTime
+	NewDecimal128                = primitive.NewDecimal128
+	ParseDecimal128              = primitive.ParseDecimal128
+	ParseDecimal128FromBigInt    = primitive.ParseDecimal128FromBigInt
+	NewObjectID                  = primitive.NewObjectID
+	NewObjectIDFromTimestamp     = primitive.NewObjectIDFromTimestamp
+	ObjectIDFromHex              = primitive.ObjectIDFromHex
+	OptionAggregate              = options.Aggregate
+	OptionAutoEncryption         = options.AutoEncryption
+	OptionBulkWrite              = options.BulkWrite
+	OptionChangeStream           = options.ChangeStream
+	OptionClientEncryption       = options.ClientEncryption
+	OptionClient                 = options.Client
+	OptionCollection             = options.Collection
+	OptionCount                  = options.Count
+	OptionCreateCollection       = options.CreateCollection
+	OptionCreateIndexes          = options.CreateIndexes
+	OptionCreateView             = options.CreateView
+	OptionDataKey                = options.DataKey
+	OptionDatabase               = options.Database
+	OptionDefaultIndex           = options.DefaultIndex
+	OptionDelete                 = options.Delete
+	OptionDistinct               = options.Distinct
+	OptionDropIndexes            = options.DropIndexes
+	OptionEncrypt                = options.Encrypt
+	OptionEstimatedDocumentCount = options.EstimatedDocumentCount
+	OptionFindOneAndDelete       = options.FindOneAndDelete
+	OptionFindOneAndReplace      = options.FindOneAndReplace
+	OptionFindOneAndUpdate       = options.FindOneAndUpdate
+	OptionFindOne                = options.FindOne
+	OptionFind                   = options.Find
+	OptionGridFSFind             = options.GridFSFind
+	OptionIndex                  = options.Index
+	OptionInsertMany             = options.InsertMany
+	OptionInsertOne              = options.InsertOne
+	OptionListCollections        = options.ListCollections
+	OptionListDatabases          = options.ListDatabases
+	OptionListIndexes            = options.ListIndexes
+	OptionReplace                = options.Replace
+	OptionRunCmd                 = options.RunCmd
+	OptionSession                = options.Session
+	OptionTransaction            = options.Transaction
+	OptionUpdate                 = options.Update
 )
