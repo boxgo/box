@@ -105,7 +105,7 @@ func (rs *mongoSource) Watch() (source.Watcher, error) {
 		return nil, rs.err
 	}
 
-	return newWatcher(rs.db, rs.collection, rs.service, rs.client, rs.opts)
+	return newWatcher(rs)
 }
 
 func (rs *mongoSource) String() string {
