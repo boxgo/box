@@ -17,9 +17,41 @@ type (
 )
 
 func newPostgreSQL(c *Config) *PostgreSQL {
-	opts, err := pg.ParseURL(c.URI)
-	if err != nil {
-		logger.Panicf("PostgreSQL ParseURL [%s] error: %s", c.URI, err)
+	var (
+		err  error
+		opts *pg.Options
+	)
+
+	if c.URI != "" {
+		opts, err = pg.ParseURL(c.URI)
+		if err != nil {
+			logger.Panicf("PostgreSQL ParseURL [%s] error: %s", c.URI, err)
+		}
+	} else {
+		opts = &pg.Options{
+			Network:               c.Network,
+			Addr:                  c.Addr,
+			Dialer:                c.dialer,
+			OnConnect:             c.onConnect,
+			User:                  c.User,
+			Password:              c.Password,
+			Database:              c.Database,
+			ApplicationName:       c.ApplicationName,
+			TLSConfig:             c.tLSConfig,
+			DialTimeout:           c.DialTimeout,
+			ReadTimeout:           c.ReadTimeout,
+			WriteTimeout:          c.WriteTimeout,
+			MaxRetries:            c.MaxRetries,
+			RetryStatementTimeout: c.RetryStatementTimeout,
+			MinRetryBackoff:       c.MinRetryBackoff,
+			MaxRetryBackoff:       c.MaxRetryBackoff,
+			PoolSize:              c.PoolSize,
+			MinIdleConns:          c.MinIdleConns,
+			MaxConnAge:            c.MaxConnAge,
+			PoolTimeout:           c.PoolTimeout,
+			IdleTimeout:           c.IdleTimeout,
+			IdleCheckFrequency:    c.IdleCheckFrequency,
+		}
 	}
 
 	db := pg.Connect(opts)
