@@ -27,9 +27,9 @@ type (
 	Configurator interface {
 		// Load config sources
 		Load(source ...source.Source) error
-		// Force a source change set sync
+		// Sync force a source change set sync
 		Sync() error
-		// Stop the config loader/watcher
+		// Close stop the config loader/watcher
 		Close() error
 		// Bytes get merged config data
 		Bytes() []byte
@@ -39,7 +39,7 @@ type (
 		Watch(path ...string) (Watcher, error)
 		// Get value through field
 		Get(path ...string) reader.Value
-		// Scanned fields
+		// Fields return scanned fields
 		Fields() *field.Fields
 	}
 
