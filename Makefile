@@ -12,7 +12,7 @@ bench:
 	BOX_BOOT_CONFIG=$(CONF_CI) go test -v -bench=. -benchmem $(TEST_DIR)
 
 test_local:
-	BOX_BOOT_CONFIG=$(CONF_LOCAL) go test -race $(TEST_DIR)
+	BOX_BOOT_CONFIG=$(CONF_LOCAL) go test -v -race $(TEST_DIR)
 
 bench_local:
 	BOX_BOOT_CONFIG=$(CONF_LOCAL) go test -v -bench=. -benchmem $(TEST_DIR)
