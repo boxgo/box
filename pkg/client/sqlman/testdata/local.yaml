@@ -1,0 +1,11 @@
+name: box
+version: 1.0.0
+
+logger:
+  default:
+    level: debug
+
+sqlman:
+  default:
+    driver: mysql
+    dsn: variety:Variety_test_2021@tcp(10.51.166.70:15028)/variety

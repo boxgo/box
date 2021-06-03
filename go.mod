@@ -13,6 +13,7 @@ require (
 	github.com/go-pg/pg/v10 v10.7.7
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-redis/redis/v8 v8.6.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/imdario/mergo v0.3.9
 	github.com/json-iterator/go v1.1.10
 	github.com/leodido/go-urn v1.2.0 // indirect
