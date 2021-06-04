@@ -1,4 +1,4 @@
-package gorm
+package gormx
 
 import (
 	"context"
@@ -81,6 +81,6 @@ func (orm *Gorm) Shutdown(ctx context.Context) error {
 	return db.Close()
 }
 
-func (orm Gorm) DB() *gorm.DB {
+func (orm Gorm) DB() *DB {
 	return orm.db
 }

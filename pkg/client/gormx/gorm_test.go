@@ -1,4 +1,4 @@
-package gorm_test
+package gormx_test
 
 import (
 	"testing"

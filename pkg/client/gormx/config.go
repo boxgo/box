@@ -1,4 +1,4 @@
-package gorm
+package gormx
 
 import (
 	"time"
@@ -48,7 +48,7 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 // DefaultConfig 默认配置
 func DefaultConfig(key string) *Config {
 	return &Config{
-		path:         "gorm." + key,
+		path:         "gormx." + key,
 		MaxIdleTime:  time.Minute * 5,
 		MaxLifeTime:  time.Hour,
 		MaxIdleConns: 2,
