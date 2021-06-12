@@ -2,19 +2,14 @@ package insight
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
+	"sort"
+	"strings"
 
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/server/ginserver"
 	"github.com/gin-gonic/gin"
-)
-
-type (
-	routes []route
-	route  struct {
-		Method string `json:"method"`
-		Path   string `json:"path"`
-	}
 )
 
 var (
@@ -23,24 +18,18 @@ var (
 
 func init() {
 	Get("/", func(ctx *gin.Context) {
-		rs := make(routes, len(Default.RoutesInfo()))
-
-		for idx, info := range Default.RoutesInfo() {
-			rs[idx] = route{
-				Method: info.Method,
-				Path:   info.Path,
-			}
-		}
-
-		ctx.JSON(200, rs)
+		ctx.Data(200, gin.MIMEHTML, []byte(html()))
 	})
 
 	Get("/config", func(ctx *gin.Context) {
-		ctx.JSON(200, config.Fields())
-	})
-
-	Get("/config/table", func(ctx *gin.Context) {
-		ctx.Data(200, gin.MIMEPlain, bytes.NewBufferString(config.Fields().Table()).Bytes())
+		switch ctx.Query("format") {
+		case "json":
+			ctx.JSON(200, config.Fields())
+		case "table":
+			ctx.Data(200, gin.MIMEPlain, bytes.NewBufferString(config.Fields().Table()).Bytes())
+		default:
+			ctx.Data(200, gin.MIMEPlain, bytes.NewBufferString(config.Fields().Table()).Bytes())
+		}
 	})
 }
 
@@ -78,4 +67,35 @@ func PostH(relativePath string, handler http.Handler) {
 
 func PostF(relativePath string, handler http.HandlerFunc) {
 	Default.POST(relativePath, gin.WrapF(handler))
+}
+
+func html() string {
+	routes := Default.RoutesInfo()
+	paths := make([]string, len(routes))
+
+	for idx, info := range routes {
+		if info.Path == "/" {
+			continue
+		}
+
+		paths[idx] = fmt.Sprintf(`<li><a href="%s">%s</a></li>`, info.Path, info.Path)
+	}
+
+	sort.Strings(paths)
+
+	return fmt.Sprintf(`
+<html>
+<head>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+    }
+</style>
+</head>
+<body>
+<h1>Welcome to %s %s insight</h1>
+<ul>%s</ul>
+</body>
+</html>`, config.ServiceName(), config.ServiceVersion(), strings.Join(paths, ""))
 }
