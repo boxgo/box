@@ -13,6 +13,7 @@ require (
 	github.com/go-pg/pg/v10 v10.7.7
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-redis/redis/v8 v8.6.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.4.0
 	github.com/imdario/mergo v0.3.9
 	github.com/json-iterator/go v1.1.10
 	github.com/leodido/go-urn v1.2.0 // indirect
@@ -27,16 +28,13 @@ require (
 	github.com/tidwall/pretty v1.0.1 // indirect
 	go.mongodb.org/mongo-driver v1.4.1
 	go.uber.org/automaxprocs v1.3.0
-	go.uber.org/zap v1.15.0
-	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
+	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.1 // indirect
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
+	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
-	golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43 // indirect
-	golang.org/x/text v0.3.5 // indirect
-	google.golang.org/genproto v0.0.0-20210120162456-f5e8c5e2aaf2
-	google.golang.org/grpc v1.35.0
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/genproto v0.0.0-20210426193834-eac7f76ac494
+	google.golang.org/grpc v1.37.0
+	google.golang.org/protobuf v1.26.0
 	gorm.io/driver/mysql v1.1.0
 	gorm.io/driver/postgres v1.1.0
 	gorm.io/gorm v1.21.10
