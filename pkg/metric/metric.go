@@ -23,7 +23,7 @@ type (
 )
 
 var (
-	Default = DefaultConfig("").Build()
+	Default = StdConfig("").Build()
 )
 
 func newMetric(cfg *Config) *Metric {
