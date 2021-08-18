@@ -52,7 +52,7 @@ func (m *Metric) Serve(context.Context) error {
 		defer ticker.Stop()
 
 		pusher := push.
-			New(m.cfg.PushTargetURL, config.ServiceName()).
+			New(m.cfg.PushTargetURL, config.ServiceName()+"-"+config.ServiceVersion()).
 			Gatherer(prometheus.DefaultRegisterer.(prometheus.Gatherer)).
 			Grouping("instance", system.Hostname())
 
