@@ -2,7 +2,6 @@ package ginprom
 
 import (
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/boxgo/box/pkg/metric"
@@ -12,25 +11,54 @@ import (
 type (
 	GinProm struct {
 		cfg                *Config
-		reqCounter         *metric.CounterVec
+		reqSizeSummary     *metric.SummaryVec
+		reqBeginCounter    *metric.CounterVec
+		reqFinishCounter   *metric.CounterVec
 		reqDurationSummary *metric.SummaryVec
+		resSizeSummary     *metric.SummaryVec
 	}
 )
 
 func newGinProm(c *Config) *GinProm {
 	return &GinProm{
 		cfg: c,
-		reqCounter: metric.NewCounterVec(
-			"http_request_total",
-			"How many HTTP requests processed, partitioned by status code and HTTP method.",
-			[]string{"status", "retcode", "method", "url", "handler"},
+		reqSizeSummary: metric.NewSummaryVec(
+			"http_server_request_size_bytes",
+			"The HTTP request sizes in bytes.",
+			[]string{"method", "url"},
+			map[float64]float64{
+				0.5:  0.05,
+				0.75: 0.05,
+				0.9:  0.01,
+				0.99: 0.001,
+			},
+		),
+		reqBeginCounter: metric.NewCounterVec(
+			"http_server_request_begin_total",
+			"How many HTTP requests ready to process.",
+			[]string{"method", "url"},
+		),
+		reqFinishCounter: metric.NewCounterVec(
+			"http_server_request_finish_total",
+			"How many HTTP requests processed.",
+			[]string{"method", "url", "status", "errcode"},
 		),
 		reqDurationSummary: metric.NewSummaryVec(
-			"http_request_duration_seconds",
+			"http_server_request_duration_seconds",
 			"The HTTP request latencies in seconds.",
-			[]string{"status", "retcode", "method", "url", "handler"},
+			[]string{"method", "url", "status", "errcode"},
 			map[float64]float64{
-				0.25: 0.05,
+				0.5:  0.05,
+				0.75: 0.05,
+				0.9:  0.01,
+				0.99: 0.001,
+			},
+		),
+		resSizeSummary: metric.NewSummaryVec(
+			"http_server_response_size_bytes",
+			"The HTTP response sizes in bytes.",
+			[]string{"method", "url", "status", "errcode"},
+			map[float64]float64{
 				0.5:  0.05,
 				0.75: 0.05,
 				0.9:  0.01,
@@ -43,28 +71,21 @@ func newGinProm(c *Config) *GinProm {
 func (prom *GinProm) Handler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		start := time.Now()
+		labels := []string{
+			ctx.Request.Method,
+			prom.cfg.requestURLMappingFn(ctx),
+		}
+
+		reqSz := computeApproximateRequestSize(ctx.Request)
+
+		prom.reqSizeSummary.WithLabelValues(labels...).Observe(reqSz)
+		prom.reqBeginCounter.WithLabelValues(labels...).Inc()
 
 		ctx.Next()
 
-		labels := []string{
-			strconv.Itoa(ctx.Writer.Status()),
-			strconv.Itoa(ctx.GetInt("retcode")),
-			ctx.Request.Method,
-			prom.cfg.requestURLMappingFn(ctx),
-			getHandlerName(ctx),
-		}
-
-		prom.reqCounter.WithLabelValues(labels...).Inc()
+		labels = append(labels, strconv.Itoa(ctx.Writer.Status()), strconv.Itoa(ctx.GetInt("errcode")))
+		prom.resSizeSummary.WithLabelValues(labels...).Observe(float64(ctx.Writer.Size()))
+		prom.reqFinishCounter.WithLabelValues(labels...).Inc()
 		prom.reqDurationSummary.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
 	}
-}
-
-func getHandlerName(c *gin.Context) string {
-	longName := c.HandlerName()
-	shortName := longName
-
-	if idx := strings.LastIndex(longName, "."); idx != -1 {
-		shortName = longName[idx+1:]
-	}
-	return shortName
 }
