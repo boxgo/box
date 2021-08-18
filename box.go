@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/logger"
 	"github.com/boxgo/box/pkg/server"
 	"github.com/boxgo/box/pkg/util/procsutil"
@@ -233,6 +234,8 @@ func New(options ...Option) Application {
 	if opts.AutoMaxProcs == nil || *opts.AutoMaxProcs {
 		procsutil.EnableAutoMaxProcs()
 	}
+
+	config.AppendServiceTag(opts.Tags...)
 
 	app := &application{
 		quit:            make(chan os.Signal),

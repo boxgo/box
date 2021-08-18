@@ -7,6 +7,7 @@ type (
 		ShutdownTimeout int
 		AutoMaxProcs    *bool
 		Boxes           []Box
+		Tags            []string
 	}
 
 	// Option setter
@@ -37,5 +38,12 @@ func WithAutoMaxProcs(autoMaxProcs bool) Option {
 func WithBoxes(boxes ...Box) Option {
 	return func(ops *Options) {
 		ops.Boxes = boxes
+	}
+}
+
+// WithTag function
+func WithTag(fn func() []string) Option {
+	return func(ops *Options) {
+		ops.Tags = fn()
 	}
 }

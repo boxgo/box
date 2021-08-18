@@ -2,6 +2,7 @@ package box
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/boxgo/box/pkg/config"
@@ -17,7 +18,7 @@ var (
 	boxMetricGauge = metric.Default.NewGaugeVec(
 		"box_info",
 		"Information about the box config and environment.",
-		[]string{"name", "version", "ip", "localhost", "start"})
+		[]string{"name", "version", "tags", "ip", "localhost", "start"})
 )
 
 func (boxMetric) Name() string {
@@ -28,6 +29,7 @@ func (boxMetric) Serve(ctx context.Context) error {
 	boxMetricGauge.WithLabelValues(
 		config.ServiceName(),
 		config.ServiceVersion(),
+		strings.Join(config.ServiceTag(), ","),
 		system.IP(),
 		system.Hostname(),
 		system.StartAt().Format(time.RFC3339),
