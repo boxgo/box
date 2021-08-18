@@ -238,7 +238,7 @@ func New(options ...Option) Application {
 		quit:            make(chan os.Signal),
 		startupTimeout:  opts.StartupTimeout,
 		shutdownTimeout: opts.ShutdownTimeout,
-		boxes:           opts.Boxes,
+		boxes:           append(opts.Boxes, &boxMetric{}),
 	}
 
 	signal.Notify(app.quit, syscall.SIGINT, syscall.SIGTERM)
