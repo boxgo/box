@@ -83,8 +83,13 @@ func (prom *GinProm) Handler() gin.HandlerFunc {
 
 		ctx.Next()
 
+		resSz := ctx.Writer.Size()
+		if resSz < 0 || !ctx.Writer.Written() {
+			resSz = 0
+		}
+
 		labels = append(labels, strconv.Itoa(ctx.Writer.Status()), strconv.Itoa(ctx.GetInt("errcode")))
-		prom.resSizeSummary.WithLabelValues(labels...).Observe(float64(ctx.Writer.Size()))
+		prom.resSizeSummary.WithLabelValues(labels...).Observe(float64(resSz))
 		prom.reqFinishCounter.WithLabelValues(labels...).Inc()
 		prom.reqDurationSummary.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
 	}
