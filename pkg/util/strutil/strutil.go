@@ -2,9 +2,11 @@ package strutil
 
 import (
 	"math/rand"
+	"reflect"
 	"strings"
 	"time"
 	"unicode"
+	"unsafe"
 
 	"github.com/teris-io/shortid"
 )
@@ -147,4 +149,20 @@ func ContainsChineseChar(str string) bool {
 		}
 	}
 	return false
+}
+
+// String2Bytes more effect but not safe
+func String2Bytes(s string) []byte {
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh := reflect.SliceHeader{
+		Data: sh.Data,
+		Len:  sh.Len,
+		Cap:  sh.Len,
+	}
+	return *(*[]byte)(unsafe.Pointer(&bh))
+}
+
+// Bytes2String more effect but not safe
+func Bytes2String(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
 }
