@@ -3,8 +3,6 @@ package logger
 import (
 	"context"
 	"fmt"
-
-	"go.uber.org/zap"
 )
 
 var (
@@ -83,21 +81,6 @@ func Errorw(msg string, keysAndValues ...interface{}) {
 	defaultLogger.Errorw(msg, keysAndValues...)
 }
 
-// DPanic uses fmt.Sprint to construct and log a message. In development, the logger then panics. (See DPanicLevel for details.)
-func DPanic(args ...interface{}) {
-	defaultLogger.DPanic(args...)
-}
-
-// DPanicf uses fmt.Sprintf to log a templated message. In development, the logger then panics. (See DPanicLevel for details.)
-func DPanicf(template string, args ...interface{}) {
-	defaultLogger.DPanicf(template, args...)
-}
-
-// DPanicw logs a message with some additional context. In development, the logger then panics. (See DPanicLevel for details.) The variadic key-value pairs are treated as they are in With.
-func DPanicw(msg string, keysAndValues ...interface{}) {
-	defaultLogger.DPanicw(msg, keysAndValues...)
-}
-
 // Panic uses fmt.Sprint to construct and log a message, then panics.
 func Panic(args ...interface{}) {
 	defaultLogger.Panic(args...)
@@ -129,21 +112,11 @@ func Fatalw(msg string, keysAndValues ...interface{}) {
 }
 
 // Trace logs a message with trace prefix and return *zap.SugaredLogger.
-func Trace(ctx context.Context) *zap.SugaredLogger {
+func Trace(ctx context.Context) *Logger {
 	return defaultLogger.Trace(ctx)
 }
 
-// TraceRaw logs a message with trace prefix and return *zap.Logger.
-func TraceRaw(ctx context.Context) *zap.Logger {
-	return defaultLogger.TraceRaw(ctx)
-}
-
-// Named adds a sub-scope to the logger's name. See Logger.Named for details.
-func Named(name string) *zap.SugaredLogger {
-	return defaultLogger.Named(name)
-}
-
-// Desugar unwraps a SugaredLogger, exposing the original Logger. Desugaring is quite inexpensive, so it's reasonable for a single application to use both Loggers and SugaredLoggers, converting between them on the boundaries of performance-sensitive code.
-func Desugar() *zap.Logger {
-	return defaultLogger.Desugar()
+// Internal logger
+func Internal() interface{} {
+	return defaultLogger.Internal()
 }

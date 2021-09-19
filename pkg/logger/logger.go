@@ -2,13 +2,15 @@ package logger
 
 import (
 	"context"
-	"fmt"
-	"log"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/boxgo/box/pkg/config"
+	"github.com/boxgo/box/pkg/logger/core"
 	"github.com/boxgo/box/pkg/trace"
 	"github.com/boxgo/box/pkg/util/jsonutil"
+	"github.com/boxgo/box/pkg/util/strutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -16,35 +18,123 @@ import (
 type (
 	// Logger logger option
 	Logger struct {
+		cfg   *Config
 		level *zap.AtomicLevel
 		sugar *zap.SugaredLogger
-		cfg   *Config
 	}
 )
 
+const (
+	traceSplitterL = '['
+	traceSplitterR = ']'
+)
+
 func newLogger(cfg *Config) (*Logger, error) {
-	var zapCfg zap.Config
-	if err := jsonutil.Copy(cfg, &zapCfg); err != nil {
+	var (
+		zapCfg           zap.Config
+		err              error
+		encoder          zapcore.Encoder
+		outSink, errSink zapcore.WriteSyncer
+	)
+	if err = jsonutil.Copy(cfg, &zapCfg); err != nil {
 		return nil, err
 	}
 
-	if zapLogger, err := zapCfg.Build(zap.AddCallerSkip(2)); err == nil {
-		logger := &Logger{
-			level: &zapCfg.Level,
-			sugar: zapLogger.Sugar(),
-			cfg:   cfg,
-		}
-
-		go func() {
-			if err := logger.watch(); err != nil {
-				logger.Errorf("logger config watch error: %s", err)
-			}
-		}()
-
-		return logger, nil
+	if zapCfg.Encoding == "json" {
+		encoder = zapcore.NewJSONEncoder(zapCfg.EncoderConfig)
 	} else {
+		encoder = zapcore.NewConsoleEncoder(zapCfg.EncoderConfig)
+	}
+
+	if outSink, errSink, err = openSinks(cfg); err != nil {
 		return nil, err
 	}
+
+	rule := cfg.MaskRules
+	if !cfg.Mask {
+		rule = nil
+	}
+
+	zapLogger := zap.New(
+		core.NewMaskCore(rule, cfg.Level, encoder, outSink),
+		buildOptions(&zapCfg, errSink)...,
+	)
+
+	logger := &Logger{
+		cfg:   cfg,
+		level: &zapCfg.Level,
+		sugar: zapLogger.Sugar(),
+	}
+
+	if err = logger.watch(); err != nil {
+		logger.Errorf("logger config watch error: %s", err)
+	}
+
+	return logger, nil
+}
+
+func openSinks(cfg *Config) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+	sink, closeOut, err := zap.Open(cfg.OutputPaths...)
+	if err != nil {
+		return nil, nil, err
+	}
+	errSink, _, err := zap.Open(cfg.ErrorOutputPaths...)
+	if err != nil {
+		closeOut()
+		return nil, nil, err
+	}
+	return sink, errSink, nil
+}
+
+func buildOptions(cfg *zap.Config, errSink zapcore.WriteSyncer) []zap.Option {
+	opts := []zap.Option{zap.ErrorOutput(errSink)}
+
+	if cfg.Development {
+		opts = append(opts, zap.Development())
+	}
+
+	if !cfg.DisableCaller {
+		opts = append(opts, zap.AddCaller())
+	}
+
+	stackLevel := zap.ErrorLevel
+	if cfg.Development {
+		stackLevel = zap.WarnLevel
+	}
+	if !cfg.DisableStacktrace {
+		opts = append(opts, zap.AddStacktrace(stackLevel))
+	}
+
+	if scfg := cfg.Sampling; scfg != nil {
+		opts = append(opts, zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			var samplerOpts []zapcore.SamplerOption
+			if scfg.Hook != nil {
+				samplerOpts = append(samplerOpts, zapcore.SamplerHook(scfg.Hook))
+			}
+			return zapcore.NewSamplerWithOptions(
+				core,
+				time.Second,
+				cfg.Sampling.Initial,
+				cfg.Sampling.Thereafter,
+				samplerOpts...,
+			)
+		}))
+	}
+
+	if len(cfg.InitialFields) > 0 {
+		fs := make([]zap.Field, 0, len(cfg.InitialFields))
+		keys := make([]string, 0, len(cfg.InitialFields))
+		for k := range cfg.InitialFields {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			fs = append(fs, zap.Any(k, cfg.InitialFields[k]))
+		}
+		opts = append(opts, zap.Fields(fs...))
+	}
+
+	return opts
 }
 
 func (logger *Logger) String() string {
@@ -136,68 +226,72 @@ func (logger *Logger) Fatalw(msg string, keysAndValues ...interface{}) {
 }
 
 // Trace logger with requestId and uid
-func (logger *Logger) Trace(ctx context.Context) *zap.SugaredLogger {
-	return logger.trace(ctx)
+func (logger *Logger) Trace(ctx context.Context) *Logger {
+	var (
+		uid, requestID, spanID, bizID string
+	)
+
+	if uidStr, ok := ctx.Value(trace.ID()).(string); ok {
+		uid = uidStr
+	}
+	if requestIDStr, ok := ctx.Value(trace.ReqID()).(string); ok {
+		requestID = requestIDStr
+	}
+	if spanIDStr, ok := ctx.Value(trace.SpanID()).(string); ok {
+		spanID = spanIDStr
+	}
+	if bizIDStr, ok := ctx.Value(trace.BizID()).(string); ok {
+		bizID = bizIDStr
+	}
+
+	prefixBuilder := strings.Builder{}
+	prefixBuilder.WriteByte(traceSplitterL)
+	prefixBuilder.Write(strutil.String2Bytes(uid))
+	prefixBuilder.WriteByte(traceSplitterR)
+	prefixBuilder.WriteByte(traceSplitterL)
+	prefixBuilder.Write(strutil.String2Bytes(requestID))
+	prefixBuilder.WriteByte(traceSplitterR)
+	prefixBuilder.WriteByte(traceSplitterL)
+	prefixBuilder.Write(strutil.String2Bytes(spanID))
+	prefixBuilder.WriteByte(traceSplitterR)
+	prefixBuilder.WriteByte(traceSplitterL)
+	prefixBuilder.Write(strutil.String2Bytes(bizID))
+	prefixBuilder.WriteByte(traceSplitterR)
+
+	return &Logger{
+		level: logger.level,
+		sugar: logger.sugar.Named(prefixBuilder.String()),
+		cfg:   logger.cfg,
+	}
 }
 
-func (logger *Logger) TraceRaw(ctx context.Context) *zap.Logger {
-	return logger.trace(ctx).Desugar()
-}
-
-func (logger *Logger) Named(name string) *zap.SugaredLogger {
-	return logger.sugar.Named(name)
-}
-
-func (logger *Logger) Desugar() *zap.Logger {
+func (logger *Logger) Internal() interface{} {
 	return logger.sugar.Desugar()
 }
 
 func (logger *Logger) watch() error {
-	if w, err := config.Watch(logger.cfg.Path(), "level"); err != nil {
+	w, err := config.Watch(logger.cfg.Path(), "level")
+	if err != nil {
 		return err
-	} else {
-		go func() {
-			for {
-				time.Sleep(time.Second)
-
-				v, _ := w.Next()
-				newLv := v.String("info")
-				oldLv := logger.level.String()
-
-				zapLevel := zapcore.InfoLevel
-				if err := zapLevel.Set(newLv); err != nil {
-					log.Printf("logger.setAtomicLevel.error %s->%s\n", oldLv, newLv)
-				} else {
-					logger.level.SetLevel(zapLevel)
-					log.Printf("logger.setAtomicLevel.success %s->%s\n", oldLv, newLv)
-				}
-			}
-		}()
 	}
+
+	go func() {
+		for {
+			time.Sleep(logger.cfg.WatchInterval)
+
+			v, _ := w.Next()
+			newLv := v.String("info")
+			oldLv := logger.level.String()
+
+			zapLevel := zapcore.InfoLevel
+			if err := zapLevel.Set(newLv); err != nil {
+				Infof("Logger.UpdateLevel.Error: %s -> %s\n", oldLv, newLv)
+			} else {
+				logger.level.SetLevel(zapLevel)
+				Infof("Logger.UpdateLevel.Success: %s -> %s\n", oldLv, newLv)
+			}
+		}
+	}()
 
 	return nil
-}
-
-func (logger *Logger) trace(ctx context.Context) *zap.SugaredLogger {
-	var uid, requestID, spanID, bizID string
-
-	traceUID := trace.ID()
-	traceRequestID := trace.ReqID()
-	traceSpanID := trace.SpanID()
-	traceBizID := trace.BizID()
-
-	if uidStr, ok := ctx.Value(traceUID).(string); ok {
-		uid = uidStr
-	}
-	if requestIDStr, ok := ctx.Value(traceRequestID).(string); ok {
-		requestID = requestIDStr
-	}
-	if spanIDStr, ok := ctx.Value(traceSpanID).(string); ok {
-		spanID = spanIDStr
-	}
-	if bizIDStr, ok := ctx.Value(traceBizID).(string); ok {
-		bizID = bizIDStr
-	}
-
-	return logger.sugar.Named(fmt.Sprintf("[%s][%s][%s][%s]", uid, requestID, spanID, bizID))
 }

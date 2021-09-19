@@ -2,8 +2,10 @@ package logger
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/boxgo/box/pkg/config"
+	"github.com/boxgo/box/pkg/logger/core"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -12,8 +14,8 @@ type (
 	// Config of logger
 	Config struct {
 		path              string
-		Level             zap.AtomicLevel        `config:"level" json:"level" desc:"debug,info,warn,error,dpanic,panic,fatal"`
-		Development       bool                   `config:"development" json:"development"`
+		WatchInterval     time.Duration          `config:"watchInterval" json:"watchInterval" desc:"config change watch interval, default is 5s"`
+		Level             zap.AtomicLevel        `config:"level" json:"level" desc:"debug,info,warn,error,panic,fatal"`
 		DisableCaller     bool                   `config:"disableCaller" json:"disableCaller"`
 		DisableStacktrace bool                   `config:"disableStacktrace" json:"disableStacktrace"`
 		Sampling          *SamplingConfig        `config:"sampling" json:"sampling"`
@@ -22,6 +24,8 @@ type (
 		OutputPaths       []string               `config:"outputPaths" json:"outputPaths"`
 		ErrorOutputPaths  []string               `config:"errorOutputPaths" json:"errorOutputPaths"`
 		InitialFields     map[string]interface{} `config:"initialFields" json:"initialFields"`
+		Mask              bool                   `config:"mask" json:"mask"`
+		MaskRules         []core.MaskRule        `config:"maskRules" json:"maskRules"`
 	}
 
 	// SamplingConfig of logger
@@ -62,11 +66,11 @@ func StdConfig(key string) *Config {
 func DefaultConfig(key string) *Config {
 	return &Config{
 		path:              "logger." + key,
+		WatchInterval:     time.Second * 10,
 		Level:             zap.NewAtomicLevel(),
-		Development:       false,
 		Encoding:          "console",
 		DisableCaller:     true,
-		DisableStacktrace: false,
+		DisableStacktrace: true,
 		Sampling: &SamplingConfig{
 			Initial:    100,
 			Thereafter: 100,
@@ -81,10 +85,18 @@ func DefaultConfig(key string) *Config {
 			CallerKey:      "caller",
 			StacktraceKey:  "stacktrace",
 			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    "capitalColor",
+			EncodeLevel:    "capital",
 			EncodeTime:     "iso8601",
 			EncodeDuration: "ms",
 			EncodeCaller:   "short",
+		},
+		Mask: true,
+		MaskRules: []core.MaskRule{
+			{Rule: `"password":(\s*)".*?"`, Replace: `"password":$1"*"`},
+			{Rule: `password:(\s*).*?\S*`, Replace: `password:$1*`},
+			{Rule: `password=\w*&`, Replace: `password=*&`},
+			{Rule: `password=\w*\S`, Replace: `password=*`},
+			{Rule: `\\"password\\":(\s*)\\".*?\\"`, Replace: `\"password\":$1\"*\"`},
 		},
 	}
 }
