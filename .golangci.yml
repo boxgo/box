@@ -1,6 +1,6 @@
 run:
   concurrency: 4
-  timeout: 1m
+  timeout: 2m
   issues-exit-code: 1
   tests: false
   skip-dirs-use-default: true
@@ -8,6 +8,7 @@ run:
     - example
     - pkg/config
   skip-files:
+    - ".*_test.go"
   allow-parallel-runners: true
 
 output:
