@@ -10,17 +10,17 @@ import (
 
 type (
 	Config struct {
-		key           string
 		path          string
 		onceHandler   Handler
 		timingHandler Handler
 		lockDuration  time.Duration
 		locker        locker.MutexLocker
-		Type          Type   `config:"type" desc:"Stop: 0, Once: 1, Timing: 2, OnceAndTiming: 3"`
-		Spec          string `config:"spec" desc:"Cron spec info"`
-		Compete       bool   `config:"compete" desc:"Only winner can exec schedule"`
-		AutoUnlock    bool   `config:"autoUnlock" desc:"Auto unlock after task finish"`
-		LockSeconds   int    `config:"lockSeconds" desc:"Lock ttl"`
+		Type          Type                   `config:"type" desc:"Stop: 0, Once: 1, Timing: 2, OnceAndTiming: 3"`
+		Spec          string                 `config:"spec" desc:"Cron spec info"`
+		Compete       bool                   `config:"compete" desc:"Only winner can exec schedule"`
+		AutoUnlock    bool                   `config:"autoUnlock" desc:"Auto unlock after task finish"`
+		LockSeconds   int                    `config:"lockSeconds" desc:"Lock ttl"`
+		Args          map[string]interface{} `config:"args" desc:"Schedule arguments"`
 	}
 
 	Type int
@@ -60,13 +60,13 @@ func StdConfig(key string) *Config {
 
 func DefaultConfig(key string) *Config {
 	return &Config{
-		key:         key,
 		path:        "schedule." + key,
 		Type:        Stop,
 		Spec:        "",
 		Compete:     true,
 		AutoUnlock:  true,
 		LockSeconds: 0,
+		Args:        map[string]interface{}{},
 	}
 }
 

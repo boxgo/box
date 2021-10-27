@@ -16,7 +16,8 @@ type (
 )
 
 var (
-	Default = StdConfig("default").Build()
+	default404Body = []byte(http.StatusText(http.StatusNotFound))
+	default405Body = []byte(http.StatusText(http.StatusMethodNotAllowed))
 )
 
 func newGinServer(cfg *Config) *GinServer {
@@ -36,6 +37,13 @@ func newGinServer(cfg *Config) *GinServer {
 	if cfg.BasicAuth != nil && len(cfg.BasicAuth) != 0 {
 		engine.Use(gin.BasicAuth(cfg.BasicAuth))
 	}
+
+	engine.NoRoute(func(c *gin.Context) {
+		c.Data(http.StatusNotFound, "text/plain", default404Body)
+	})
+	engine.NoMethod(func(c *gin.Context) {
+		c.Data(http.StatusMethodNotAllowed, "text/plain", default405Body)
+	})
 
 	return &GinServer{
 		cfg:    cfg,

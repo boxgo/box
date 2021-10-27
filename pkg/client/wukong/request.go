@@ -10,6 +10,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"reflect"
+	"strings"
 
 	"github.com/boxgo/box/pkg/util/urlutil"
 )
@@ -67,6 +68,14 @@ func (request *Request) Set(key, value interface{}) *Request {
 	return request
 }
 
+func (request *Request) Logger(level LoggerLevel) *Request {
+	return request.Set(loggerLevelKey, level)
+}
+
+func (request *Request) Metric(enable bool) *Request {
+	return request.Set(metricSwitchKey, enable)
+}
+
 func (request *Request) SetBasicAuth(auth BasicAuth) *Request {
 	request.BasicAuth = auth
 
@@ -121,7 +130,7 @@ func (request *Request) Form(form interface{}) *Request {
 	case reflect.Ptr:
 		switch v.Elem().Kind() {
 		case reflect.Map, reflect.Struct:
-			request.queryMapOrStruct(request.QueryData, v.Interface())
+			request.queryMapOrStruct(request.FormData, v.Interface())
 		}
 	}
 
@@ -148,9 +157,10 @@ func (request *Request) End() *Response {
 
 func (request *Request) RawRequest() (*http.Request, error) {
 	var (
-		err    error
-		req    *http.Request
-		reader io.Reader
+		err       error
+		targetUrl string
+		req       *http.Request
+		reader    io.Reader
 	)
 	if err = request.Error; err != nil {
 		return req, err
@@ -159,9 +169,14 @@ func (request *Request) RawRequest() (*http.Request, error) {
 		return request.rawReq, nil
 	}
 
-	targetUrl, err := urlutil.UrlJoin(request.BaseUrl, request.Url)
-	if err != nil {
-		return req, err
+	if strings.HasPrefix(request.BaseUrl, "http") {
+		if target, err := urlutil.UrlJoin(request.BaseUrl, request.Url); err != nil {
+			return req, err
+		} else {
+			targetUrl = target
+		}
+	} else {
+		targetUrl = request.Url
 	}
 
 	if request.BodyData != nil {
@@ -189,6 +204,13 @@ func (request *Request) RawRequest() (*http.Request, error) {
 
 	if len(request.QueryData) != 0 {
 		req.URL.RawQuery = request.QueryData.Encode()
+	}
+	if len(request.FormData) != 0 {
+		if req.URL.RawQuery != "" {
+			req.URL.RawQuery += "&" + request.FormData.Encode()
+		} else {
+			req.URL.RawQuery = request.FormData.Encode()
+		}
 	}
 
 	if request.BasicAuth.Username != "" || request.BasicAuth.Password != "" {

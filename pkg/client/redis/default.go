@@ -11,6 +11,10 @@ var (
 	Default = StdConfig("default").Build()
 )
 
+func NewScript(src string) *Script {
+	return Default.NewScript(src)
+}
+
 func Client() redis.UniversalClient {
 	return Default.Client()
 }

@@ -3,14 +3,12 @@ package mongodb
 import (
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/logger"
-	"go.mongodb.org/mongo-driver/event"
 )
 
 type (
 	Config struct {
 		path                 string
-		commandMonitor       *event.CommandMonitor
-		poolMonitor          *event.PoolMonitor
+		monitor              Monitor
 		URI                  string `config:"uri" desc:"mongodb uri string."`
 		EnableCommandMonitor bool   `config:"commandMonitor"`
 		EnablePoolMonitor    bool   `config:"poolMonitor"`
@@ -19,15 +17,9 @@ type (
 	OptionFunc func(*Config)
 )
 
-func WithCommandMonitor(monitor *event.CommandMonitor) OptionFunc {
+func WithMonitor(monitor Monitor) OptionFunc {
 	return func(options *Config) {
-		options.commandMonitor = monitor
-	}
-}
-
-func WithPoolMonitor(monitor *event.PoolMonitor) OptionFunc {
-	return func(options *Config) {
-		options.poolMonitor = monitor
+		options.monitor = monitor
 	}
 }
 

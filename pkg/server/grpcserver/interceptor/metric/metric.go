@@ -21,7 +21,6 @@ var (
 		"gGPC server handle msg duration",
 		[]string{"method", "type", "code"},
 		map[float64]float64{
-			0.25: 0.05,
 			0.5:  0.05,
 			0.75: 0.05,
 			0.9:  0.01,

@@ -77,7 +77,7 @@ func (rs *redisSource) Watch() (source.Watcher, error) {
 		return nil, rs.err
 	}
 
-	return newWatcher(rs.prefix, rs.client, rs.opts)
+	return newWatcher(rs)
 }
 
 func (rs *redisSource) String() string {

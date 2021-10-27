@@ -1,39 +1,26 @@
 package redis
 
 import (
-	"bytes"
-	"context"
 	"errors"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/boxgo/box/pkg/config/source"
-	"github.com/go-redis/redis/v8"
 )
 
 type watcher struct {
-	sync.RWMutex
-	name   string
-	prefix string
-	opts   source.Options
-	cs     *source.ChangeSet
-	rsp    chan string
-	ch     chan *source.ChangeSet
-	exit   chan bool
-	client redis.UniversalClient
+	name       string
+	source     *redisSource
+	exit       chan bool
+	changeSets chan *source.ChangeSet
 }
 
-func newWatcher(prefix string, client redis.UniversalClient, opts source.Options) (source.Watcher, error) {
+func newWatcher(sour *redisSource) (source.Watcher, error) {
 	w := &watcher{
-		name:   "redis",
-		prefix: prefix,
-		opts:   opts,
-		cs:     nil,
-		rsp:    make(chan string),
-		ch:     make(chan *source.ChangeSet),
-		exit:   make(chan bool),
-		client: client,
+		name:       "redis",
+		changeSets: make(chan *source.ChangeSet),
+		exit:       make(chan bool),
+		source:     sour,
 	}
 	go w.watch()
 
@@ -42,7 +29,7 @@ func newWatcher(prefix string, client redis.UniversalClient, opts source.Options
 
 func (w *watcher) Next() (*source.ChangeSet, error) {
 	select {
-	case cs := <-w.ch:
+	case cs := <-w.changeSets:
 		return cs, nil
 	case <-w.exit:
 		return nil, errors.New("watcher stopped")
@@ -67,44 +54,12 @@ func (w *watcher) watch() {
 		case <-w.exit:
 			return
 		default:
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
-			if rsp, err := w.client.Get(ctx, w.prefix+".config").Bytes(); err != nil && err != redis.Nil {
+			data, err := w.source.Read()
+			if err != nil {
 				log.Printf("config redis watch error: %#v", err)
-			} else if len(rsp) != 0 {
-				w.handle(rsp)
 			}
 
-			cancel()
+			w.changeSets <- data
 		}
 	}
-}
-
-func (w *watcher) handle(data []byte) {
-	w.RLock()
-	eq := w.cs != nil && bytes.Compare(w.cs.Data, data) == 0
-	w.RUnlock()
-
-	if eq {
-		return
-	}
-
-	var val map[string]interface{}
-	if err := w.opts.Encoder.Decode(data, &val); err != nil {
-		log.Printf("config redis watch handler decode error: %#v", err)
-		return
-	}
-
-	cs := &source.ChangeSet{
-		Timestamp: time.Now(),
-		Source:    w.name,
-		Data:      data,
-		Format:    w.opts.Encoder.String(),
-	}
-	cs.Checksum = cs.Sum()
-
-	w.Lock()
-	w.cs = cs
-	w.Unlock()
-
-	w.ch <- cs
 }

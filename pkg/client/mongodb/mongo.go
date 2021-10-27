@@ -5,6 +5,7 @@ import (
 
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/logger"
+	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -13,8 +14,18 @@ import (
 type (
 	Mongo struct {
 		client  *mongo.Client
-		monitor *Monitor
+		monitor Monitor
 		cfg     *Config
+	}
+
+	Monitor interface {
+		Setup(*mongo.Client)
+		Serve()
+		Shutdown()
+		Started(context.Context, *event.CommandStartedEvent)
+		Succeeded(context.Context, *event.CommandSucceededEvent)
+		Failed(context.Context, *event.CommandFailedEvent)
+		Event(*event.PoolEvent)
 	}
 )
 
@@ -23,18 +34,20 @@ func newMongo(cfg *Config) *Mongo {
 	clientOptions.ApplyURI(cfg.URI)
 	clientOptions.SetAppName(config.ServiceName())
 
-	if cfg.commandMonitor == nil {
-		cfg.commandMonitor = defaultMonitor.CommandMonitor()
-	}
-	if cfg.poolMonitor == nil {
-		cfg.poolMonitor = defaultMonitor.PoolEventMonitor()
+	var mo Monitor
+	if cfg.monitor == nil && (cfg.EnableCommandMonitor || cfg.EnablePoolMonitor) {
+		mo = newMonitor()
 	}
 
 	if cfg.EnableCommandMonitor {
-		clientOptions.Monitor = cfg.commandMonitor
+		clientOptions.Monitor = &event.CommandMonitor{
+			Started:   mo.Started,
+			Succeeded: mo.Succeeded,
+			Failed:    mo.Failed,
+		}
 	}
 	if cfg.EnablePoolMonitor {
-		clientOptions.PoolMonitor = cfg.poolMonitor
+		clientOptions.PoolMonitor = &event.PoolMonitor{Event: mo.Event}
 	}
 
 	client, err := mongo.NewClient(clientOptions)
@@ -42,10 +55,14 @@ func newMongo(cfg *Config) *Mongo {
 		logger.Panicf("new mongodb client error: %s", err)
 	}
 
+	if mo != nil {
+		mo.Setup(client)
+	}
+
 	mgo := &Mongo{
 		client:  client,
 		cfg:     cfg,
-		monitor: defaultMonitor,
+		monitor: mo,
 	}
 
 	return mgo
@@ -61,7 +78,7 @@ func (mgo *Mongo) Serve(ctx context.Context) error {
 	}
 
 	if mgo.monitor != nil {
-		mgo.monitor.watch(mgo.client)
+		mgo.monitor.Serve()
 	}
 
 	return mgo.client.Ping(ctx, readpref.Primary())
@@ -69,7 +86,7 @@ func (mgo *Mongo) Serve(ctx context.Context) error {
 
 func (mgo *Mongo) Shutdown(ctx context.Context) error {
 	if mgo.monitor != nil {
-		mgo.monitor.shutdown()
+		mgo.monitor.Shutdown()
 	}
 
 	return mgo.client.Disconnect(ctx)

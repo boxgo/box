@@ -9,6 +9,7 @@ import (
 type (
 	Config struct {
 		path   string
+		Prefix string `config:"prefix" desc:"locker key prefix. if empty, auto prefix with format: ${serviceName}.locker.${key}."`
 		Config string `config:"config" desc:"redis config path. eg: 'default' means use 'redis.default' config"`
 	}
 )

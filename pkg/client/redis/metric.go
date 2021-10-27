@@ -29,7 +29,6 @@ var (
 		"redis command duration seconds",
 		[]string{"address", "db", "masterName", "pipe", "cmd", "error"},
 		map[float64]float64{
-			0.25: 0.05,
 			0.5:  0.05,
 			0.75: 0.05,
 			0.9:  0.01,

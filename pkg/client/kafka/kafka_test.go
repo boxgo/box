@@ -7,12 +7,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Shopify/sarama"
 	"github.com/boxgo/box/pkg/client/kafka"
 )
 
 const (
-	testTopic = "wechat_event"
+	testTopic = "test"
 )
 
 func Example() {
@@ -40,7 +39,7 @@ func Example() {
 		}
 	}()
 
-	partitionConsumer, err := consumer.ConsumePartition(testTopic, 0, sarama.OffsetNewest)
+	partitionConsumer, err := consumer.ConsumePartition(testTopic, 0, kafka.OffsetNewest)
 	if err != nil {
 		panic(err)
 	}
@@ -61,9 +60,9 @@ func Example() {
 		}
 	}()
 
-	partition, offset, err := producer.SendMessage(&sarama.ProducerMessage{
+	partition, offset, err := producer.SendMessage(&kafka.ProducerMessage{
 		Topic: testTopic,
-		Value: sarama.StringEncoder("hi"),
+		Value: kafka.StringEncoder("hi"),
 	})
 	if err != nil {
 		panic(err)

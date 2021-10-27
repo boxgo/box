@@ -11,13 +11,16 @@ import (
 type (
 	// Config 配置
 	Config struct {
-		path     string
-		kfkCfg   *sarama.Config
-		Addrs    []string       `config:"addrs"`
-		Net      Net            `config:"net"`
-		Metadata Metadata       `config:"metadata"`
-		Producer ProducerConfig `config:"producer"`
-		Consumer ConsumerConfig `config:"consumer"`
+		path              string
+		kfkCfg            *sarama.Config
+		Addrs             []string            `config:"addrs"`
+		Net               Net                 `config:"net"`
+		Metadata          Metadata            `config:"metadata"`
+		Producer          ProducerConfig      `config:"producer"`
+		Consumer          ConsumerConfig      `config:"consumer"`
+		ClientID          string              `config:"clientId"`
+		ChannelBufferSize int                 `config:"channelBufferSize"`
+		Version           sarama.KafkaVersion `config:"version"`
 	}
 
 	Net struct {
@@ -31,7 +34,7 @@ type (
 	Metadata struct {
 		RetryMax         int                                         `config:"retryMax"`
 		RetryBackoff     time.Duration                               `config:"retryBackoff"`
-		RetryBackoffFunc func(retries, maxRetries int) time.Duration `config:"-"`
+		RetryBackoffFunc func(retries, maxRetries int) time.Duration `config:"-" json:"-"`
 		RefreshFrequency time.Duration                               `config:"refreshFrequency"`
 		Full             bool                                        `config:"full"`
 		Timeout          time.Duration                               `config:"timeout"`
@@ -43,7 +46,7 @@ type (
 		Timeout          time.Duration                               `config:"timeout"`
 		Compression      sarama.CompressionCodec                     `config:"compression"`
 		CompressionLevel int                                         `config:"compressionLevel"`
-		Partitioner      sarama.PartitionerConstructor               `config:"-"`
+		Partitioner      sarama.PartitionerConstructor               `config:"-" json:"-"`
 		Idempotent       bool                                        `config:"idempotent"`
 		ReturnSuccesses  bool                                        `config:"returnSuccesses"`
 		ReturnErrors     bool                                        `config:"returnErrors"`
@@ -53,20 +56,20 @@ type (
 		FlushMaxMessages int                                         `config:"FlushMaxMessages"`
 		RetryMax         int                                         `config:"retryMax"`
 		RetryBackoff     time.Duration                               `config:"retryBackoff"`
-		RetryBackoffFunc func(retries, maxRetries int) time.Duration `config:"-"`
-		Interceptors     []sarama.ProducerInterceptor                `config:"-"`
+		RetryBackoffFunc func(retries, maxRetries int) time.Duration `config:"-" json:"-"`
+		Interceptors     []sarama.ProducerInterceptor                `config:"-" json:"-"`
 	}
 
 	ConsumerConfig struct {
 		GroupSessionTimeout        time.Duration                   `config:"groupSessionTimeout"`
 		GroupHeartbeatInterval     time.Duration                   `config:"groupHeartbeatInterval"`
-		GroupRebalanceStrategy     sarama.BalanceStrategy          `config:"groupRebalanceStrategy"`
+		GroupRebalanceStrategy     sarama.BalanceStrategy          `config:"groupRebalanceStrategy" json:"-"`
 		GroupRebalanceTimeout      time.Duration                   `config:"groupRebalanceTimeout"`
 		GroupRebalanceRetryMax     int                             `config:"groupRebalanceRetryMax"`
 		GroupRebalanceRetryBackoff time.Duration                   `config:"groupRebalanceRetryBackoff"`
 		GroupMemberUserData        []byte                          `config:"groupMemberUserData"`
 		RetryBackoff               time.Duration                   `config:"retryBackoff"`
-		RetryBackoffFunc           func(retries int) time.Duration `config:"-"`
+		RetryBackoffFunc           func(retries int) time.Duration `config:"-" json:"-"`
 		FetchMin                   int32                           `config:"fetchMin"`
 		FetchMax                   int32                           `config:"fetchMax"`
 		FetchDefault               int32                           `config:"fetchDefault"`
@@ -80,7 +83,7 @@ type (
 		OffsetAutoCommitEnable     bool                            `config:"offsetAutoCommitEnable"`
 		OffsetAutoCommitInterval   time.Duration                   `config:"offsetAutoCommitInterval"`
 		IsolationLevel             sarama.IsolationLevel           `config:"isolationLevel"`
-		Interceptors               []sarama.ConsumerInterceptor    `config:"-"`
+		Interceptors               []sarama.ConsumerInterceptor    `config:"-" json:"-"`
 	}
 
 	// OptionFunc 选项信息
@@ -147,6 +150,9 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 	cfg.kfkCfg.Consumer.Offsets.AutoCommit.Interval = cfg.Consumer.OffsetAutoCommitInterval
 	cfg.kfkCfg.Consumer.IsolationLevel = cfg.Consumer.IsolationLevel
 	cfg.kfkCfg.Consumer.Interceptors = cfg.Consumer.Interceptors
+	cfg.kfkCfg.ClientID = cfg.ClientID
+	cfg.kfkCfg.ChannelBufferSize = cfg.ChannelBufferSize
+	cfg.kfkCfg.Version = cfg.Version
 
 	if err := cfg.kfkCfg.Validate(); err != nil {
 		logger.Panicf("Kafka config invalid error: %s", err)
@@ -168,6 +174,14 @@ func DefaultConfig(key string) *Config {
 			ReadTimeout:     kfkCfg.Net.ReadTimeout,
 			WriteTimeout:    kfkCfg.Net.WriteTimeout,
 			KeepAlive:       kfkCfg.Net.KeepAlive,
+		},
+		Metadata: Metadata{
+			RetryMax:         kfkCfg.Metadata.Retry.Max,
+			RetryBackoff:     kfkCfg.Metadata.Retry.Backoff,
+			RetryBackoffFunc: kfkCfg.Metadata.Retry.BackoffFunc,
+			RefreshFrequency: kfkCfg.Metadata.RefreshFrequency,
+			Full:             kfkCfg.Metadata.Full,
+			Timeout:          kfkCfg.Metadata.Timeout,
 		},
 		Producer: ProducerConfig{
 			MaxMessageBytes:  kfkCfg.Producer.MaxMessageBytes,
@@ -212,7 +226,10 @@ func DefaultConfig(key string) *Config {
 			IsolationLevel:             kfkCfg.Consumer.IsolationLevel,
 			Interceptors:               kfkCfg.Consumer.Interceptors,
 		},
-		kfkCfg: kfkCfg,
+		ClientID:          kfkCfg.ClientID,
+		ChannelBufferSize: kfkCfg.ChannelBufferSize,
+		Version:           kfkCfg.Version,
+		kfkCfg:            kfkCfg,
 	}
 }
 

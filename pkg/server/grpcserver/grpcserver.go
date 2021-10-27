@@ -24,6 +24,8 @@ func newGRpcServer(cfg *Config) *Server {
 
 	server := grpc.NewServer(serverOpts...)
 
+	cfg.wrap(server)
+
 	if cfg.Reflection {
 		reflection.Register(server)
 	}
@@ -56,8 +58,4 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	server.server.GracefulStop()
 
 	return nil
-}
-
-func (server *Server) RawServer() *grpc.Server {
-	return server.server
 }

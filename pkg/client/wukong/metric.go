@@ -12,6 +12,10 @@ type (
 	metricDurationKey struct{}
 )
 
+const (
+	metricSwitchKey = "metric.enable"
+)
+
 var (
 	requestInflight = metric.NewGaugeVec(
 		"http_client_request_in_process",
@@ -28,7 +32,6 @@ var (
 		"http client request duration",
 		[]string{"method", "baseUrl", "url", "statusCode", "error"},
 		map[float64]float64{
-			0.25: 0.05,
 			0.5:  0.05,
 			0.75: 0.05,
 			0.9:  0.01,
@@ -38,6 +41,10 @@ var (
 )
 
 func metricStart(request *Request) error {
+	if val, ok := request.Context.Value(metricSwitchKey).(bool); ok && !val {
+		return nil
+	}
+
 	requestInflight.WithLabelValues(request.Method, request.BaseUrl, request.Url).Inc()
 
 	request.Context = context.WithValue(request.Context, metricDurationKey{}, time.Now())
@@ -46,6 +53,10 @@ func metricStart(request *Request) error {
 }
 
 func metricEnd(request *Request, resp *Response) error {
+	if val, ok := request.Context.Value(metricSwitchKey).(bool); ok && !val {
+		return nil
+	}
+
 	var (
 		errMsg     = ""
 		duration   = time.Duration(0)

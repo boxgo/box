@@ -1,0 +1,12 @@
+name: box
+version: 1.0.0
+
+schedule:
+  default:
+    type: 2
+    lockSeconds: 60
+    autoUnlock: true
+    compete: true
+    spec: "0 */10 * * * *"
+    args:
+      hello: world

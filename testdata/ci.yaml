@@ -1,0 +1,6 @@
+name: box
+version: 1.0.0
+
+ginserver:
+  default:
+    addr: ":9000"

@@ -27,9 +27,9 @@ type (
 	Configurator interface {
 		// Load config sources
 		Load(source ...source.Source) error
-		// Force a source change set sync
+		// Sync force a source change set sync
 		Sync() error
-		// Stop the config loader/watcher
+		// Close stop the config loader/watcher
 		Close() error
 		// Bytes get merged config data
 		Bytes() []byte
@@ -39,13 +39,14 @@ type (
 		Watch(path ...string) (Watcher, error)
 		// Get value through field
 		Get(path ...string) reader.Value
-		// Scanned fields
+		// Fields return scanned fields
 		Fields() *field.Fields
 	}
 
 	bootConfig struct {
 		Name    string   `config:"name"`
 		Version string   `config:"version"`
+		Tags    []string `config:"tags"`
 		Loader  string   `config:"loader"`
 		Reader  string   `config:"reader"`
 		Source  []Source `config:"source"`
@@ -61,9 +62,10 @@ type (
 var (
 	// Default Config Manager
 	Default        = NewConfig()
-	bootCfg        = bootConfig{Name: "box", Version: "unknown"}
+	bootCfg        = bootConfig{Name: "box", Version: "unknown", Tags: []string{}}
 	defaultOnce    sync.Once
 	defaultSources []source.Source
+	rwMutex        = sync.RWMutex{}
 )
 
 // NewConfig returns new config
@@ -122,6 +124,27 @@ func ServiceName() string {
 
 func ServiceVersion() string {
 	return bootCfg.Version
+}
+
+func ServiceTag() []string {
+	rwMutex.RLock()
+	defer rwMutex.RUnlock()
+
+	return bootCfg.Tags
+}
+
+func SetServiceTag(tags ...string) {
+	rwMutex.Lock()
+	defer rwMutex.Unlock()
+
+	bootCfg.Tags = tags
+}
+
+func AppendServiceTag(tags ...string) {
+	rwMutex.Lock()
+	defer rwMutex.Unlock()
+
+	bootCfg.Tags = append(bootCfg.Tags, tags...)
 }
 
 func lazyLoad() {

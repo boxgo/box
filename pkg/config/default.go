@@ -137,7 +137,7 @@ func (c *config) Load(sources ...source.Source) error {
 	return nil
 }
 
-// sync loads all the sources, calls the parser and updates the config
+// Sync loads all the sources, calls the parser and updates the config
 func (c *config) Sync() error {
 	if err := c.opts.Loader.Sync(); err != nil {
 		return err
@@ -161,7 +161,7 @@ func (c *config) Sync() error {
 	return nil
 }
 
-// Stop the config loader/watcher
+// Close stop the config loader/watcher
 func (c *config) Close() error {
 	select {
 	case <-c.exit:

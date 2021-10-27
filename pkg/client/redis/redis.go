@@ -57,3 +57,7 @@ func (r *Redis) Shutdown(ctx context.Context) error {
 func (r *Redis) Client() redis.UniversalClient {
 	return r.client
 }
+
+func (r *Redis) NewScript(script string) *Script {
+	return newScript(r.client, script)
+}

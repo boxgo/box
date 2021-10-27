@@ -1,16 +1,13 @@
 package box
 
-import (
-	"github.com/boxgo/box/pkg/component"
-)
-
 type (
 	// Options new box options
 	Options struct {
 		StartupTimeout  int
 		ShutdownTimeout int
 		AutoMaxProcs    *bool
-		Boxes           []component.Box
+		Boxes           []Box
+		Tags            []string
 	}
 
 	// Option setter
@@ -38,8 +35,15 @@ func WithAutoMaxProcs(autoMaxProcs bool) Option {
 }
 
 // WithBoxes set boxes
-func WithBoxes(boxes ...component.Box) Option {
+func WithBoxes(boxes ...Box) Option {
 	return func(ops *Options) {
 		ops.Boxes = boxes
+	}
+}
+
+// WithTag function
+func WithTag(fn func() []string) Option {
+	return func(ops *Options) {
+		ops.Tags = fn()
 	}
 }

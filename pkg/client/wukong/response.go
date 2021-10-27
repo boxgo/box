@@ -17,11 +17,6 @@ type (
 		bodyData        []byte
 		ignoreEncodeErr bool
 	}
-
-	ConditionBind struct {
-		Data  interface{}
-		Check func() bool
-	}
 )
 
 func NewResponse(err error, req *Request, resp *http.Response) *Response {

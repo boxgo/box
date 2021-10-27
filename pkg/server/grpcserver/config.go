@@ -9,6 +9,7 @@ import (
 type (
 	Config struct {
 		path                    string
+		wrap                    Wrap
 		serverOptions           []grpc.ServerOption
 		unaryServerInterceptor  []grpc.UnaryServerInterceptor
 		streamServerInterceptor []grpc.StreamServerInterceptor
@@ -17,8 +18,16 @@ type (
 		Reflection              bool   `config:"reflection" desc:"Enable server reflection service"`
 	}
 
+	Wrap func(*grpc.Server)
+
 	OptionFunc func(*Config)
 )
+
+func WithWrap(wrap Wrap) OptionFunc {
+	return func(c *Config) {
+		c.wrap = wrap
+	}
+}
 
 func WithServerOption(opt ...grpc.ServerOption) OptionFunc {
 	return func(c *Config) {

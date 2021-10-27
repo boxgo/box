@@ -6,6 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var (
+	Default = StdConfig("default").Build()
+)
+
 func Run() error {
 	return Default.Run()
 }

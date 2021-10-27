@@ -23,7 +23,7 @@ type (
 )
 
 var (
-	Default = DefaultConfig("").Build()
+	Default = StdConfig("").Build()
 )
 
 func newMetric(cfg *Config) *Metric {
@@ -52,7 +52,7 @@ func (m *Metric) Serve(context.Context) error {
 		defer ticker.Stop()
 
 		pusher := push.
-			New(m.cfg.PushTargetURL, config.ServiceName()).
+			New(m.cfg.PushTargetURL, config.ServiceName()+"-"+config.ServiceVersion()).
 			Gatherer(prometheus.DefaultRegisterer.(prometheus.Gatherer)).
 			Grouping("instance", system.Hostname())
 
@@ -92,7 +92,7 @@ func (m *Metric) Handler() http.Handler {
 }
 
 // NewCounterVec creates a new CounterVec based on the provided CounterOpts and partitioned by the given label names.
-func (m *Metric) NewCounterVec(name, help string, labels []string) *prometheus.CounterVec {
+func (m *Metric) NewCounterVec(name, help string, labels []string) *CounterVec {
 	vec := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: m.cfg.Namespace,
@@ -109,7 +109,7 @@ func (m *Metric) NewCounterVec(name, help string, labels []string) *prometheus.C
 }
 
 // NewSummaryVec creates a new SummaryVec based on the provided SummaryOpts and partitioned by the given label names.
-func (m *Metric) NewSummaryVec(name, help string, labels []string, objectives map[float64]float64) *prometheus.SummaryVec {
+func (m *Metric) NewSummaryVec(name, help string, labels []string, objectives map[float64]float64) *SummaryVec {
 	vec := prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Namespace:  m.cfg.Namespace,
@@ -127,7 +127,7 @@ func (m *Metric) NewSummaryVec(name, help string, labels []string, objectives ma
 }
 
 // NewGaugeVec creates a new GaugeVec based on the provided GaugeOpts and partitioned by the given label names.
-func (m *Metric) NewGaugeVec(name, help string, labels []string) *prometheus.GaugeVec {
+func (m *Metric) NewGaugeVec(name, help string, labels []string) *GaugeVec {
 	vec := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: m.cfg.Namespace,
@@ -144,7 +144,7 @@ func (m *Metric) NewGaugeVec(name, help string, labels []string) *prometheus.Gau
 }
 
 // NewHistogramVec creates a new HistogramVec based on the provided HistogramOpts and partitioned by the given label names.
-func (m *Metric) NewHistogramVec(name, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
+func (m *Metric) NewHistogramVec(name, help string, labels []string, buckets []float64) *HistogramVec {
 	vec := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: m.cfg.Namespace,
