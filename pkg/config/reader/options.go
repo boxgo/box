@@ -1,27 +1,27 @@
 package reader
 
 import (
-	"github.com/boxgo/box/pkg/config/encoder"
-	"github.com/boxgo/box/pkg/config/encoder/json"
-	"github.com/boxgo/box/pkg/config/encoder/toml"
-	"github.com/boxgo/box/pkg/config/encoder/xml"
-	"github.com/boxgo/box/pkg/config/encoder/yaml"
+	"github.com/boxgo/box/pkg/codec"
+	"github.com/boxgo/box/pkg/codec/json"
+	"github.com/boxgo/box/pkg/codec/toml"
+	"github.com/boxgo/box/pkg/codec/xml"
+	"github.com/boxgo/box/pkg/codec/yaml"
 )
 
 type Options struct {
-	Encoding map[string]encoder.Encoder
+	Encoding map[string]codec.Marshaler
 }
 
 type Option func(o *Options)
 
 func NewOptions(opts ...Option) Options {
 	options := Options{
-		Encoding: map[string]encoder.Encoder{
-			"json": json.NewEncoder(),
-			"yaml": yaml.NewEncoder(),
-			"toml": toml.NewEncoder(),
-			"xml":  xml.NewEncoder(),
-			"yml":  yaml.NewEncoder(),
+		Encoding: map[string]codec.Marshaler{
+			"json": json.NewMarshaler(),
+			"yaml": yaml.NewMarshaler(),
+			"toml": toml.NewMarshaler(),
+			"xml":  xml.NewMarshaler(),
+			"yml":  yaml.NewMarshaler(),
 		},
 	}
 	for _, o := range opts {
@@ -30,10 +30,10 @@ func NewOptions(opts ...Option) Options {
 	return options
 }
 
-func WithEncoder(e encoder.Encoder) Option {
+func WithEncoder(e codec.Marshaler) Option {
 	return func(o *Options) {
 		if o.Encoding == nil {
-			o.Encoding = make(map[string]encoder.Encoder)
+			o.Encoding = make(map[string]codec.Marshaler)
 		}
 		o.Encoding[e.String()] = e
 	}
