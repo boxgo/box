@@ -3,7 +3,7 @@ module github.com/boxgo/box
 go 1.15
 
 require (
-	github.com/BurntSushi/toml v0.3.1
+	github.com/BurntSushi/toml v0.4.1
 	github.com/Shopify/sarama v1.27.2
 	github.com/boxgo/redisstore/v2 v2.0.0
 	github.com/fsnotify/fsnotify v1.4.9
