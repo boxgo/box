@@ -26,7 +26,7 @@ func (h DebugHook) BeforeQuery(ctx context.Context, evt *pg.QueryEvent) (context
 	}
 
 	if evt.Err != nil {
-		logger.Trace(ctx).Errorw("PgExecuteError", "error", evt.Err)
+		logger.Trace(ctx).Errorw("PgExecuteError", "error", evt.Err, "event", evt)
 	} else if h.Verbose {
 		logger.Trace(ctx).Infow("PgExecuteStart", "sql", string(q))
 	}
@@ -36,7 +36,7 @@ func (h DebugHook) BeforeQuery(ctx context.Context, evt *pg.QueryEvent) (context
 
 func (h DebugHook) AfterQuery(ctx context.Context, evt *pg.QueryEvent) error {
 	if evt.Err != nil {
-		logger.Trace(ctx).Errorw("PGExecuteError", "error", evt.Err)
+		logger.Trace(ctx).Errorw("PgExecuteError", "error", evt.Err, "event", evt)
 	} else if h.Verbose {
 		logger.Trace(ctx).Infow("PgExecuteEnd", "affected", evt.Result.RowsAffected(), "returned", evt.Result.RowsReturned())
 	}
