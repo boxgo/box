@@ -11,7 +11,7 @@ import (
 )
 
 type (
-	// Locker redis lock
+	// Cache redis cache
 	redisCache struct {
 		cfg    *Config
 		client *redis.Redis
@@ -35,7 +35,7 @@ func newCache(cfg *Config) cache.Cache {
 	return lock
 }
 
-// Lock key
+// Set cache
 func (l *redisCache) Set(ctx context.Context, key string, val interface{}, duration time.Duration) error {
 	data, err := json.Marshal(val)
 	if err != nil {
@@ -45,7 +45,7 @@ func (l *redisCache) Set(ctx context.Context, key string, val interface{}, durat
 	return l.client.Client().Set(ctx, l.cacheKey(key), data, duration).Err()
 }
 
-// UnLock unlock key
+// Get cache
 func (l *redisCache) Get(ctx context.Context, key string, val interface{}) error {
 	data, err := l.client.Client().Get(ctx, l.cacheKey(key)).Bytes()
 	if err == redis.Nil {
