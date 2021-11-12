@@ -3,14 +3,14 @@ module github.com/boxgo/box
 go 1.15
 
 require (
-	github.com/BurntSushi/toml v0.3.1
+	github.com/BurntSushi/toml v0.4.1
 	github.com/Shopify/sarama v1.27.2
 	github.com/boxgo/redisstore/v2 v2.0.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
 	github.com/gin-contrib/sessions v0.0.3
 	github.com/gin-gonic/gin v1.5.0
-	github.com/go-pg/pg/v10 v10.7.7
+	github.com/go-pg/pg/v10 v10.10.6
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-redis/redis/v8 v8.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.4.0

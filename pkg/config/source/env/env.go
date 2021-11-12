@@ -67,7 +67,7 @@ func (e *env) Read() (*source.ChangeSet, error) {
 		}
 	}
 
-	b, err := e.opts.Encoder.Encode(changes)
+	b, err := e.opts.Encoder.Marshal(changes)
 	if err != nil {
 		return nil, err
 	}

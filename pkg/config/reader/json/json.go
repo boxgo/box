@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/boxgo/box/pkg/config/encoder"
-	"github.com/boxgo/box/pkg/config/encoder/json"
+	"github.com/boxgo/box/pkg/codec"
+	"github.com/boxgo/box/pkg/codec/json"
 	"github.com/boxgo/box/pkg/config/reader"
 	"github.com/boxgo/box/pkg/config/source"
 	"github.com/imdario/mergo"
@@ -13,7 +13,7 @@ import (
 
 type jsonReader struct {
 	opts reader.Options
-	json encoder.Encoder
+	json codec.Marshaler
 }
 
 func (j *jsonReader) Merge(changes ...*source.ChangeSet) (*source.ChangeSet, error) {
@@ -35,7 +35,7 @@ func (j *jsonReader) Merge(changes ...*source.ChangeSet) (*source.ChangeSet, err
 		}
 
 		var data map[string]interface{}
-		if err := codec.Decode(m.Data, &data); err != nil {
+		if err := codec.Unmarshal(m.Data, &data); err != nil {
 			return nil, err
 		}
 		if err := mergo.Map(&merged, data, mergo.WithOverride); err != nil {
@@ -43,7 +43,7 @@ func (j *jsonReader) Merge(changes ...*source.ChangeSet) (*source.ChangeSet, err
 		}
 	}
 
-	b, err := j.json.Encode(merged)
+	b, err := j.json.Marshal(merged)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (j *jsonReader) String() string {
 func NewReader(opts ...reader.Option) reader.Reader {
 	options := reader.NewOptions(opts...)
 	return &jsonReader{
-		json: json.NewEncoder(),
+		json: json.NewMarshaler(),
 		opts: options,
 	}
 }

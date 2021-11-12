@@ -3,13 +3,13 @@ package source
 import (
 	"context"
 
-	"github.com/boxgo/box/pkg/config/encoder"
-	"github.com/boxgo/box/pkg/config/encoder/json"
+	"github.com/boxgo/box/pkg/codec"
+	"github.com/boxgo/box/pkg/codec/json"
 )
 
 type Options struct {
 	// Encoder
-	Encoder encoder.Encoder
+	Encoder codec.Marshaler
 
 	// for alternative data
 	Context context.Context
@@ -19,7 +19,7 @@ type Option func(o *Options)
 
 func NewOptions(opts ...Option) Options {
 	options := Options{
-		Encoder: json.NewEncoder(),
+		Encoder: json.NewMarshaler(),
 		Context: context.Background(),
 	}
 
@@ -31,7 +31,7 @@ func NewOptions(opts ...Option) Options {
 }
 
 // WithEncoder sets the source encoder
-func WithEncoder(e encoder.Encoder) Option {
+func WithEncoder(e codec.Marshaler) Option {
 	return func(o *Options) {
 		o.Encoder = e
 	}
