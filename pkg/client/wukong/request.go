@@ -236,6 +236,8 @@ func (request *Request) queryMapOrStruct(urlVal url.Values, query interface{}) {
 					for _, e := range val {
 						urlVal.Add(k, fmt.Sprintf("%v", e))
 					}
+				case nil:
+					continue
 				default:
 					urlVal.Add(k, fmt.Sprintf("%v", v))
 				}
