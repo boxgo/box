@@ -8,6 +8,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 type (
@@ -34,9 +35,33 @@ func newGorm(c *Config) *Gorm {
 		}
 	}
 
+	var namer schema.Namer
+	if c.NamingStrategy != nil {
+		namer = c.NamingStrategy
+	} else {
+		namer = schema.NamingStrategy{
+			TablePrefix:   c.NamingStrategyTablePrefix,
+			SingularTable: c.NamingStrategySingularTable,
+			NameReplacer:  c.NamingStrategyNameReplacer,
+			NoLowerCase:   c.NamingStrategyNoLowerCase,
+		}
+	}
+
 	db, err := gorm.Open(dial, &gorm.Config{
-		SkipDefaultTransaction: true,
-		Logger:                 &Logger{},
+		SkipDefaultTransaction:                   c.SkipDefaultTransaction,
+		DryRun:                                   c.DryRun,
+		PrepareStmt:                              c.PrepareStmt,
+		DisableNestedTransaction:                 c.DisableNestedTransaction,
+		AllowGlobalUpdate:                        c.AllowGlobalUpdate,
+		DisableForeignKeyConstraintWhenMigrating: c.DisableForeignKeyConstraintWhenMigrating,
+		QueryFields:                              c.QueryFields,
+		CreateBatchSize:                          c.CreateBatchSize,
+		NamingStrategy:                           namer,
+		NowFunc:                                  c.NowFunc,
+		ConnPool:                                 c.ConnPool,
+		ClauseBuilders:                           c.ClauseBuilders,
+		Plugins:                                  c.Plugins,
+		Logger:                                   &Logger{},
 	})
 	if err != nil {
 		logger.Panicf("Gorm open error %s %s: %s", c.Driver, c.DSN, err)
