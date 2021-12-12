@@ -5,5 +5,7 @@ import (
 )
 
 type (
-	Context = gin.Context
+	Context     = gin.Context
+	HandlerFunc = gin.HandlerFunc
+	RouterGroup = gin.RouterGroup
 )

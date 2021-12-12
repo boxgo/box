@@ -112,6 +112,10 @@ func (server *GinServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	server.engine.ServeHTTP(w, req)
 }
 
+func (server *GinServer) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
+	return server.engine.Group(relativePath, handlers...)
+}
+
 func (server *GinServer) RoutesInfo() gin.RoutesInfo {
 	return server.engine.Routes()
 }
