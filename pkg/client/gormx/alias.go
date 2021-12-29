@@ -5,7 +5,8 @@ import (
 )
 
 type (
-	DB = gorm.DB
+	DB      = gorm.DB
+	Session = gorm.Session
 )
 
 var (
