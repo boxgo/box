@@ -65,6 +65,10 @@ func newPostgreSQL(c *Config) *PostgreSQL {
 	}
 }
 
+func (pg *PostgreSQL) Name() string {
+	return "gopg"
+}
+
 func (pg *PostgreSQL) Serve(ctx context.Context) error {
 	if err := pg.db.Ping(ctx); err != nil {
 		return err
