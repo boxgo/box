@@ -19,6 +19,7 @@ require (
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/lib/pq v1.6.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/nicksnyder/go-i18n/v2 v2.1.2
 	github.com/olekukonko/tablewriter v0.0.5-0.20200416053754-163badb3bac6
 	github.com/prometheus/client_golang v1.6.0
 	github.com/prometheus/procfs v0.1.3 // indirect
@@ -32,6 +33,7 @@ require (
 	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/text v0.3.5
 	google.golang.org/genproto v0.0.0-20210426193834-eac7f76ac494
 	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.26.0
