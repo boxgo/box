@@ -15,6 +15,7 @@ require (
 	github.com/go-redis/redis/v8 v8.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.4.0
 	github.com/imdario/mergo v0.3.9
+	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/json-iterator/go v1.1.10
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/lib/pq v1.6.0 // indirect
