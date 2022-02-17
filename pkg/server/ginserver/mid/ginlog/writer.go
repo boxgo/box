@@ -3,6 +3,7 @@ package ginlog
 import (
 	"bytes"
 	"io/ioutil"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,6 +25,10 @@ func newBodyWriter(ctx *gin.Context) *bodyWriter {
 func readBody(ctx *gin.Context) string {
 	if ctx.Request.Body == nil {
 		return ""
+	}
+
+	if !strings.Contains(ctx.ContentType(), "application/json") {
+		return "<non-json ignored>"
 	}
 
 	body, _ := ioutil.ReadAll(ctx.Request.Body)
