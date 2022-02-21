@@ -31,6 +31,24 @@ func (log *GinLog) Logger() func(ctx *gin.Context) {
 		}
 
 		var (
+			requestUA     = log.cfg.RequestUA
+			requestIP     = log.cfg.RequestIP
+			requestHeader = log.cfg.RequestHeader
+			requestQuery  = log.cfg.RequestQuery
+			requestBody   = log.cfg.RequestBody
+			responseBody  = log.cfg.ResponseBody
+		)
+
+		if rule, ok := log.cfg.Urls[ctx.Request.URL.Path]; ok {
+			requestUA = rule&LogRequestUA > 0
+			requestIP = rule&LogRequestIP > 0
+			requestHeader = rule&LogRequestHeader > 0
+			requestQuery = rule&LogRequestQuery > 0
+			requestBody = rule&LogRequestBody > 0
+			responseBody = rule&LogResponseBody > 0
+		}
+
+		var (
 			fields []interface{}
 			reqId  = ctx.GetHeader(trace.ReqID())
 			start  = time.Now()
@@ -42,22 +60,22 @@ func (log *GinLog) Logger() func(ctx *gin.Context) {
 		if reqId == "" {
 			reqId = strutil.RandomAlphanumeric(10)
 		}
-		if log.cfg.RequestIP {
+		if requestIP {
 			fields = append(fields, "ip", ctx.ClientIP())
 		}
-		if log.cfg.RequestQuery {
+		if requestQuery {
 			fields = append(fields, "query", ctx.Request.URL.RawQuery)
 		}
-		if log.cfg.RequestBody {
+		if requestBody {
 			fields = append(fields, "body", readBody(ctx))
 		}
-		if log.cfg.UserAgent {
+		if requestUA {
 			fields = append(fields, "user-agent", ctx.Request.UserAgent())
 		}
-		if log.cfg.RequestHeader {
+		if requestHeader {
 			fields = append(fields, "header", ctx.Request.Header)
 		}
-		if log.cfg.ResponseBody {
+		if responseBody {
 			writer = newBodyWriter(ctx)
 			ctx.Writer = writer
 		}
