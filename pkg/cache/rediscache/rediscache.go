@@ -59,6 +59,10 @@ func (l *redisCache) Get(ctx context.Context, key string, val interface{}) error
 	return json.Unmarshal(data, val)
 }
 
+func (l *redisCache) Clear(ctx context.Context, key string) error {
+	return l.client.Client().Del(ctx, l.cacheKey(key)).Err()
+}
+
 func (l redisCache) cacheKey(key string) string {
 	cacheKey := l.cfg.Prefix
 	if cacheKey == "" {
