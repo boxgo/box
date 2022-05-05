@@ -10,12 +10,13 @@ import (
 type (
 	// Config 配置
 	Config struct {
-		path       string
-		Redis      string `config:"redis"`
-		CookieName string `config:"cookieName" desc:"cookie name"`
-		KeyPair    string `config:"keyPair" desc:"cookie value encrypt key pair"`
-		KeyPrefix  string `config:"keyPrefix" desc:"redis save key prefix"`
-		MaxLen     int    `config:"maxLen" desc:"max val length"`
+		path        string
+		Redis       string   `config:"redis"`
+		CookieName  string   `config:"cookieName" desc:"cookie name"`
+		CookieNames []string `config:"cookieNames" desc:"cookie names"`
+		KeyPair     string   `config:"keyPair" desc:"cookie value encrypt key pair"`
+		KeyPrefix   string   `config:"keyPrefix" desc:"redis save key prefix"`
+		MaxLen      int      `config:"maxLen" desc:"max val length"`
 	}
 
 	// OptionFunc 选项信息

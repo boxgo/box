@@ -24,10 +24,13 @@ func newGinSession(c *Config) *GinSession {
 		cfg:    c,
 		client: client,
 	}
-
 }
 
 func (s *GinSession) Cookie() gin.HandlerFunc {
+	if len(s.cfg.CookieNames) != 0 {
+		return sessions.SessionsMany(s.cfg.CookieNames, cookie.NewStore([]byte(s.cfg.KeyPair)))
+	}
+
 	return sessions.Sessions(s.cfg.CookieName, cookie.NewStore([]byte(s.cfg.KeyPair)))
 }
 
@@ -39,6 +42,12 @@ func (s *GinSession) Redis() gin.HandlerFunc {
 		redisstore.WithKeyPairs([]byte(s.cfg.KeyPair)),
 		redisstore.WithSerializer(serializer.JSONSerializer{}),
 	)
+
+	if len(s.cfg.CookieNames) != 0 {
+		return sessions.SessionsMany(s.cfg.CookieNames, &redisStore{
+			RedisStore: st,
+		})
+	}
 
 	return sessions.Sessions(s.cfg.CookieName, &redisStore{
 		RedisStore: st,
