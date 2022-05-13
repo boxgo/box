@@ -15,3 +15,11 @@ func Cookie() gin.HandlerFunc {
 func Redis() gin.HandlerFunc {
 	return Default.Redis()
 }
+
+func CookieName() string {
+	return Default.CookieName()
+}
+
+func CookieNames() []string {
+	return Default.CookieNames()
+}
