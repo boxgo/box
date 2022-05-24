@@ -51,8 +51,19 @@ func newSchedule(cfg *Config) *Schedule {
 		logger.Panic("schedule handler is not set")
 	}
 
-	if sch.cfg.Type != Once {
-		if err := sch.cron.AddFunc(sch.cfg.Spec, func() {
+	if sch.cfg.Type == Once {
+		return sch
+	}
+
+	var specs []string
+	if len(sch.cfg.Specs) != 0 {
+		specs = sch.cfg.Specs
+	} else {
+		specs = []string{sch.cfg.Spec}
+	}
+
+	for _, spec := range specs {
+		if err := sch.cron.AddFunc(spec, func() {
 			sch.exec(sch.timingHandler)
 		}); err != nil {
 			logger.Panicf("schedule build error: %s", err)
