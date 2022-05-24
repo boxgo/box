@@ -53,3 +53,11 @@ func (s *GinSession) Redis() gin.HandlerFunc {
 		RedisStore: st,
 	})
 }
+
+func (s *GinSession) CookieName() string {
+	return s.cfg.CookieName
+}
+
+func (s *GinSession) CookieNames() []string {
+	return s.cfg.CookieNames
+}
