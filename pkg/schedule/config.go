@@ -21,6 +21,7 @@ type (
 		Compete       bool                   `config:"compete" desc:"Only winner can exec schedule"`
 		AutoUnlock    bool                   `config:"autoUnlock" desc:"Auto unlock after task finish"`
 		LockSeconds   int                    `config:"lockSeconds" desc:"Lock ttl"`
+		Delay         time.Duration          `config:"delay" desc:"Delay duration"`
 		Args          map[string]interface{} `config:"args" desc:"Schedule arguments"`
 	}
 
@@ -68,6 +69,7 @@ func DefaultConfig(key string) *Config {
 		Compete:     true,
 		AutoUnlock:  true,
 		LockSeconds: 0,
+		Delay:       0,
 		Args:        map[string]interface{}{},
 	}
 }

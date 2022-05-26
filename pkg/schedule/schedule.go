@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"runtime/debug"
+	"time"
 
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/locker"
@@ -24,6 +25,7 @@ type (
 		timingHandler Handler
 	}
 
+	// Handler TODO support context
 	Handler func(args map[string]interface{}) error
 )
 
@@ -134,6 +136,10 @@ func (sch *Schedule) execTiming() {
 
 func (sch *Schedule) exec(handler Handler) {
 	go func() {
+		if sch.cfg.Delay > 0 {
+			time.Sleep(sch.cfg.Delay)
+		}
+
 		defer func() {
 			if sch.cfg.Compete && sch.cfg.AutoUnlock {
 				if err := sch.locker.UnLock(context.Background(), sch.key()); err != nil {
