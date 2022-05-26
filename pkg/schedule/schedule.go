@@ -4,6 +4,7 @@ package schedule
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/locker"
@@ -142,7 +143,7 @@ func (sch *Schedule) exec(handler Handler) {
 
 			if err := recover(); err != nil {
 				scheduleCounter.WithLabelValues(sch.key(), "", fmt.Sprintf("%s", err)).Inc()
-				logger.Errorf("Schedule [%s] crash: %s", sch.key(), err)
+				logger.Errorf("Schedule [%s] crash: %+v\n%s", sch.key(), err, debug.Stack())
 				return
 			}
 		}()
