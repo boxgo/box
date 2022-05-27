@@ -15,6 +15,7 @@ type (
 		timingHandler Handler
 		lockDuration  time.Duration
 		locker        locker.MutexLocker
+		recorder      Recorder
 		Type          Type                   `config:"type" desc:"Stop: 0, Once: 1, Timing: 2, OnceAndTiming: 3"`
 		Spec          string                 `config:"spec" desc:"Cron spec info"`
 		Specs         []string               `config:"specs" desc:"Multi cron spec info, higher priority than spec"`
@@ -36,6 +37,12 @@ const (
 	Timing        = Type(2)
 	OnceAndTiming = Type(3)
 )
+
+func WithRecorder(recorder Recorder) OptionFunc {
+	return func(c *Config) {
+		c.recorder = recorder
+	}
+}
 
 func WithLocker(locker locker.MutexLocker) OptionFunc {
 	return func(c *Config) {
@@ -84,6 +91,10 @@ func (c *Config) Build(optionFunc ...OptionFunc) *Schedule {
 	}
 
 	c.lockDuration = time.Duration(1000000000 * c.LockSeconds)
+
+	if c.recorder == nil {
+		c.recorder = func(Journal) {}
+	}
 
 	return newSchedule(c)
 }

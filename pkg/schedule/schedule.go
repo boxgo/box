@@ -21,12 +21,22 @@ type (
 		cfg           *Config
 		cron          *cron.Cron
 		locker        locker.MutexLocker
+		recorder      Recorder
 		onceHandler   Handler
 		timingHandler Handler
 	}
 
 	// Handler TODO support context
 	Handler func(args map[string]interface{}) error
+
+	Journal struct {
+		Config    Config
+		StartTime time.Time
+		EndTime   time.Time
+		Error     error
+		Panic     interface{}
+	}
+	Recorder func(Journal)
 )
 
 var (
@@ -42,6 +52,7 @@ func newSchedule(cfg *Config) *Schedule {
 		cfg:           cfg,
 		cron:          cron.New(),
 		locker:        cfg.locker,
+		recorder:      cfg.recorder,
 		onceHandler:   cfg.onceHandler,
 		timingHandler: cfg.timingHandler,
 	}
@@ -136,6 +147,16 @@ func (sch *Schedule) execTiming() {
 
 func (sch *Schedule) exec(handler Handler) {
 	go func() {
+		var (
+			journal = Journal{
+				Config:    *sch.cfg,
+				StartTime: time.Now(),
+				EndTime:   time.Time{},
+				Error:     nil,
+				Panic:     nil,
+			}
+		)
+
 		if sch.cfg.Delay > 0 {
 			time.Sleep(sch.cfg.Delay)
 		}
@@ -147,10 +168,15 @@ func (sch *Schedule) exec(handler Handler) {
 				}
 			}
 
-			if err := recover(); err != nil {
-				scheduleCounter.WithLabelValues(sch.key(), "", fmt.Sprintf("%s", err)).Inc()
-				logger.Errorf("Schedule [%s] crash: %+v\n%s", sch.key(), err, debug.Stack())
-				return
+			journal.EndTime = time.Now()
+
+			if journal.Panic = recover(); journal.Panic != nil {
+				scheduleCounter.WithLabelValues(sch.key(), "", fmt.Sprintf("%s", journal.Panic)).Inc()
+				logger.Errorf("Schedule [%s] crash: %+v\n%s", sch.key(), journal.Panic, debug.Stack())
+
+				sch.recorder(journal)
+			} else {
+				sch.recorder(journal)
 			}
 		}()
 
@@ -169,9 +195,9 @@ func (sch *Schedule) exec(handler Handler) {
 
 		logger.Infof("Schedule [%s] run start", sch.key())
 
-		if err := handler(sch.cfg.Args); err != nil {
-			scheduleCounter.WithLabelValues(sch.key(), err.Error(), "").Inc()
-			logger.Errorf("Schedule [%s] run error: [%s]", sch.key(), err)
+		if journal.Error = handler(sch.cfg.Args); journal.Error != nil {
+			scheduleCounter.WithLabelValues(sch.key(), journal.Error.Error(), "").Inc()
+			logger.Errorf("Schedule [%s] run error: [%s]", sch.key(), journal.Error)
 		} else {
 			scheduleCounter.WithLabelValues(sch.key(), "", "").Inc()
 			logger.Infof("Schedule [%s] run success", sch.key())
