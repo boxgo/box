@@ -25,9 +25,9 @@ type (
 func newLocales(c *Config) *Locales {
 	bundle := i18n.NewBundle(language.Chinese)
 
-	bundle.RegisterUnmarshalFunc("toml", toml.NewMarshaler().Unmarshal)
-	bundle.RegisterUnmarshalFunc("yaml", yaml.NewMarshaler().Unmarshal)
-	bundle.RegisterUnmarshalFunc("yml", yaml.NewMarshaler().Unmarshal)
+	bundle.RegisterUnmarshalFunc("toml", toml.NewCoder().Unmarshal)
+	bundle.RegisterUnmarshalFunc("yaml", yaml.NewCoder().Unmarshal)
+	bundle.RegisterUnmarshalFunc("yml", yaml.NewCoder().Unmarshal)
 
 	files, err := os.ReadDir(c.LanguageDir)
 	if err != nil {

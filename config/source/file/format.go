@@ -6,7 +6,7 @@ import (
 	"github.com/boxgo/box/v2/codec"
 )
 
-func format(p string, e codec.Marshaler) string {
+func format(p string, e codec.Coder) string {
 	parts := strings.Split(p, ".")
 	if len(parts) > 1 {
 		return parts[len(parts)-1]

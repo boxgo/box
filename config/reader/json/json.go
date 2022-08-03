@@ -13,7 +13,7 @@ import (
 
 type jsonReader struct {
 	opts reader2.Options
-	json codec.Marshaler
+	json codec.Coder
 }
 
 func (j *jsonReader) Merge(changes ...*source.ChangeSet) (*source.ChangeSet, error) {
@@ -77,7 +77,7 @@ func (j *jsonReader) String() string {
 func NewReader(opts ...reader2.Option) reader2.Reader {
 	options := reader2.NewOptions(opts...)
 	return &jsonReader{
-		json: json.NewMarshaler(),
+		json: json.NewCoder(),
 		opts: options,
 	}
 }

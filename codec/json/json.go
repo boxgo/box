@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 
 	"github.com/boxgo/box/v2/codec"
-	jsoniter "github.com/json-iterator/go"
+	jsonIter "github.com/json-iterator/go"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
-type marshaler struct{}
+type coder struct{}
 
 var (
 	protoMarshler = protojson.MarshalOptions{
@@ -28,35 +28,35 @@ var (
 		Resolver:       nil,
 	}
 
-	jsoniterMarshler = jsoniter.ConfigCompatibleWithStandardLibrary
+	jsonIterMarshler = jsonIter.ConfigCompatibleWithStandardLibrary
 )
 
-func NewMarshaler() codec.Marshaler {
-	return &marshaler{}
+func NewCoder() codec.Coder {
+	return &coder{}
 }
 
-func (j marshaler) String() string {
+func (j coder) String() string {
 	return "json"
 }
 
-func (marshaler) Marshal(v interface{}) ([]byte, error) {
+func (coder) Marshal(v interface{}) ([]byte, error) {
 	switch m := v.(type) {
 	case json.Marshaler:
 		return m.MarshalJSON()
 	case proto.Message:
 		return protoMarshler.Marshal(m)
 	default:
-		return jsoniterMarshler.Marshal(m)
+		return jsonIterMarshler.Marshal(m)
 	}
 }
 
-func (marshaler) Unmarshal(data []byte, v interface{}) error {
+func (coder) Unmarshal(data []byte, v interface{}) error {
 	switch m := v.(type) {
 	case json.Unmarshaler:
 		return m.UnmarshalJSON(data)
 	case proto.Message:
 		return protoUnmarshler.Unmarshal(data, m)
 	default:
-		return jsoniterMarshler.Unmarshal(data, m)
+		return jsonIterMarshler.Unmarshal(data, m)
 	}
 }

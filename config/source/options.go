@@ -9,7 +9,7 @@ import (
 
 type Options struct {
 	// Encoder
-	Encoder codec.Marshaler
+	Encoder codec.Coder
 
 	// for alternative data
 	Context context.Context
@@ -19,7 +19,7 @@ type Option func(o *Options)
 
 func NewOptions(opts ...Option) Options {
 	options := Options{
-		Encoder: json.NewMarshaler(),
+		Encoder: json.NewCoder(),
 		Context: context.Background(),
 	}
 
@@ -31,7 +31,7 @@ func NewOptions(opts ...Option) Options {
 }
 
 // WithEncoder sets the source encoder
-func WithEncoder(e codec.Marshaler) Option {
+func WithEncoder(e codec.Coder) Option {
 	return func(o *Options) {
 		o.Encoder = e
 	}

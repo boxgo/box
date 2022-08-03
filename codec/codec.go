@@ -1,10 +1,10 @@
-// Package codec handles source encoding formats
+// Package codec handles data encoding
 package codec
 
 type (
-	Marshaler interface {
+	Coder interface {
 		String() string
-		Marshal(interface{}) ([]byte, error)
-		Unmarshal([]byte, interface{}) error
+		Marshal(v interface{}) ([]byte, error)   // Marshal returns the encoded data of v.
+		Unmarshal(d []byte, v interface{}) error // Unmarshal parses the encoded data of d and stores the result in the value pointed to by v.
 	}
 )
