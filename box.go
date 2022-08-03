@@ -7,10 +7,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/boxgo/box/pkg/config"
-	"github.com/boxgo/box/pkg/logger"
-	"github.com/boxgo/box/pkg/server"
-	"github.com/boxgo/box/pkg/util/procsutil"
+	"github.com/boxgo/box/v2/config"
+	"github.com/boxgo/box/v2/logger"
+	"github.com/boxgo/box/v2/server"
+	"github.com/boxgo/box/v2/util/procsutil"
 	"golang.org/x/sync/errgroup"
 )
 

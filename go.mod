@@ -1,4 +1,4 @@
-module github.com/boxgo/box
+module github.com/boxgo/box/v2
 
 go 1.15
 

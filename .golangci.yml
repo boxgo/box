@@ -6,7 +6,7 @@ run:
   skip-dirs-use-default: true
   skip-dirs:
     - example
-    - pkg/config
+    - config
   skip-files:
     - ".*_test.go"
   allow-parallel-runners: true

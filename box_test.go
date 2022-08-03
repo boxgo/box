@@ -1,9 +1,9 @@
 package box_test
 
 import (
-	"github.com/boxgo/box"
-	"github.com/boxgo/box/pkg/logger"
-	"github.com/boxgo/box/pkg/server/ginserver"
+	"github.com/boxgo/box/v2"
+	"github.com/boxgo/box/v2/logger"
+	"github.com/boxgo/box/v2/server/ginserver"
 	"github.com/gin-gonic/gin"
 )
 

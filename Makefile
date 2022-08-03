@@ -1,4 +1,4 @@
-TEST_DIR?="./pkg/..."
+TEST_DIR?="./..."
 CONF_CI?="./testdata/ci.yaml"
 CONF_LOCAL?="./testdata/local.yaml"
 

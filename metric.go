@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boxgo/box/pkg/config"
-	"github.com/boxgo/box/pkg/metric"
-	"github.com/boxgo/box/pkg/system"
+	"github.com/boxgo/box/v2/config"
+	"github.com/boxgo/box/v2/metric"
+	"github.com/boxgo/box/v2/system"
 )
 
 type (

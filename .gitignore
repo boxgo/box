@@ -1,10 +1,10 @@
 coverage.out
+coverage.html
 
 .idea
 .DS_Store
 
 main
-debug
 example
 vendor
 
