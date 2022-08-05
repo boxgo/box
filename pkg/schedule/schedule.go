@@ -12,6 +12,7 @@ import (
 	"github.com/boxgo/box/pkg/locker/redislocker"
 	"github.com/boxgo/box/pkg/logger"
 	"github.com/boxgo/box/pkg/metric"
+	"github.com/boxgo/box/pkg/util/strutil"
 	"github.com/robfig/cron"
 )
 
@@ -148,6 +149,7 @@ func (sch *Schedule) execTiming() {
 func (sch *Schedule) exec(handler Handler) {
 	go func() {
 		var (
+			taskId  = strutil.RandomAlphanumeric(10)
 			journal = Journal{
 				Config:    *sch.cfg,
 				StartTime: time.Now(),
@@ -164,43 +166,47 @@ func (sch *Schedule) exec(handler Handler) {
 		defer func() {
 			if sch.cfg.Compete && sch.cfg.AutoUnlock {
 				if err := sch.locker.UnLock(context.Background(), sch.key()); err != nil {
-					logger.Errorf("Schedule [%s] unlock error: [%s]", sch.key(), err)
+					logger.Errorf("Schedule [%s][%s] unlock error: [%s]", sch.key(), taskId, err)
+				} else {
+					logger.Infof("Schedule [%s][%s] unlock success", sch.key(), taskId)
 				}
-			}
-
-			journal.EndTime = time.Now()
-
-			if journal.Panic = recover(); journal.Panic != nil {
-				scheduleCounter.WithLabelValues(sch.key(), "", fmt.Sprintf("%s", journal.Panic)).Inc()
-				logger.Errorf("Schedule [%s] crash: %+v\n%s", sch.key(), journal.Panic, debug.Stack())
-
-				sch.recorder(journal)
-			} else {
-				sch.recorder(journal)
 			}
 		}()
 
 		if sch.cfg.Compete {
 			locked, err := sch.locker.Lock(context.Background(), sch.key(), sch.cfg.lockDuration)
 			if err != nil {
-				logger.Errorf("Schedule [%s] compete error: [%s]", sch.key(), err)
+				logger.Errorf("Schedule [%s][%s] compete error: [%s]", sch.key(), taskId, err)
 				return
 			} else if !locked {
-				logger.Warnf("Schedule [%s] compete fail", sch.key())
+				logger.Warnf("Schedule [%s][%s] compete fail", sch.key(), taskId)
 				return
 			} else {
-				logger.Infof("Schedule [%s] compete win", sch.key())
+				logger.Infof("Schedule [%s][%s] compete win", sch.key(), taskId)
 			}
 		}
 
-		logger.Infof("Schedule [%s] run start", sch.key())
+		// only record winner
+		defer func() {
+			journal.EndTime = time.Now()
+			journal.Panic = recover()
+
+			if journal.Panic != nil {
+				logger.Errorf("Schedule [%s][%s] crash: %+v\n%s", sch.key(), journal.Panic, taskId, debug.Stack())
+				scheduleCounter.WithLabelValues(sch.key(), "", fmt.Sprintf("%s", journal.Panic)).Inc()
+			}
+
+			sch.recorder(journal)
+		}()
+
+		logger.Infof("Schedule [%s][%s] run start", sch.key(), taskId)
 
 		if journal.Error = handler(sch.cfg.Args); journal.Error != nil {
+			logger.Errorf("Schedule [%s][%s] run error: [%s]", sch.key(), taskId, journal.Error)
 			scheduleCounter.WithLabelValues(sch.key(), journal.Error.Error(), "").Inc()
-			logger.Errorf("Schedule [%s] run error: [%s]", sch.key(), journal.Error)
 		} else {
+			logger.Infof("Schedule [%s][%s] run success", taskId, sch.key())
 			scheduleCounter.WithLabelValues(sch.key(), "", "").Inc()
-			logger.Infof("Schedule [%s] run success", sch.key())
 		}
 	}()
 }
