@@ -3,15 +3,16 @@ package wukong
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 
+	"github.com/boxgo/box/pkg/codec/json"
 	"github.com/boxgo/box/pkg/util/urlutil"
 )
 
@@ -34,6 +35,10 @@ type (
 		BodyData    interface{}
 		Cookies     []*http.Cookie
 	}
+)
+
+var (
+	jsonMarshaler = json.NewMarshaler()
 )
 
 func NewRequest(client *WuKong, method, path string) *Request {
@@ -223,11 +228,11 @@ func (request *Request) RawRequest() (*http.Request, error) {
 }
 
 func (request *Request) queryMapOrStruct(urlVal url.Values, query interface{}) {
-	if marshalContent, err := json.Marshal(query); err != nil {
+	if marshalContent, err := jsonMarshaler.Marshal(query); err != nil {
 		request.Error = err
 	} else {
 		var val map[string]interface{}
-		if err := json.Unmarshal(marshalContent, &val); err != nil {
+		if err := jsonMarshaler.Unmarshal(marshalContent, &val); err != nil {
 			request.Error = err
 		} else {
 			for k, v := range val {
@@ -238,8 +243,16 @@ func (request *Request) queryMapOrStruct(urlVal url.Values, query interface{}) {
 					}
 				case nil:
 					continue
+				case string:
+					urlVal.Add(k, val)
+				case float64:
+					urlVal.Add(k, strconv.FormatFloat(val, 'f', -1, 64))
 				default:
-					urlVal.Add(k, fmt.Sprintf("%v", v))
+					if j, err := jsonMarshaler.Marshal(v); err != nil {
+						continue
+					} else {
+						urlVal.Add(k, string(j))
+					}
 				}
 			}
 		}
