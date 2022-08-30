@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/boxgo/box/v2/cache"
-	redis2 "github.com/boxgo/box/v2/client/redis"
+	"github.com/boxgo/box/v2/client/redis"
 	"github.com/boxgo/box/v2/metric"
 )
 
@@ -14,7 +14,7 @@ type (
 	// Cache redis cache
 	redisCache struct {
 		cfg    *Config
-		client *redis2.Redis
+		client *redis.Redis
 	}
 )
 
@@ -29,7 +29,7 @@ var (
 func newCache(cfg *Config) cache.Cache {
 	lock := &redisCache{
 		cfg:    cfg,
-		client: redis2.StdConfig(cfg.Config).Build(),
+		client: redis.StdConfig(cfg.Config).Build(),
 	}
 
 	return lock
@@ -48,7 +48,7 @@ func (l *redisCache) Set(ctx context.Context, key string, val interface{}, durat
 // Get cache
 func (l *redisCache) Get(ctx context.Context, key string, val interface{}) error {
 	data, err := l.client.Client().Get(ctx, l.cacheKey(key)).Bytes()
-	if err == redis2.Nil {
+	if err == redis.Nil {
 		cacheHitCounter.WithLabelValues(key, "false").Inc()
 		return cache.ErrCacheMiss
 	} else if err != nil {
