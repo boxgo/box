@@ -2,27 +2,37 @@
 package source
 
 import (
+	"crypto/md5"
+	"fmt"
 	"time"
 )
 
-// Source is the source from which config is loaded
-type Source interface {
-	Read() (*ChangeSet, error)
-	Watch() (Watcher, error)
-	String() string
-}
+type (
+	// Source is the source from which config is loaded
+	Source interface {
+		Read() (*ChangeSet, error)
+		Watch() (Watcher, error)
+		String() string
+	}
 
-// ChangeSet represents a set of changes from a source
-type ChangeSet struct {
-	Data      []byte
-	Checksum  string
-	Format    string
-	Source    string
-	Timestamp time.Time
-}
+	Watcher interface {
+		Next() (*ChangeSet, error)
+		Stop() error
+	}
 
-// Watcher watches a source for changes
-type Watcher interface {
-	Next() (*ChangeSet, error)
-	Stop() error
+	// ChangeSet represents a set of changes from a source
+	ChangeSet struct {
+		Data      []byte
+		Checksum  string
+		Format    string
+		Source    string
+		Timestamp time.Time
+	}
+)
+
+// Sum returns the md5 checksum of the ChangeSet data
+func (c *ChangeSet) Sum() string {
+	h := md5.New()
+	h.Write(c.Data)
+	return fmt.Sprintf("%x", h.Sum(nil))
 }

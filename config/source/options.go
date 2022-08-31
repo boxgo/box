@@ -7,15 +7,14 @@ import (
 	"github.com/boxgo/box/v2/codec/json"
 )
 
-type Options struct {
-	// Encoder
-	Encoder codec.Coder
+type (
+	Options struct {
+		Encoder codec.Coder     // Encoder
+		Context context.Context // for alternative data
+	}
 
-	// for alternative data
-	Context context.Context
-}
-
-type Option func(o *Options)
+	Option func(o *Options)
+)
 
 func NewOptions(opts ...Option) Options {
 	options := Options{

@@ -2,162 +2,102 @@
 package config
 
 import (
-	"fmt"
-	"sync"
-
-	"github.com/boxgo/box/v2/config/field"
 	"github.com/boxgo/box/v2/config/reader"
 	"github.com/boxgo/box/v2/config/source"
+	"github.com/boxgo/box/v2/config/value"
+	"github.com/boxgo/box/v2/config/value/json"
 )
 
 type (
-	// Config is set of config fields. "." is a level splitter.
-	// For example:
-	//	father.child
-	// It means that config data's struct same as this.
-	// 	{
-	// 	  "father": {
-	// 	    "child": {xxx}
-	// 	  }
-	// 	}
+	// Configurator is an interface abstraction for dynamic configuration
+	Configurator interface {
+		Load() error                                           // Load config sources
+		Scan(val interface{}) error                            // Scan to val
+		Value(key string) value.Value                          // Value get values through key
+		Watch(key string, cb func(old, new value.Value)) error // Watch field change
+		Close() error                                          // Close stop the config loader/watcher
+	}
+
 	Config interface {
 		Path() string
 	}
-	// Configurator is an interface abstraction for dynamic configuration
-	Configurator interface {
-		// Load config sources
-		Load(source ...source.Source) error
-		// Sync force a source change set sync
-		Sync() error
-		// Close stop the config loader/watcher
-		Close() error
-		// Bytes get merged config data
-		Bytes() []byte
-		// Scan to val
-		Scan(val Config) error
-		// Watch field change
-		Watch(path ...string) (Watcher, error)
-		// Get value through field
-		Get(path ...string) reader.Value
-		// Fields return scanned fields
-		Fields() *field.Fields
-	}
 
-	bootConfig struct {
-		Name    string   `config:"name"`
-		Version string   `config:"version"`
-		Tags    []string `config:"tags"`
-		Loader  string   `config:"loader"`
-		Reader  string   `config:"reader"`
-		Source  []Source `config:"source"`
+	config struct {
+		opts   Options
+		values value.Values
 	}
-
-	Source struct {
-		Type string `config:"type"`
-		name string
-		data []byte
-	}
-)
-
-var (
-	// Default Config Manager
-	Default        = NewConfig()
-	bootCfg        = bootConfig{Name: "box", Version: "unknown", Tags: []string{}}
-	defaultOnce    sync.Once
-	defaultSources []source.Source
-	rwMutex        = sync.RWMutex{}
 )
 
 // NewConfig returns new config
 func NewConfig(opts ...Option) Configurator {
-	return newConfig(opts...)
+	options := Options{
+		Reader: reader.NewReader(),
+	}
+
+	for _, o := range opts {
+		o(&options)
+	}
+
+	values, _ := json.NewValues(nil)
+
+	c := &config{
+		opts:   options,
+		values: values,
+	}
+
+	return c
 }
 
-// Load config sources
-func Load(source ...source.Source) error {
-	return Default.Load(source...)
-}
+func (c *config) Load() error {
+	changes := make([]*source.ChangeSet, len(c.opts.Source))
 
-// Sync force a source changeset sync
-func Sync() error {
-	lazyLoad()
-	return Default.Sync()
-}
-
-// Close stop the config loader/watcher
-func Close() error {
-	return Default.Close()
-}
-
-// Byte return config raw data
-func Byte() []byte {
-	lazyLoad()
-	return Default.Bytes()
-}
-
-// Scan config to val
-func Scan(val Config) error {
-	lazyLoad()
-	return Default.Scan(val)
-}
-
-// Watch a value for changes
-func Watch(path ...string) (Watcher, error) {
-	lazyLoad()
-	return Default.Watch(path...)
-}
-
-// Get a value from the config
-func Get(path ...string) reader.Value {
-	lazyLoad()
-	return Default.Get(path...)
-}
-
-func Fields() *field.Fields {
-	lazyLoad()
-	return Default.Fields()
-}
-
-func ServiceName() string {
-	return bootCfg.Name
-}
-
-func ServiceVersion() string {
-	return bootCfg.Version
-}
-
-func ServiceTag() []string {
-	rwMutex.RLock()
-	defer rwMutex.RUnlock()
-
-	return bootCfg.Tags
-}
-
-func SetServiceTag(tags ...string) {
-	rwMutex.Lock()
-	defer rwMutex.Unlock()
-
-	bootCfg.Tags = tags
-}
-
-func AppendServiceTag(tags ...string) {
-	rwMutex.Lock()
-	defer rwMutex.Unlock()
-
-	bootCfg.Tags = append(bootCfg.Tags, tags...)
-}
-
-func lazyLoad() {
-	defaultOnce.Do(func() {
-		var validSources []source.Source
-		for _, s := range defaultSources {
-			if s != nil && s.String() != "" {
-				validSources = append(validSources, s)
-			}
+	for idx, sour := range c.opts.Source {
+		data, err := sour.Read()
+		if err != nil {
+			return err
 		}
 
-		if err := Default.Load(validSources...); err != nil {
-			panic(fmt.Errorf("default load %s error: %s", validSources, err))
-		}
-	})
+		changes[idx] = data
+	}
+
+	if mergeData, err := c.opts.Reader.Merge(changes...); err != nil {
+		return err
+	} else if c.values, err = json.NewValues(mergeData); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *config) Scan(val interface{}) (err error) {
+	switch v := val.(type) {
+	case Config:
+		err = c.Value(v.Path()).Scan(val)
+	default:
+		err = c.values.Scan(val)
+	}
+
+	if err != nil {
+		return
+	}
+
+	if c.opts.Validator != nil {
+		err = c.opts.Validator.Validate(val)
+	}
+
+	return
+}
+
+func (c *config) Value(key string) value.Value {
+	return c.values.Value(key)
+}
+
+func (c *config) Watch(key string, cb func(old value.Value, new value.Value)) error {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (c *config) Close() error {
+	// TODO implement me
+	panic("implement me")
 }
