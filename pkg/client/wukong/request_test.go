@@ -1,10 +1,13 @@
 package wukong
 
 import (
+	"bytes"
 	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -220,6 +223,67 @@ func TestSendXmlStruct(t *testing.T) {
 	}
 
 	resp := New(ts.URL).Post("/").Type(MimeTypeXML).Send(td).End()
+	if err := resp.Error(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSendFile(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		file, fileHeader, err := r.FormFile("file")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer file.Close()
+
+		if fileHeader.Size != 13 {
+			t.Fatal("文件大小错误")
+		}
+		if fileHeader.Filename != "upload.txt" {
+			t.Fatal("文件名错误")
+		}
+		if data, _ := ioutil.ReadAll(file); string(data) != "hello world!\n" {
+			t.Fatal("文件内容错误")
+		}
+
+		w.WriteHeader(200)
+	}))
+	defer ts.Close()
+
+	pwd, _ := os.Getwd()
+	fp := filepath.Join(pwd, "testdata/upload.txt")
+	resp := New(ts.URL).Post("/").SendFile("file", fp).End()
+	if err := resp.Error(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSendFileReader(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		file, fileHeader, err := r.FormFile("file1")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer file.Close()
+
+		if fileHeader.Size != 12 {
+			t.Fatal("文件大小错误")
+		}
+		if fileHeader.Filename != "upload.txt" {
+			t.Fatal("文件名错误")
+		}
+		if data, _ := ioutil.ReadAll(file); string(data) != "hello world!" {
+			t.Fatal("文件内容错误")
+		}
+
+		w.WriteHeader(200)
+	}))
+	defer ts.Close()
+
+	pwd, _ := os.Getwd()
+	fp := filepath.Join(pwd, "testdata/upload.txt")
+	resp := New(ts.URL).Post("/").SendFileReader("file1", fp, bytes.NewBuffer([]byte("hello world!"))).End()
 	if err := resp.Error(); err != nil {
 		t.Fatal(err)
 	}

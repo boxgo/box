@@ -5,9 +5,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -34,6 +37,14 @@ type (
 		ParamData   map[string]interface{}
 		BodyData    interface{}
 		Cookies     []*http.Cookie
+		Multipart   []MultipartForm
+	}
+
+	MultipartForm struct {
+		IsFile    bool
+		FieldName string
+		Filename  string
+		Value     io.Reader
 	}
 )
 
@@ -150,6 +161,28 @@ func (request *Request) Send(data interface{}) *Request {
 	return request
 }
 
+func (request *Request) SendFile(fieldName, filename string) *Request {
+	request.Multipart = append(request.Multipart, MultipartForm{
+		IsFile:    true,
+		FieldName: fieldName,
+		Filename:  filename,
+		Value:     nil,
+	})
+
+	return request
+}
+
+func (request *Request) SendFileReader(fieldName, filename string, reader io.Reader) *Request {
+	request.Multipart = append(request.Multipart, MultipartForm{
+		IsFile:    true,
+		FieldName: fieldName,
+		Filename:  filename,
+		Value:     reader,
+	})
+
+	return request
+}
+
 func (request *Request) Type(typ string) *Request {
 	request.ContentType = typ
 
@@ -190,6 +223,65 @@ func (request *Request) RawRequest() (*http.Request, error) {
 		} else {
 			reader = bytes.NewReader(data)
 		}
+	} else if request.Multipart != nil {
+		payload := &bytes.Buffer{}
+		writer := multipart.NewWriter(payload)
+
+		for _, part := range request.Multipart {
+			if part.IsFile {
+				var (
+					file       *os.File
+					partWriter io.Writer
+				)
+
+				if part.Value == nil {
+					if file, err = os.Open(part.Filename); err != nil {
+						break
+					}
+					defer file.Close()
+
+					if partWriter, err = writer.CreateFormFile(part.FieldName, filepath.Base(part.Filename)); err != nil {
+						break
+					}
+
+					if _, err = io.Copy(partWriter, file); err != nil {
+						break
+					}
+				} else {
+					if partWriter, err = writer.CreateFormFile(part.FieldName, filepath.Base(part.Filename)); err != nil {
+						break
+					}
+
+					if _, err = io.Copy(partWriter, part.Value); err != nil {
+						break
+					}
+				}
+
+				reader = payload
+			} else {
+				var (
+					partWriter io.Writer
+				)
+
+				if partWriter, err = writer.CreateFormField(part.FieldName); err != nil {
+					break
+				}
+
+				if _, err = io.Copy(partWriter, part.Value); err != nil {
+					break
+				}
+			}
+		}
+
+		writer.Close()
+
+		if err != nil {
+			request.Error = err
+
+			return req, err
+		}
+
+		request.ContentType = writer.FormDataContentType()
 	}
 
 	if req, err = http.NewRequest(request.Method, urlutil.UrlFormat(targetUrl, request.ParamData), reader); err != nil {
