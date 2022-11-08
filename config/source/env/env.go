@@ -6,21 +6,53 @@ import (
 	"strings"
 	"time"
 
-	source2 "github.com/boxgo/box/v2/config/source"
+	"github.com/boxgo/box/v2/config/source"
 	"github.com/imdario/mergo"
 )
 
 var (
-	DefaultPrefixes = []string{}
+	DefaultPrefixes []string
 )
 
 type env struct {
 	prefixes         []string
 	strippedPrefixes []string
-	opts             source2.Options
+	opts             source.Options
 }
 
-func (e *env) Read() (*source2.ChangeSet, error) {
+// NewSource returns a config source for parsing ENV variables.
+// Underscores are delimiters for nesting, and all keys are lowercased.
+//
+// Example:
+//      "DATABASE_SERVER_HOST=localhost" will convert to
+//
+//      {
+//          "database": {
+//              "server": {
+//                  "host": "localhost"
+//              }
+//          }
+//      }
+func NewSource(opts ...source.Option) source.Source {
+	options := source.NewOptions(opts...)
+
+	var sp []string
+	var pre []string
+	if p, ok := options.Context.Value(strippedPrefixKey{}).([]string); ok {
+		sp = p
+	}
+
+	if p, ok := options.Context.Value(prefixKey{}).([]string); ok {
+		pre = p
+	}
+
+	if len(sp) > 0 || len(pre) > 0 {
+		pre = append(pre, DefaultPrefixes...)
+	}
+	return &env{prefixes: pre, strippedPrefixes: sp, opts: options}
+}
+
+func (e *env) Read() (*source.ChangeSet, error) {
 	var changes map[string]interface{}
 
 	for _, env := range os.Environ() {
@@ -72,7 +104,7 @@ func (e *env) Read() (*source2.ChangeSet, error) {
 		return nil, err
 	}
 
-	cs := &source2.ChangeSet{
+	cs := &source.ChangeSet{
 		Format:    e.opts.Encoder.String(),
 		Data:      b,
 		Timestamp: time.Now(),
@@ -81,6 +113,14 @@ func (e *env) Read() (*source2.ChangeSet, error) {
 	cs.Checksum = cs.Sum()
 
 	return cs, nil
+}
+
+func (e *env) Watch() (source.Watcher, error) {
+	return newWatcher()
+}
+
+func (e *env) String() string {
+	return "env"
 }
 
 func matchPrefix(pre []string, s string) (string, bool) {
@@ -98,44 +138,4 @@ func reverse(ss []string) {
 		opp := len(ss) - 1 - i
 		ss[i], ss[opp] = ss[opp], ss[i]
 	}
-}
-
-func (e *env) Watch() (source2.Watcher, error) {
-	return newWatcher()
-}
-
-func (e *env) String() string {
-	return "env"
-}
-
-// NewSource returns a config source for parsing ENV variables.
-// Underscores are delimiters for nesting, and all keys are lowercased.
-//
-// Example:
-//      "DATABASE_SERVER_HOST=localhost" will convert to
-//
-//      {
-//          "database": {
-//              "server": {
-//                  "host": "localhost"
-//              }
-//          }
-//      }
-func NewSource(opts ...source2.Option) source2.Source {
-	options := source2.NewOptions(opts...)
-
-	var sp []string
-	var pre []string
-	if p, ok := options.Context.Value(strippedPrefixKey{}).([]string); ok {
-		sp = p
-	}
-
-	if p, ok := options.Context.Value(prefixKey{}).([]string); ok {
-		pre = p
-	}
-
-	if len(sp) > 0 || len(pre) > 0 {
-		pre = append(pre, DefaultPrefixes...)
-	}
-	return &env{prefixes: pre, strippedPrefixes: sp, opts: options}
 }

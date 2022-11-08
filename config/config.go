@@ -11,11 +11,11 @@ import (
 type (
 	// Configurator is an interface abstraction for dynamic configuration
 	Configurator interface {
-		Load() error                                           // Load config sources
-		Scan(val interface{}) error                            // Scan to val
-		Value(key string) value.Value                          // Value get values through key
-		Watch(key string, cb func(old, new value.Value)) error // Watch field change
-		Close() error                                          // Close stop the config loader/watcher
+		Load() error                  // Load config sources
+		Scan(val interface{}) error   // Scan to val
+		Value(key string) value.Value // Value get values through key
+		// Watch(key string, cb func(old, new value.Value)) error // TODO Watch field change
+		// Close() error                                          // TODO Close stop the config loader/watcher
 	}
 
 	Config interface {

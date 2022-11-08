@@ -5,19 +5,29 @@ import (
 	"io/ioutil"
 	"os"
 
-	source2 "github.com/boxgo/box/v2/config/source"
+	"github.com/boxgo/box/v2/config/source"
 )
 
 type file struct {
 	path string
-	opts source2.Options
+	opts source.Options
 }
 
 var (
 	DefaultPath = "config.json"
 )
 
-func (f *file) Read() (*source2.ChangeSet, error) {
+func NewSource(opts ...source.Option) source.Source {
+	options := source.NewOptions(opts...)
+	path := DefaultPath
+	f, ok := options.Context.Value(filePathKey{}).(string)
+	if ok {
+		path = f
+	}
+	return &file{opts: options, path: path}
+}
+
+func (f *file) Read() (*source.ChangeSet, error) {
 	fh, err := os.Open(f.path)
 	if err != nil {
 		return nil, err
@@ -32,7 +42,7 @@ func (f *file) Read() (*source2.ChangeSet, error) {
 		return nil, err
 	}
 
-	cs := &source2.ChangeSet{
+	cs := &source.ChangeSet{
 		Format:    format(f.path, f.opts.Encoder),
 		Source:    f.String(),
 		Timestamp: info.ModTime(),
@@ -43,23 +53,13 @@ func (f *file) Read() (*source2.ChangeSet, error) {
 	return cs, nil
 }
 
-func (f *file) String() string {
-	return "file"
-}
-
-func (f *file) Watch() (source2.Watcher, error) {
+func (f *file) Watch() (source.Watcher, error) {
 	if _, err := os.Stat(f.path); err != nil {
 		return nil, err
 	}
 	return newWatcher(f)
 }
 
-func NewSource(opts ...source2.Option) source2.Source {
-	options := source2.NewOptions(opts...)
-	path := DefaultPath
-	f, ok := options.Context.Value(filePathKey{}).(string)
-	if ok {
-		path = f
-	}
-	return &file{opts: options, path: path}
+func (f *file) String() string {
+	return "file"
 }

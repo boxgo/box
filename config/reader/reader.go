@@ -83,7 +83,7 @@ func (r *reader) Merge(changes ...*source.ChangeSet) (*source.ChangeSet, error) 
 		Source:    "reader",
 		Format:    r.targetCoder.String(),
 	}
-	cs.Checksum = cs.Sum()
+	cs.Sum()
 
 	return cs, nil
 }
