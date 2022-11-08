@@ -17,12 +17,12 @@ import (
 
 type (
 	Request struct {
-		client    *WuKong
-		rawReq    *http.Request
-		TraceInfo TraceInfo
-		Context   context.Context
-		BasicAuth BasicAuth
-		Error     error
+		client      *WuKong
+		rawReq      *http.Request
+		TraceInfo   TraceInfo
+		Context     context.Context
+		BasicAuth   BasicAuth
+		Error       error
 		Method      string
 		BaseUrl     string
 		Url         string
@@ -110,6 +110,10 @@ func (request *Request) Param(param map[string]interface{}) *Request {
 // format:
 //		1.map[string]interface{} {"key": "value", "key1": 1}
 func (request *Request) Query(query interface{}) *Request {
+	if query == nil {
+		return request
+	}
+
 	switch v := reflect.ValueOf(query); v.Kind() {
 	case reflect.Map, reflect.Struct:
 		request.queryMapOrStruct(request.QueryData, v.Interface())
@@ -124,6 +128,10 @@ func (request *Request) Query(query interface{}) *Request {
 }
 
 func (request *Request) Form(form interface{}) *Request {
+	if form == nil {
+		return request
+	}
+
 	switch v := reflect.ValueOf(form); v.Kind() {
 	case reflect.Map, reflect.Struct:
 		request.queryMapOrStruct(request.FormData, v.Interface())
