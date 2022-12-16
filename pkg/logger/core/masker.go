@@ -32,6 +32,10 @@ func NewMaskers(rules MaskRules) *Maskers {
 }
 
 func (m *Maskers) Mask(data []byte) []byte {
+	if m == nil || len(*m) == 0 {
+		return data
+	}
+
 	for _, filter := range *m {
 		data = filter.reg.ReplaceAll(data, filter.replace)
 	}

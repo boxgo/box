@@ -65,6 +65,7 @@ func (c *MaskCore) Sync() error {
 func (c *MaskCore) clone() *MaskCore {
 	return &MaskCore{
 		LevelEnabler: c.LevelEnabler,
+		maskers:      c.maskers,
 		enc:          c.enc.Clone(),
 		out:          c.out,
 	}

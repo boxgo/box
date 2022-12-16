@@ -111,6 +111,10 @@ func Fatalw(msg string, keysAndValues ...interface{}) {
 	defaultLogger.Fatalw(msg, keysAndValues...)
 }
 
+func With(args ...interface{}) *Logger {
+	return defaultLogger.With(args...)
+}
+
 // Trace logs a message with trace prefix and return *zap.SugaredLogger.
 func Trace(ctx context.Context) *Logger {
 	return defaultLogger.Trace(ctx)

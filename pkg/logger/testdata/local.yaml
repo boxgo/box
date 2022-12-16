@@ -3,4 +3,5 @@ version: 1.0.0
 
 logger:
   default:
+    encoding: json
     level: debug

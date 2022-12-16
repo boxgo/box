@@ -22,9 +22,16 @@ func init() {
 	ctx = context.WithValue(ctx, traceRequestID, "traceRequestID")
 	ctx = context.WithValue(ctx, traceSpanID, "traceSpanID")
 	ctx = context.WithValue(ctx, traceBizID, "traceBizID")
-
 }
 
 func Test_Box_Infow(t *testing.T) {
 	logger.Infow("123", "key", "value", "map", m)
+}
+
+func Test_Trace(t *testing.T) {
+	logger.Trace(ctx).Infow("123", "key", "value", "map", m)
+}
+
+func Test_With(t *testing.T) {
+	logger.Trace(ctx).With("key1", 1, "key2", "string").Infow("123", "map", m)
 }

@@ -225,10 +225,19 @@ func (logger *Logger) Fatalw(msg string, keysAndValues ...interface{}) {
 	logger.sugar.Fatalw(msg, keysAndValues...)
 }
 
+func (logger *Logger) With(args ...interface{}) *Logger {
+	return &Logger{
+		level: logger.level,
+		sugar: logger.sugar.With(args...),
+		cfg:   logger.cfg,
+	}
+}
+
 // Trace logger with requestId and uid
 func (logger *Logger) Trace(ctx context.Context) *Logger {
 	var (
 		uid, requestID, spanID, bizID string
+		sugar                         *zap.SugaredLogger
 	)
 
 	if uidStr, ok := ctx.Value(trace.ID()).(string); ok {
@@ -244,23 +253,34 @@ func (logger *Logger) Trace(ctx context.Context) *Logger {
 		bizID = bizIDStr
 	}
 
-	prefixBuilder := strings.Builder{}
-	prefixBuilder.WriteByte(traceSplitterL)
-	prefixBuilder.Write(strutil.String2Bytes(uid))
-	prefixBuilder.WriteByte(traceSplitterR)
-	prefixBuilder.WriteByte(traceSplitterL)
-	prefixBuilder.Write(strutil.String2Bytes(requestID))
-	prefixBuilder.WriteByte(traceSplitterR)
-	prefixBuilder.WriteByte(traceSplitterL)
-	prefixBuilder.Write(strutil.String2Bytes(spanID))
-	prefixBuilder.WriteByte(traceSplitterR)
-	prefixBuilder.WriteByte(traceSplitterL)
-	prefixBuilder.Write(strutil.String2Bytes(bizID))
-	prefixBuilder.WriteByte(traceSplitterR)
+	switch logger.cfg.Encoding {
+	case "console":
+		prefixBuilder := strings.Builder{}
+		prefixBuilder.WriteByte(traceSplitterL)
+		prefixBuilder.Write(strutil.String2Bytes(uid))
+		prefixBuilder.WriteByte(traceSplitterR)
+		prefixBuilder.WriteByte(traceSplitterL)
+		prefixBuilder.Write(strutil.String2Bytes(requestID))
+		prefixBuilder.WriteByte(traceSplitterR)
+		prefixBuilder.WriteByte(traceSplitterL)
+		prefixBuilder.Write(strutil.String2Bytes(spanID))
+		prefixBuilder.WriteByte(traceSplitterR)
+		prefixBuilder.WriteByte(traceSplitterL)
+		prefixBuilder.Write(strutil.String2Bytes(bizID))
+		prefixBuilder.WriteByte(traceSplitterR)
+		sugar = logger.sugar.Named(prefixBuilder.String())
+	default:
+		sugar = logger.sugar.With(
+			"uid", uid,
+			"reqId", requestID,
+			"bizId", bizID,
+			"spanId", spanID,
+		)
+	}
 
 	return &Logger{
 		level: logger.level,
-		sugar: logger.sugar.Named(prefixBuilder.String()),
+		sugar: sugar,
 		cfg:   logger.cfg,
 	}
 }
