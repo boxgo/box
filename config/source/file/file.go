@@ -2,6 +2,7 @@
 package file
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -58,6 +59,10 @@ func (f *file) Watch() (source.Watcher, error) {
 		return nil, err
 	}
 	return newWatcher(f)
+}
+
+func (f *file) Id() string {
+	return fmt.Sprintf("%s://%s", f.String(), f.path)
 }
 
 func (f *file) String() string {

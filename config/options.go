@@ -2,6 +2,9 @@ package config
 
 import (
 	"context"
+	"io"
+	"os"
+	"time"
 
 	"github.com/boxgo/box/v2/config/reader"
 	"github.com/boxgo/box/v2/config/source"
@@ -10,6 +13,8 @@ import (
 
 type (
 	Options struct {
+		Debug     io.Writer
+		Interval  time.Duration
 		Source    []source.Source
 		Reader    reader.Reader
 		Validator validator.Validator
@@ -19,7 +24,25 @@ type (
 	Option func(o *Options)
 )
 
-// WithSource appends a source to list of sources
+// WithDebug print debug log
+func WithDebug(debug bool) Option {
+	return func(o *Options) {
+		if debug {
+			o.Debug = os.Stdout
+		} else {
+			o.Debug = io.Discard
+		}
+	}
+}
+
+// WithInterval sets watch interval
+func WithInterval(interval time.Duration) Option {
+	return func(o *Options) {
+		o.Interval = interval
+	}
+}
+
+// WithSource appends a source to list of sources, the latter has higher priority.
 func WithSource(s ...source.Source) Option {
 	return func(o *Options) {
 		o.Source = append(o.Source, s...)

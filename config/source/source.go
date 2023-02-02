@@ -10,9 +10,10 @@ import (
 type (
 	// Source is the source from which config is loaded
 	Source interface {
+		Id() string
+		String() string
 		Read() (*ChangeSet, error)
 		Watch() (Watcher, error)
-		String() string
 	}
 
 	Watcher interface {

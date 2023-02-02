@@ -1,6 +1,7 @@
 package env
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -121,6 +122,10 @@ func (e *env) Watch() (source.Watcher, error) {
 
 func (e *env) String() string {
 	return "env"
+}
+
+func (e *env) Id() string {
+	return fmt.Sprintf("%s://%s;%s", e.String(), strings.Join(e.strippedPrefixes, ","), strings.Join(e.prefixes, ","))
 }
 
 func matchPrefix(pre []string, s string) (string, bool) {
