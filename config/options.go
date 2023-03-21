@@ -8,17 +8,15 @@ import (
 
 	"github.com/boxgo/box/v2/config/reader"
 	"github.com/boxgo/box/v2/config/source"
-	"github.com/boxgo/box/v2/config/validator"
 )
 
 type (
 	Options struct {
-		Debug     io.Writer
-		Interval  time.Duration
-		Source    []source.Source
-		Reader    reader.Reader
-		Validator validator.Validator
-		Context   context.Context
+		Debug    io.Writer
+		Interval time.Duration
+		Source   []source.Source
+		Reader   reader.Reader
+		Context  context.Context
 	}
 
 	Option func(o *Options)
@@ -53,12 +51,5 @@ func WithSource(s ...source.Source) Option {
 func WithReader(r reader.Reader) Option {
 	return func(o *Options) {
 		o.Reader = r
-	}
-}
-
-// WithValidator sets the config validator
-func WithValidator(r validator.Validator) Option {
-	return func(o *Options) {
-		o.Validator = r
 	}
 }

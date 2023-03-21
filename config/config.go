@@ -27,6 +27,7 @@ type (
 
 	Config interface {
 		Path() string
+		Validate() error
 	}
 
 	Callback func(old, new value.Value)
@@ -108,8 +109,9 @@ func (c *config) Scan(val interface{}) (err error) {
 		return
 	}
 
-	if c.opts.Validator != nil {
-		err = c.opts.Validator.Validate(val)
+	switch v := val.(type) {
+	case Config:
+		err = v.Validate()
 	}
 
 	return
