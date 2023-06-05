@@ -17,6 +17,7 @@ import (
 
 	"github.com/boxgo/box/pkg/codec/json"
 	"github.com/boxgo/box/pkg/util/urlutil"
+	"moul.io/http2curl"
 )
 
 type (
@@ -38,6 +39,7 @@ type (
 		BodyData    interface{}
 		Cookies     []*http.Cookie
 		Multipart   []MultipartForm
+		curl        string
 	}
 
 	MultipartForm struct {
@@ -114,7 +116,9 @@ func (request *Request) AddCookies(cookies ...*http.Cookie) *Request {
 // Param Method sets multiple URL path key-value pairs.
 //
 // For example: http://example.com/users/:uid
-//		client.Get("http://example.com/users/:uid").Param(map[string]interface{}{"uid": "123"}).End()
+//
+//	client.Get("http://example.com/users/:uid").Param(map[string]interface{}{"uid": "123"}).End()
+//
 // request target Url will be replace to `http://example.com/users/123`
 func (request *Request) Param(param map[string]interface{}) *Request {
 	request.ParamData = param
@@ -124,7 +128,8 @@ func (request *Request) Param(param map[string]interface{}) *Request {
 
 // Query
 // format:
-//		1.map[string]interface{} {"key": "value", "key1": 1}
+//
+//	1.map[string]interface{} {"key": "value", "key1": 1}
 func (request *Request) Query(query interface{}) *Request {
 	switch v := reflect.ValueOf(query); v.Kind() {
 	case reflect.Map, reflect.Struct:
@@ -315,6 +320,14 @@ func (request *Request) RawRequest() (*http.Request, error) {
 	}
 
 	request.rawReq = req
+
+	if getLoggerLevel(request)&LoggerCurl == 1 {
+		if curl, e := http2curl.GetCurlCommand(req); e != nil {
+			return req, e
+		} else {
+			request.curl = curl.String()
+		}
+	}
 
 	return req, err
 }

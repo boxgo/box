@@ -32,12 +32,13 @@ type (
 func New(baseUrl string) *WuKong {
 	w := &WuKong{
 		baseUrl: baseUrl,
-		logger:  LoggerResponse | LoggerRequest,
+		logger:  LoggerResponse | LoggerRequest | LoggerCurl,
 		metric:  true,
 		before:  []Before{loggerStart, metricStart},
 		after:   []After{loggerAfter, metricEnd},
 		client: &http.Client{
 			Transport: http.DefaultTransport,
+			Timeout:   time.Second * 10,
 		},
 	}
 

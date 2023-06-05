@@ -2,7 +2,6 @@ package wukong
 
 import (
 	"github.com/boxgo/box/pkg/logger"
-	"moul.io/http2curl"
 )
 
 type (
@@ -17,6 +16,7 @@ const (
 	LoggerDisable LoggerLevel = 1 << iota
 	LoggerRequest
 	LoggerResponse
+	LoggerCurl
 )
 
 func loggerStart(req *Request) error {
@@ -27,19 +27,9 @@ func loggerStart(req *Request) error {
 	}
 
 	if level&LoggerRequest == 0 {
-		logger.Trace(req.Context).Info("http_client_start")
+		logger.Trace(req.Context).Infow("http_client_start")
 	} else {
-		r, e := req.RawRequest()
-		if e != nil {
-			return e
-		}
-
-		curl, e := http2curl.GetCurlCommand(r)
-		if e != nil {
-			return e
-		}
-
-		logger.Trace(req.Context).Infow("http_client_start", "request", curl.String())
+		logger.Trace(req.Context).Infow("http_client_start", "request", req.curl)
 	}
 
 	return nil
@@ -55,7 +45,7 @@ func loggerAfter(req *Request, resp *Response) error {
 	if level&LoggerResponse == 0 {
 		logger.Trace(req.Context).Info("http_client_end")
 	} else {
-		logger.Trace(req.Context).Infow("http_client_end", "response", string(resp.Bytes()))
+		logger.Trace(req.Context).Infow("http_client_end", "elapsed", req.TraceInfo.ElapsedTime, "request", req.curl, "response", string(resp.Bytes()))
 	}
 
 	return nil
