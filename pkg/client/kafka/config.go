@@ -1,11 +1,13 @@
 package kafka
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/logger"
+	"github.com/boxgo/box/pkg/system"
 )
 
 type (
@@ -99,6 +101,10 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 
 	if err := config.Scan(cfg); err != nil {
 		logger.Panicf("Kafka load config error: %s", err)
+	}
+
+	if cfg.ClientID == "" || cfg.ClientID == "sarama" {
+		cfg.ClientID = fmt.Sprintf("%s_%s", config.ServiceName(), system.Hostname())
 	}
 
 	cfg.kfkCfg.Net.MaxOpenRequests = cfg.Net.MaxOpenRequests
