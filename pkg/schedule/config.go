@@ -23,12 +23,15 @@ type (
 		AutoUnlock    bool                   `config:"autoUnlock" desc:"Auto unlock after task finish"`
 		LockSeconds   int                    `config:"lockSeconds" desc:"Lock ttl"`
 		Delay         time.Duration          `config:"delay" desc:"Delay duration"`
+		Timeout       time.Duration          `config:"timeout" desc:"Execute timeout, default 6h"`
 		Args          map[string]interface{} `config:"args" desc:"Schedule arguments"`
 	}
 
 	Type int
 
 	OptionFunc func(*Config)
+
+	ArgsKey struct{}
 )
 
 const (
@@ -74,9 +77,10 @@ func DefaultConfig(key string) *Config {
 		Spec:        "",
 		Specs:       []string{},
 		Compete:     true,
-		AutoUnlock:  true,
+		AutoUnlock:  false,
 		LockSeconds: 0,
 		Delay:       0,
+		Timeout:     time.Hour * 6,
 		Args:        map[string]interface{}{},
 	}
 }

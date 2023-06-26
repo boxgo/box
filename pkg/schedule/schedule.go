@@ -12,6 +12,7 @@ import (
 	"github.com/boxgo/box/pkg/locker/redislocker"
 	"github.com/boxgo/box/pkg/logger"
 	"github.com/boxgo/box/pkg/metric"
+	"github.com/boxgo/box/pkg/trace"
 	"github.com/boxgo/box/pkg/util/strutil"
 	"github.com/robfig/cron"
 )
@@ -27,8 +28,7 @@ type (
 		timingHandler Handler
 	}
 
-	// Handler TODO support context
-	Handler func(args map[string]interface{}) error
+	Handler func(ctx context.Context) error
 
 	Journal struct {
 		Config    Config
@@ -149,8 +149,8 @@ func (sch *Schedule) execTiming() {
 func (sch *Schedule) exec(handler Handler) {
 	go func() {
 		var (
-			taskId  = strutil.RandomAlphanumeric(10)
-			journal = Journal{
+			ctx, cancel = context.WithTimeout(context.TODO(), sch.cfg.Timeout)
+			journal     = Journal{
 				Config:    *sch.cfg,
 				StartTime: time.Now(),
 				EndTime:   time.Time{},
@@ -159,6 +159,12 @@ func (sch *Schedule) exec(handler Handler) {
 			}
 		)
 
+		defer cancel()
+
+		ctx = context.WithValue(ctx, ArgsKey{}, sch.cfg.Args)
+		ctx = context.WithValue(ctx, trace.BizID(), sch.key())
+		ctx = context.WithValue(ctx, trace.ReqID(), strutil.RandomAlphanumeric(10))
+
 		if sch.cfg.Delay > 0 {
 			time.Sleep(sch.cfg.Delay)
 		}
@@ -166,9 +172,9 @@ func (sch *Schedule) exec(handler Handler) {
 		defer func() {
 			if sch.cfg.Compete && sch.cfg.AutoUnlock {
 				if err := sch.locker.UnLock(context.Background(), sch.key()); err != nil {
-					logger.Errorf("Schedule [%s][%s] unlock error: [%s]", sch.key(), taskId, err)
+					logger.Trace(ctx).Errorf("Schedule unlock error: [%s]", err)
 				} else {
-					logger.Infof("Schedule [%s][%s] unlock success", sch.key(), taskId)
+					logger.Trace(ctx).Infof("Schedule unlock success")
 				}
 			}
 		}()
@@ -176,13 +182,13 @@ func (sch *Schedule) exec(handler Handler) {
 		if sch.cfg.Compete {
 			locked, err := sch.locker.Lock(context.Background(), sch.key(), sch.cfg.lockDuration)
 			if err != nil {
-				logger.Errorf("Schedule [%s][%s] compete error: [%s]", sch.key(), taskId, err)
+				logger.Trace(ctx).Errorf("Schedule compete error: [%s]", err)
 				return
 			} else if !locked {
-				logger.Warnf("Schedule [%s][%s] compete fail", sch.key(), taskId)
+				logger.Trace(ctx).Warnf("Schedule compete fail")
 				return
 			} else {
-				logger.Infof("Schedule [%s][%s] compete win", sch.key(), taskId)
+				logger.Trace(ctx).Infof("Schedule compete win")
 			}
 		}
 
@@ -192,20 +198,20 @@ func (sch *Schedule) exec(handler Handler) {
 			journal.Panic = recover()
 
 			if journal.Panic != nil {
-				logger.Errorf("Schedule [%s][%s] crash: %+v\n%s", sch.key(), journal.Panic, taskId, debug.Stack())
+				logger.Trace(ctx).Errorf("Schedule crash: %+v\n%s", journal.Panic, debug.Stack())
 				scheduleCounter.WithLabelValues(sch.key(), "", fmt.Sprintf("%s", journal.Panic)).Inc()
 			}
 
 			sch.recorder(journal)
 		}()
 
-		logger.Infof("Schedule [%s][%s] run start", sch.key(), taskId)
+		logger.Trace(ctx).Infof("Schedule run start")
 
-		if journal.Error = handler(sch.cfg.Args); journal.Error != nil {
-			logger.Errorf("Schedule [%s][%s] run error: [%s]", sch.key(), taskId, journal.Error)
+		if journal.Error = handler(ctx); journal.Error != nil {
+			logger.Trace(ctx).Errorf("Schedule run error: [%s]", journal.Error)
 			scheduleCounter.WithLabelValues(sch.key(), journal.Error.Error(), "").Inc()
 		} else {
-			logger.Infof("Schedule [%s][%s] run success", taskId, sch.key())
+			logger.Trace(ctx).Infof("Schedule run success")
 			scheduleCounter.WithLabelValues(sch.key(), "", "").Inc()
 		}
 	}()
