@@ -321,7 +321,7 @@ func (request *Request) RawRequest() (*http.Request, error) {
 
 	request.rawReq = req
 
-	if getLoggerLevel(request)&LoggerCurl == 1 {
+	if getLoggerLevel(request)&LoggerCurl != 0 {
 		if curl, e := http2curl.GetCurlCommand(req); e != nil {
 			return req, e
 		} else {

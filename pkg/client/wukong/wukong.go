@@ -156,13 +156,6 @@ func (wk *WuKong) do(req *Request) (resp *Response) {
 		startAt = time.Now()
 	)
 
-	for _, before := range wk.before {
-		if err = before(req); err != nil {
-			logger.Trace(req.Context).Errorw("http_before_hook_error", "err", err)
-			break
-		}
-	}
-
 	for i := 0; i < 1; i++ {
 		if err != nil {
 			resp = NewResponse(err, req, nil)
@@ -175,17 +168,24 @@ func (wk *WuKong) do(req *Request) (resp *Response) {
 			break
 		}
 
+		for _, before := range wk.before {
+			if err = before(req); err != nil {
+				logger.Trace(req.Context).Errorw("http_before_hook_error", "err", err)
+				break
+			}
+		}
+
 		rawResp, err = wk.client.Do(rawReq)
 		req.TraceInfo.ElapsedTime = time.Since(startAt)
 
 		resp = NewResponse(err, req, rawResp)
-	}
 
-	for _, after := range wk.after {
-		if err = after(req, resp); err != nil {
-			logger.Trace(req.Context).Errorw("http_after_hook_error", "err", err)
-			resp = NewResponse(err, req, rawResp)
-			break
+		for _, after := range wk.after {
+			if err = after(req, resp); err != nil {
+				logger.Trace(req.Context).Errorw("http_after_hook_error", "err", err)
+				resp = NewResponse(err, req, rawResp)
+				break
+			}
 		}
 	}
 

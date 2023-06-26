@@ -22,7 +22,7 @@ const (
 func loggerStart(req *Request) error {
 	level := getLoggerLevel(req)
 
-	if level&LoggerDisable == 1 {
+	if level&LoggerDisable != 0 {
 		return nil
 	}
 
@@ -38,7 +38,7 @@ func loggerStart(req *Request) error {
 func loggerAfter(req *Request, resp *Response) error {
 	level := getLoggerLevel(req)
 
-	if level&LoggerDisable == 1 {
+	if level&LoggerDisable != 0 {
 		return nil
 	}
 
@@ -54,7 +54,7 @@ func loggerAfter(req *Request, resp *Response) error {
 func getLoggerLevel(req *Request) LoggerLevel {
 	level, ok := req.Context.Value(loggerLevelKey).(LoggerLevel)
 	if !ok {
-		level = LoggerRequest | LoggerResponse
+		level = req.client.logger
 	}
 
 	return level
