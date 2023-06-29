@@ -1,4 +1,4 @@
-package core_test
+package zap_test
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ func Benchmark_Filter2(b *testing.B) {
 }
 
 func expectB(b *testing.B, origin, expect string) {
-	str := string(m.Mask([]byte(origin)))
+	str := string(masker.Mask([]byte(origin)))
 	if str != expect {
 		b.Fatalf("\norigin: %s\nexpect: %s\nactual: %s", origin, expect, str)
 	}

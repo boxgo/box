@@ -1,13 +1,13 @@
-package core_test
+package zap_test
 
 import (
 	"testing"
 
-	"github.com/boxgo/box/v2/logger/core"
+	"github.com/boxgo/box/v2/contrib/log/zap/v2"
 )
 
 var (
-	m = core.NewMaskers(core.MaskRules{
+	masker = zap.NewMaskers(zap.MaskRules{
 		{`"password":(\s*)".*?"`, `"password":$1"*"`},
 		{`password:(\s*).*?\S*`, `password:$1*`},
 		{`password=\w*&`, `password=*&`},
@@ -33,7 +33,7 @@ func Test_Filter2(t *testing.T) {
 }
 
 func expect(t *testing.T, origin, expect string) {
-	str := string(m.Mask([]byte(origin)))
+	str := string(masker.Mask([]byte(origin)))
 	if str != expect {
 		t.Fatalf("\norigin: %s\nexpect: %s\nactual: %s", origin, expect, str)
 	} else {

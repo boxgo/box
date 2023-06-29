@@ -1,6 +1,0 @@
-name: box
-version: 1.0.0
-
-logger:
-  default:
-    level: debug

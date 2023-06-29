@@ -1,4 +1,4 @@
-package core
+package zap
 
 import (
 	"regexp"
@@ -13,8 +13,18 @@ type (
 
 	MaskRules []MaskRule
 	MaskRule  struct {
-		Rule    string `config:"rule" json:"rule"`
-		Replace string `config:"replace" json:"replace"`
+		Rule    string
+		Replace string
+	}
+)
+
+var (
+	DefaultMaskRules = []MaskRule{
+		{Rule: `"password":(\s*)".*?"`, Replace: `"password":$1"***"`},
+		{Rule: `password:(\s*).*?\S*`, Replace: `password:$1***`},
+		{Rule: `password=\w*&`, Replace: `password=***&`},
+		{Rule: `password=\w*\S`, Replace: `password=***`},
+		{Rule: `\\"password\\":(\s*)\\".*?\\"`, Replace: `\"password\":$1\"***\"`},
 	}
 )
 

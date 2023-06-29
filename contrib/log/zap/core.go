@@ -1,4 +1,4 @@
-package core
+package zap
 
 import (
 	"go.uber.org/zap/zapcore"
@@ -8,12 +8,14 @@ var (
 	_ zapcore.Core = (*MaskCore)(nil)
 )
 
-type MaskCore struct {
-	zapcore.LevelEnabler
-	maskers *Maskers
-	enc     zapcore.Encoder
-	out     zapcore.WriteSyncer
-}
+type (
+	MaskCore struct {
+		zapcore.LevelEnabler
+		maskers *Maskers
+		enc     zapcore.Encoder
+		out     zapcore.WriteSyncer
+	}
+)
 
 func NewMaskCore(rules MaskRules, lv zapcore.LevelEnabler, enc zapcore.Encoder, out zapcore.WriteSyncer) zapcore.Core {
 	return &MaskCore{
@@ -67,6 +69,7 @@ func (c *MaskCore) clone() *MaskCore {
 		LevelEnabler: c.LevelEnabler,
 		enc:          c.enc.Clone(),
 		out:          c.out,
+		maskers:      c.maskers,
 	}
 }
 

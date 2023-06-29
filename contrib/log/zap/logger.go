@@ -1,16 +1,11 @@
-package logger
+package zap
 
 import (
 	"context"
 	"sort"
-	"strings"
 	"time"
 
-	"github.com/boxgo/box/v2/config"
-	"github.com/boxgo/box/v2/logger/core"
-	"github.com/boxgo/box/v2/trace"
-	"github.com/boxgo/box/v2/util/jsonutil"
-	"github.com/boxgo/box/v2/util/strutil"
+	"github.com/boxgo/box/v2/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -18,26 +13,33 @@ import (
 type (
 	// Logger logger option
 	Logger struct {
-		cfg   *Config
+		opt   Options
+		cfg   *zap.Config
 		level *zap.AtomicLevel
 		sugar *zap.SugaredLogger
 	}
+
+	Config = zap.Config
 )
 
-const (
-	traceSplitterL = '['
-	traceSplitterR = ']'
+var (
+	ProductionConfig = zap.NewProductionConfig()
 )
 
-func newLogger(cfg *Config) (*Logger, error) {
+func NewLogger(zapCfg *zap.Config, opts ...Option) (log.Logger, error) {
 	var (
-		zapCfg           zap.Config
 		err              error
+		opt              Options
 		encoder          zapcore.Encoder
 		outSink, errSink zapcore.WriteSyncer
 	)
-	if err = jsonutil.Copy(cfg, &zapCfg); err != nil {
-		return nil, err
+
+	for _, options := range opts {
+		options(&opt)
+	}
+
+	if opt.maskRules == nil {
+		opt.maskRules = DefaultMaskRules
 	}
 
 	if zapCfg.Encoding == "json" {
@@ -46,34 +48,24 @@ func newLogger(cfg *Config) (*Logger, error) {
 		encoder = zapcore.NewConsoleEncoder(zapCfg.EncoderConfig)
 	}
 
-	if outSink, errSink, err = openSinks(cfg); err != nil {
+	if outSink, errSink, err = openSinks(zapCfg); err != nil {
 		return nil, err
 	}
 
-	rule := cfg.MaskRules
-	if !cfg.Mask {
-		rule = nil
-	}
-
 	zapLogger := zap.New(
-		core.NewMaskCore(rule, cfg.Level, encoder, outSink),
-		buildOptions(&zapCfg, errSink)...,
+		NewMaskCore(opt.maskRules, zapCfg.Level, encoder, outSink),
+		buildOptions(zapCfg, errSink)...,
 	)
 
-	logger := &Logger{
-		cfg:   cfg,
+	return &Logger{
+		opt:   opt,
+		cfg:   zapCfg,
 		level: &zapCfg.Level,
 		sugar: zapLogger.Sugar(),
-	}
-
-	if err = logger.watch(); err != nil {
-		logger.Errorf("logger config watch error: %s", err)
-	}
-
-	return logger, nil
+	}, nil
 }
 
-func openSinks(cfg *Config) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+func openSinks(cfg *zap.Config) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
 	sink, closeOut, err := zap.Open(cfg.OutputPaths...)
 	if err != nil {
 		return nil, nil, err
@@ -137,8 +129,17 @@ func buildOptions(cfg *zap.Config, errSink zapcore.WriteSyncer) []zap.Option {
 	return opts
 }
 
-func (logger *Logger) String() string {
-	return "logger"
+func (logger Logger) SetLevel(level log.Level) {
+	logger.level.SetLevel(zapcore.Level(level))
+}
+
+func (logger *Logger) With(keysAndValues ...interface{}) log.Logger {
+	return &Logger{
+		opt:   logger.opt,
+		cfg:   logger.cfg,
+		level: logger.level,
+		sugar: logger.sugar.With(keysAndValues...),
+	}
 }
 
 func (logger *Logger) Debug(args ...interface{}) {
@@ -189,30 +190,6 @@ func (logger *Logger) Errorw(msg string, keysAndValues ...interface{}) {
 	logger.sugar.Errorw(msg, keysAndValues...)
 }
 
-func (logger *Logger) DPanic(args ...interface{}) {
-	logger.sugar.DPanic(args...)
-}
-
-func (logger *Logger) DPanicf(template string, args ...interface{}) {
-	logger.sugar.DPanicf(template, args...)
-}
-
-func (logger *Logger) DPanicw(msg string, keysAndValues ...interface{}) {
-	logger.sugar.DPanicw(msg, keysAndValues...)
-}
-
-func (logger *Logger) Panic(args ...interface{}) {
-	logger.sugar.Panic(args...)
-}
-
-func (logger *Logger) Panicf(template string, args ...interface{}) {
-	logger.sugar.Panicf(template, args...)
-}
-
-func (logger *Logger) Panicw(msg string, keysAndValues ...interface{}) {
-	logger.sugar.Panicw(msg, keysAndValues...)
-}
-
 func (logger *Logger) Fatal(args ...interface{}) {
 	logger.sugar.Fatal(args...)
 }
@@ -226,72 +203,22 @@ func (logger *Logger) Fatalw(msg string, keysAndValues ...interface{}) {
 }
 
 // Trace logger with requestId and uid
-func (logger *Logger) Trace(ctx context.Context) *Logger {
-	var (
-		uid, requestID, spanID, bizID string
-	)
+func (logger *Logger) Trace(ctx context.Context) log.Logger {
+	var kv = make([]interface{}, len(logger.opt.traceFields)*2)
 
-	if uidStr, ok := ctx.Value(trace.ID()).(string); ok {
-		uid = uidStr
-	}
-	if requestIDStr, ok := ctx.Value(trace.ReqID()).(string); ok {
-		requestID = requestIDStr
-	}
-	if spanIDStr, ok := ctx.Value(trace.SpanID()).(string); ok {
-		spanID = spanIDStr
-	}
-	if bizIDStr, ok := ctx.Value(trace.BizID()).(string); ok {
-		bizID = bizIDStr
+	for idx, field := range logger.opt.traceFields {
+		if val, ok := ctx.Value(field).(string); ok {
+			kv[idx*2] = val
+			kv[idx*2+1] = val
+		}
 	}
 
-	prefixBuilder := strings.Builder{}
-	prefixBuilder.WriteByte(traceSplitterL)
-	prefixBuilder.Write(strutil.String2Bytes(uid))
-	prefixBuilder.WriteByte(traceSplitterR)
-	prefixBuilder.WriteByte(traceSplitterL)
-	prefixBuilder.Write(strutil.String2Bytes(requestID))
-	prefixBuilder.WriteByte(traceSplitterR)
-	prefixBuilder.WriteByte(traceSplitterL)
-	prefixBuilder.Write(strutil.String2Bytes(spanID))
-	prefixBuilder.WriteByte(traceSplitterR)
-	prefixBuilder.WriteByte(traceSplitterL)
-	prefixBuilder.Write(strutil.String2Bytes(bizID))
-	prefixBuilder.WriteByte(traceSplitterR)
+	sugar := logger.sugar.With(kv...)
 
 	return &Logger{
-		level: logger.level,
-		sugar: logger.sugar.Named(prefixBuilder.String()),
+		opt:   logger.opt,
 		cfg:   logger.cfg,
+		level: logger.level,
+		sugar: sugar,
 	}
-}
-
-func (logger *Logger) Internal() interface{} {
-	return logger.sugar.Desugar()
-}
-
-func (logger *Logger) watch() error {
-	w, err := config.Watch(logger.cfg.Path(), "level")
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		for {
-			time.Sleep(logger.cfg.WatchInterval)
-
-			v, _ := w.Next()
-			newLv := v.String("info")
-			oldLv := logger.level.String()
-
-			zapLevel := zapcore.InfoLevel
-			if err := zapLevel.Set(newLv); err != nil {
-				Infof("Logger.UpdateLevel.Error: %s -> %s\n", oldLv, newLv)
-			} else {
-				logger.level.SetLevel(zapLevel)
-				Infof("Logger.UpdateLevel.Success: %s -> %s\n", oldLv, newLv)
-			}
-		}
-	}()
-
-	return nil
 }
