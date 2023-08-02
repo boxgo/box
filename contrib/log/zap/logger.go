@@ -208,7 +208,7 @@ func (logger *Logger) Trace(ctx context.Context) log.Logger {
 
 	for idx, field := range logger.opt.traceFields {
 		if val, ok := ctx.Value(field).(string); ok {
-			kv[idx*2] = val
+			kv[idx*2] = field
 			kv[idx*2+1] = val
 		}
 	}
