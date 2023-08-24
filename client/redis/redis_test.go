@@ -11,23 +11,42 @@ import (
 func Example() {
 	ctx := context.TODO()
 
-	if err := redis.Set(ctx, "key", "value", time.Minute).Err(); err != nil {
+	client := redis.New(&redis.Options{
+		Addrs: []string{"127.0.0.1:6379"},
+	})
+
+	if err := client.Set(ctx, "key", "value", time.Minute).Err(); err != nil {
 		panic(err)
 	}
 
-	if err := redis.Del(ctx, "key").Err(); err != nil {
+	if val, err := client.Get(ctx, "key").Result(); err != nil {
+		panic(err)
+	} else if val != "value" {
+		panic(err)
+	} else {
+		fmt.Println(val)
+	}
+
+	if err := client.Del(ctx, "key").Err(); err != nil {
 		panic(err)
 	}
+
+	// Output:
+	// value
 }
 
 func ExampleRedis_NewScript() {
 	ctx := context.TODO()
 
-	IncrByXX := redis.Default.NewScript(`
+	client := redis.New(&redis.Options{
+		Addrs: []string{"127.0.0.1:6379"},
+	})
+
+	IncrByXX := client.NewScript(`
 		return redis.call("INCRBY", KEYS[1], ARGV[1])
 	`)
 
-	defer redis.Del(ctx, "xx_counter")
+	defer client.Del(ctx, "xx_counter")
 
 	if n, err := IncrByXX.Run(ctx, []string{"xx_counter"}, 100).Result(); err != nil {
 		panic(err)
@@ -35,7 +54,7 @@ func ExampleRedis_NewScript() {
 		fmt.Println(n)
 	}
 
-	if err := redis.Set(ctx, "xx_counter", "40", 0).Err(); err != nil {
+	if err := client.Set(ctx, "xx_counter", "40", 0).Err(); err != nil {
 		panic(err)
 	}
 
