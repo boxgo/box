@@ -6,6 +6,8 @@ package build
 
 import (
 	"os"
+
+	"github.com/boxgo/box/v2/util/strutil"
 )
 
 var (
@@ -18,6 +20,18 @@ var (
 func init() {
 	if ID == "" {
 		ID, _ = os.Hostname()
+	}
+
+	if Name == "" {
+		Name = strutil.RandomAlphabet(8)
+	}
+
+	if Namespace == "" {
+		Namespace = "default"
+	}
+
+	if Version == "" {
+		Version = "0.0.0"
 	}
 }
 
