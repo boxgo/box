@@ -1,7 +1,0 @@
-name: box
-version: 1.0.0
-
-redis:
-  default:
-    address:
-      - localhost:6379

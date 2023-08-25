@@ -20,7 +20,7 @@ func New(opts *redis.UniversalOptions) *Redis {
 	client := redis.NewUniversalClient(opts)
 
 	// Enable tracing instrumentation.
-	if err := redisotel.InstrumentTracing(client, redisotel.WithDBStatement(true)); err != nil {
+	if err := redisotel.InstrumentTracing(client, redisotel.WithDBStatement(false)); err != nil {
 		panic(err)
 	}
 

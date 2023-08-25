@@ -4,36 +4,42 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"testing"
 	"time"
 
-	"github.com/boxgo/box/v2/cache/rediscache"
+	"github.com/boxgo/box/v2/client/redis"
+	"github.com/boxgo/box/v2/contrib/cache/rediscache"
 	"github.com/boxgo/box/v2/util/strutil"
 )
 
-var (
-	inst = rediscache.StdConfig("default").Build()
-)
-
-func Example() {
+func TestRedisCache(t *testing.T) {
 	val := ""
 	ctx := context.Background()
 	testKey := strutil.RandomAlphabet(10)
 	testVal := strutil.RandomAlphabet(100)
 
-	if err := inst.Set(ctx, testKey, testVal, time.Second*5); err != nil {
-		panic(err)
+	cache, err := rediscache.New(redis.New(&redis.Options{
+		Addrs: []string{"127.0.0.1:6379"},
+	}))
+
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	if err := inst.Get(ctx, testKey, &val); err != nil {
-		panic(err)
+	if err = cache.Set(ctx, testKey, testVal, time.Second*5); err != nil {
+		t.Fatal(err)
 	}
 
-	fmt.Println(testVal == val)
-	// Output: true
+	if err = cache.Get(ctx, testKey, &val); err != nil {
+		t.Fatal(err)
+	}
+
+	if testVal != val {
+		t.Fatalf("RedisCache\nexpect:%s\nreal:%s", testVal, val)
+	}
 }
 
-func ExampleGet() {
+func TestRedisCache1(t *testing.T) {
 	type (
 		testStruct struct {
 			String      string
@@ -61,16 +67,21 @@ func ExampleGet() {
 		},
 	}
 
-	err := inst.Set(ctx, testKey, testVal, time.Second*5)
+	cache, err := rediscache.New(redis.New(&redis.Options{
+		Addrs: []string{"127.0.0.1:6379"},
+	}))
+
+	err = cache.Set(ctx, testKey, testVal, time.Second*5)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	val := testStruct{}
-	err = inst.Get(ctx, testKey, &val)
+	err = cache.Get(ctx, testKey, &val)
 	a, _ := json.Marshal(val)
 	b, _ := json.Marshal(testVal)
 
-	fmt.Println(bytes.Compare(a, b) == 0)
-	// Output: true
+	if bytes.Compare(a, b) != 0 {
+		t.Fatalf("RedisCache\nexpect:%s\nreal:%s", a, b)
+	}
 }
