@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/boxgo/box/v2/log"
+	"github.com/boxgo/box/v2/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -26,7 +26,7 @@ var (
 	ProductionConfig = zap.NewProductionConfig()
 )
 
-func NewLogger(zapCfg *zap.Config, opts ...Option) (log.Logger, error) {
+func NewLogger(zapCfg *zap.Config, opts ...Option) (logger.Logger, error) {
 	var (
 		err              error
 		opt              Options
@@ -129,11 +129,11 @@ func buildOptions(cfg *zap.Config, errSink zapcore.WriteSyncer) []zap.Option {
 	return opts
 }
 
-func (logger Logger) SetLevel(level log.Level) {
+func (logger Logger) SetLevel(level logger.Level) {
 	logger.level.SetLevel(zapcore.Level(level))
 }
 
-func (logger *Logger) With(keysAndValues ...interface{}) log.Logger {
+func (logger *Logger) With(keysAndValues ...interface{}) logger.Logger {
 	return &Logger{
 		opt:   logger.opt,
 		cfg:   logger.cfg,
@@ -203,7 +203,7 @@ func (logger *Logger) Fatalw(msg string, keysAndValues ...interface{}) {
 }
 
 // Trace logger with requestId and uid
-func (logger *Logger) Trace(ctx context.Context) log.Logger {
+func (logger *Logger) Trace(ctx context.Context) logger.Logger {
 	var kv = make([]interface{}, len(logger.opt.traceFields)*2)
 
 	for idx, field := range logger.opt.traceFields {
