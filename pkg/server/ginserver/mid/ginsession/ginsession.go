@@ -34,13 +34,21 @@ func (s *GinSession) Cookie() gin.HandlerFunc {
 	return sessions.Sessions(s.cfg.CookieName, cookie.NewStore([]byte(s.cfg.KeyPair)))
 }
 
-func (s *GinSession) Redis() gin.HandlerFunc {
+func (s *GinSession) Redis(serializers ...serializer.SessionSerializer) gin.HandlerFunc {
+	var ser serializer.SessionSerializer
+
+	if len(serializers) == 0 {
+		ser = serializer.JSONSerializer{}
+	} else {
+		ser = serializers[0]
+	}
+
 	st, _ := redisstore.NewStoreWithUniversalClient(
 		s.client.Client(),
 		redisstore.WithMaxLength(s.cfg.MaxLen),
 		redisstore.WithKeyPrefix(s.cfg.KeyPrefix),
 		redisstore.WithKeyPairs([]byte(s.cfg.KeyPair)),
-		redisstore.WithSerializer(serializer.JSONSerializer{}),
+		redisstore.WithSerializer(ser),
 	)
 
 	if len(s.cfg.CookieNames) != 0 {
