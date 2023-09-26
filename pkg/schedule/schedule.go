@@ -12,8 +12,10 @@ import (
 	"github.com/boxgo/box/pkg/locker/redislocker"
 	"github.com/boxgo/box/pkg/logger"
 	"github.com/boxgo/box/pkg/metric"
+	"github.com/boxgo/box/pkg/server/ginserver"
 	"github.com/boxgo/box/pkg/trace"
 	"github.com/boxgo/box/pkg/util/strutil"
+	"github.com/boxgo/box/pkg/util/urlutil"
 	"github.com/robfig/cron"
 )
 
@@ -82,6 +84,12 @@ func newSchedule(cfg *Config) *Schedule {
 			sch.exec(sch.timingHandler)
 		}); err != nil {
 			logger.Panicf("schedule build error: %s", err)
+		}
+	}
+
+	if cfg.server != nil {
+		if err := sch.serverHttp(); err != nil {
+			logger.Panicf("schedule build serverHttp.error: %s", err)
 		}
 	}
 
@@ -215,6 +223,35 @@ func (sch *Schedule) exec(handler Handler) {
 			scheduleCounter.WithLabelValues(sch.key(), "", "").Inc()
 		}
 	}()
+}
+
+func (sch Schedule) serverHttp() error {
+	endpoint, err := urlutil.UrlJoin("/schedule", sch.cfg.key)
+	if err != nil {
+		return err
+	}
+
+	sch.cfg.server.GET(endpoint, func(ctx *ginserver.Context) {
+		var err error
+		typ := ctx.DefaultQuery("type", "timing")
+
+		switch typ {
+		case "once":
+			err = sch.cfg.onceHandler(ctx)
+		case "timing":
+			err = sch.cfg.timingHandler(ctx)
+		default:
+			err = sch.cfg.timingHandler(ctx)
+		}
+
+		if err != nil {
+			ctx.String(200, "run %s.%sHandler error: %s", sch.cfg.key, typ, err.Error())
+		} else {
+			ctx.String(500, "run %s.%sHandler success", sch.cfg.key, typ)
+		}
+	})
+
+	return nil
 }
 
 func (sch *Schedule) key() string {

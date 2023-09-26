@@ -6,13 +6,16 @@ import (
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/locker"
 	"github.com/boxgo/box/pkg/logger"
+	"github.com/boxgo/box/pkg/server/ginserver"
 )
 
 type (
 	Config struct {
+		key           string
 		path          string
 		onceHandler   Handler
 		timingHandler Handler
+		server        *ginserver.GinServer
 		lockDuration  time.Duration
 		locker        locker.MutexLocker
 		recorder      Recorder
@@ -60,6 +63,12 @@ func WithHandler(onceHandler, timingHandler Handler) OptionFunc {
 	}
 }
 
+func WithServer(server *ginserver.GinServer) OptionFunc {
+	return func(c *Config) {
+		c.server = server
+	}
+}
+
 func StdConfig(key string) *Config {
 	cfg := DefaultConfig(key)
 
@@ -72,6 +81,7 @@ func StdConfig(key string) *Config {
 
 func DefaultConfig(key string) *Config {
 	return &Config{
+		key:         key,
 		path:        "schedule." + key,
 		Type:        Stop,
 		Spec:        "",
