@@ -31,6 +31,7 @@ func newGinProm(c *Config) *GinProm {
 				0.75: 0.05,
 				0.9:  0.01,
 				0.99: 0.001,
+				1:    0.001,
 			},
 		),
 		reqBeginCounter: metric.NewCounterVec(
@@ -52,6 +53,7 @@ func newGinProm(c *Config) *GinProm {
 				0.75: 0.05,
 				0.9:  0.01,
 				0.99: 0.001,
+				1:    0.001,
 			},
 		),
 		resSizeSummary: metric.NewSummaryVec(
@@ -63,6 +65,7 @@ func newGinProm(c *Config) *GinProm {
 				0.75: 0.05,
 				0.9:  0.01,
 				0.99: 0.001,
+				1:    0.001,
 			},
 		),
 	}

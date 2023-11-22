@@ -32,6 +32,7 @@ var (
 			0.75: 0.05,
 			0.9:  0.01,
 			0.99: 0.001,
+			1:    0.001,
 		},
 	)
 	workingSession = metric.NewGaugeVec(

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/boxgo/box/pkg/metric"
+	"github.com/boxgo/box/pkg/trace"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -22,17 +23,18 @@ var (
 	cmdTotal = metric.NewCounterVec(
 		"redis_client_command_total",
 		"redis command counter",
-		[]string{"address", "db", "masterName", "pipe", "cmd", "error"},
+		[]string{"bid", "address", "db", "masterName", "pipe", "cmd", "error"},
 	)
 	cmdDuration = metric.NewSummaryVec(
 		"redis_client_command_duration_seconds",
 		"redis command duration seconds",
-		[]string{"address", "db", "masterName", "pipe", "cmd", "error"},
+		[]string{"bid", "address", "db", "masterName", "pipe", "cmd", "error"},
 		map[float64]float64{
 			0.5:  0.05,
 			0.75: 0.05,
 			0.9:  0.01,
 			0.99: 0.001,
+			1:    0.001,
 		},
 	)
 )
@@ -45,7 +47,7 @@ func (m *Metric) AfterProcess(ctx context.Context, cmd redis.Cmder) error {
 	start := ctx.Value(startKey{}).(time.Time)
 	elapsed := time.Since(start)
 
-	m.report(false, elapsed, cmd)
+	m.report(ctx, false, elapsed, cmd)
 
 	return nil
 }
@@ -58,12 +60,12 @@ func (m *Metric) AfterProcessPipeline(ctx context.Context, cmds []redis.Cmder) e
 	start := ctx.Value(startKey{}).(time.Time)
 	elapsed := time.Since(start)
 
-	m.report(true, elapsed, cmds...)
+	m.report(ctx, true, elapsed, cmds...)
 
 	return nil
 }
 
-func (m *Metric) report(pipe bool, elapsed time.Duration, cmds ...redis.Cmder) {
+func (m *Metric) report(ctx context.Context, pipe bool, elapsed time.Duration, cmds ...redis.Cmder) {
 	addressStr := strings.Join(m.cfg.Address, ",")
 	dbStr := fmt.Sprintf("%d", m.cfg.DB)
 	masterNameStr := m.cfg.MasterName
@@ -80,7 +82,16 @@ func (m *Metric) report(pipe bool, elapsed time.Duration, cmds ...redis.Cmder) {
 	}
 	cmdStr = strings.TrimSuffix(cmdStr, ";")
 
+	var (
+		bizID string
+	)
+
+	if bizIDStr, ok := ctx.Value(trace.BizID()).(string); ok {
+		bizID = bizIDStr
+	}
+
 	values := []string{
+		bizID,
 		addressStr,
 		dbStr,
 		masterNameStr,
