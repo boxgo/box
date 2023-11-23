@@ -87,7 +87,7 @@ func (log *GinLog) Logger() func(ctx *gin.Context) {
 
 		ctx.Next()
 
-		fields = append(fields, "status", ctx.Writer.Status(), "latency", time.Since(start))
+		fields = append(fields, "status", ctx.Writer.Status(), "latency", time.Since(start).Milliseconds())
 		if log.cfg.ResponseBody && writer != nil {
 			fields = append(fields, "resp", writer.body.String())
 		}
