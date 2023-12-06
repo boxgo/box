@@ -73,7 +73,9 @@ func StdConfig(key string) *Config {
 	cfg := DefaultConfig(key)
 
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("schedule build error: %s", err)
+		logger.Panicf("schedule load config error: %s", err)
+	} else {
+		logger.Debugw("schedule load config", "config", cfg)
 	}
 
 	return cfg

@@ -21,7 +21,9 @@ func StdConfig() *Config {
 	cfg := DefaultConfig()
 
 	if err := config.Scan(cfg); err != nil {
-		panic(fmt.Errorf("trace build error: %s", err))
+		panic(fmt.Errorf("trace load config error: %s", err))
+	} else {
+		fmt.Println("trace load config", cfg)
 	}
 
 	return cfg

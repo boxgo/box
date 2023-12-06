@@ -30,7 +30,9 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 	}
 
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("mongodb client build error: %s", err)
+		logger.Panicf("mongodb client load config error: %s", err)
+	} else {
+		logger.Debugw("mongodb client load config", "config", cfg)
 	}
 
 	return cfg

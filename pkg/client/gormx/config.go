@@ -30,15 +30,15 @@ type (
 		DisableForeignKeyConstraintWhenMigrating bool                            `config:"disableForeignKeyConstraintWhenMigrating"`
 		QueryFields                              bool                            `config:"queryFields"`
 		CreateBatchSize                          int                             `config:"createBatchSize"`
-		NamingStrategy                           schema.Namer                    `config:"-"`
+		NamingStrategy                           schema.Namer                    `config:"-" json:"-"`
 		NamingStrategyTablePrefix                string                          `config:"namingStrategyTablePrefix"`
 		NamingStrategySingularTable              bool                            `config:"namingStrategySingularTable"`
 		NamingStrategyNoLowerCase                bool                            `config:"namingStrategyNoLowerCase"`
-		NamingStrategyNameReplacer               schema.Replacer                 `config:"-"`
-		NowFunc                                  func() time.Time                `config:"-"`
-		ConnPool                                 gorm.ConnPool                   `config:"-"`
-		ClauseBuilders                           map[string]clause.ClauseBuilder `config:"-"`
-		Plugins                                  map[string]gorm.Plugin          `config:"-"`
+		NamingStrategyNameReplacer               schema.Replacer                 `config:"-" json:"-"`
+		NowFunc                                  func() time.Time                `config:"-" json:"-"`
+		ConnPool                                 gorm.ConnPool                   `config:"-" json:"-"`
+		ClauseBuilders                           map[string]clause.ClauseBuilder `config:"-" json:"-"`
+		Plugins                                  map[string]gorm.Plugin          `config:"-" json:"-"`
 	}
 
 	// OptionFunc 选项信息
@@ -96,6 +96,8 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 
 	if err := config.Scan(cfg); err != nil {
 		logger.Panicf("Gorm load config error: %s", err)
+	} else {
+		logger.Debugw("Gorm load config", "config", cfg)
 	}
 
 	return cfg

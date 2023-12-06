@@ -72,7 +72,9 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 	}
 
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("PostgreSQL build error: %s", err)
+		logger.Panicf("PostgreSQL load config error: %s", err)
+	} else {
+		logger.Debugw("PostgreSQL load config", "config", cfg)
 	}
 
 	return cfg

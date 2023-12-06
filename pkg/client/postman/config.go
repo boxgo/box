@@ -35,6 +35,8 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 
 	if err := config.Scan(cfg); err != nil {
 		logger.Panicf("PostMan load config error: %s", err)
+	} else {
+		logger.Debugw("PostMan load config", "config", cfg)
 	}
 
 	return cfg

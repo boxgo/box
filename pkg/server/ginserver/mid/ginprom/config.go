@@ -37,6 +37,8 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 
 	if err := config.Scan(cfg); err != nil {
 		logger.Panicf("GinProm load config error: %s", err)
+	} else {
+		logger.Debugw("GinProm load config", "config", cfg)
 	}
 
 	return cfg

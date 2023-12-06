@@ -101,6 +101,8 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 
 	if err := config.Scan(cfg); err != nil {
 		logger.Panicf("Kafka load config error: %s", err)
+	} else {
+		logger.Debugw("Kafka load config", "config", cfg)
 	}
 
 	if cfg.ClientID == "" || cfg.ClientID == "sarama" {

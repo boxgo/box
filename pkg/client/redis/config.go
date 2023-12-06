@@ -20,7 +20,9 @@ type (
 func StdConfig(key string) *Config {
 	cfg := DefaultConfig(key)
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("redis build error: %s", err)
+		logger.Panicf("redis load config error: %s", err)
+	} else {
+		logger.Debugw("redis load config", "config", cfg)
 	}
 
 	return cfg

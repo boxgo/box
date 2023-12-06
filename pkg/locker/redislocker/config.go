@@ -18,7 +18,9 @@ func StdConfig(key string) *Config {
 	cfg := DefaultConfig(key)
 
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("redis locker build error: %s", err)
+		logger.Panicf("RedisLocker load config error: %s", err)
+	} else {
+		logger.Debugw("RedisLocker load config", "config", cfg)
 	}
 
 	return cfg

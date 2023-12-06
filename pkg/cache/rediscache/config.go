@@ -19,7 +19,9 @@ func StdConfig(key string) *Config {
 	cfg := DefaultConfig(key)
 
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("redis cache build error: %s", err)
+		logger.Panicf("redis cache load config error: %s", err)
+	} else {
+		logger.Debugf("redis cache load config %s", err)
 	}
 
 	return cfg

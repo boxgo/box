@@ -50,7 +50,9 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 	}
 
 	if err := config.Scan(cfg); err != nil {
-		logger.Panicf("gRPC gateway build error: %s", err)
+		logger.Panicf("gRPC gateway load config error: %s", err)
+	} else {
+		logger.Debugw("gRPC gateway load config", "config", cfg)
 	}
 
 	return cfg

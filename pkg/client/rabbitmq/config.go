@@ -31,6 +31,8 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 
 	if err := config.Scan(cfg); err != nil {
 		logger.Panicf("RabbitMQ load config error: %s", err)
+	} else {
+		logger.Debugw("RabbitMQ load config", "config", cfg)
 	}
 
 	return cfg

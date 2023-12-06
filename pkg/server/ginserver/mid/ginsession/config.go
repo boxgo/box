@@ -32,6 +32,8 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 
 	if err := config.Scan(cfg); err != nil {
 		logger.Panicf("GinSession load config error: %s", err)
+	} else {
+		logger.Debugw("GinSession load config", "config", cfg)
 	}
 
 	return cfg
