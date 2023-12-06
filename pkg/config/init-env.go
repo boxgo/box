@@ -1,3 +1,4 @@
+//go:build !no_config_init && !no_config_env
 // +build !no_config_init,!no_config_env
 
 package config
@@ -18,7 +19,7 @@ func init() {
 			continue
 		}
 
-		prefix := strings.ToUpper(bootCfg.Name)
+		prefix := strings.ToUpper(strings.ReplaceAll(bootCfg.Name, "-", "_"))
 		defaultSources[idx] = env.NewSource(env.WithStrippedPrefix(prefix))
 	}
 }
