@@ -53,8 +53,8 @@ func (e *env) Read() (*source.ChangeSet, error) {
 					tmp[k] = intValue
 				} else if boolValue, err := strconv.ParseBool(value); err == nil {
 					tmp[k] = boolValue
-				} else {
-					tmp[k] = value
+				} else if sliceStrValue := strings.Split(value, ","); len(sliceStrValue) != 0 {
+					tmp[k] = sliceStrValue
 				}
 				continue
 			}
@@ -112,15 +112,16 @@ func (e *env) String() string {
 // Underscores are delimiters for nesting, and all keys are lowercased.
 //
 // Example:
-//      "DATABASE_SERVER_HOST=localhost" will convert to
 //
-//      {
-//          "database": {
-//              "server": {
-//                  "host": "localhost"
-//              }
-//          }
-//      }
+//	"DATABASE_SERVER_HOST=localhost" will convert to
+//
+//	{
+//	    "database": {
+//	        "server": {
+//	            "host": "localhost"
+//	        }
+//	    }
+//	}
 func NewSource(opts ...source.Option) source.Source {
 	options := source.NewOptions(opts...)
 
