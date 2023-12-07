@@ -53,7 +53,7 @@ func (e *env) Read() (*source.ChangeSet, error) {
 					tmp[k] = intValue
 				} else if boolValue, err := strconv.ParseBool(value); err == nil {
 					tmp[k] = boolValue
-				} else if sliceStrValue := strings.Split(value, ","); len(sliceStrValue) != 0 {
+				} else if sliceStrValue := strings.Split(value, ","); len(sliceStrValue) > 1 {
 					tmp[k] = sliceStrValue
 				}
 				continue
