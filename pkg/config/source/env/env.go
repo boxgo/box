@@ -55,6 +55,8 @@ func (e *env) Read() (*source.ChangeSet, error) {
 					tmp[k] = boolValue
 				} else if sliceStrValue := strings.Split(value, ","); len(sliceStrValue) > 1 {
 					tmp[k] = sliceStrValue
+				} else {
+					tmp[k] = value
 				}
 				continue
 			}
