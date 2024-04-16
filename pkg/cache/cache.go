@@ -14,6 +14,7 @@ type (
 		Get(context.Context, string, interface{}) error
 		Set(context.Context, string, interface{}, time.Duration) error
 		Clear(context.Context, string) error
+		Expire(context.Context, string) error
 	}
 )
 
