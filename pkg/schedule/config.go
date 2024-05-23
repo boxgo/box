@@ -19,22 +19,22 @@ type (
 		lockDuration  time.Duration
 		locker        locker.MutexLocker
 		recorder      Recorder
-		Type          Type                   `config:"type" desc:"Stop: 0, Once: 1, Timing: 2, OnceAndTiming: 3"`
-		Spec          string                 `config:"spec" desc:"Cron spec info"`
-		Specs         []string               `config:"specs" desc:"Multi cron spec info, higher priority than spec"`
-		Compete       bool                   `config:"compete" desc:"Only winner can exec schedule"`
-		AutoUnlock    bool                   `config:"autoUnlock" desc:"Auto unlock after task finish"`
-		LockSeconds   int                    `config:"lockSeconds" desc:"Lock ttl"`
-		Delay         time.Duration          `config:"delay" desc:"Delay duration"`
-		Timeout       time.Duration          `config:"timeout" desc:"Execute timeout, default 6h"`
-		Args          map[string]interface{} `config:"args" desc:"Schedule arguments"`
+		Type          Type          `config:"type" desc:"Stop: 0, Once: 1, Timing: 2, OnceAndTiming: 3"`
+		Spec          string        `config:"spec" desc:"Cron spec info"`
+		Specs         []string      `config:"specs" desc:"Multi cron spec info, higher priority than spec"`
+		Compete       bool          `config:"compete" desc:"Only winner can exec schedule"`
+		AutoUnlock    bool          `config:"autoUnlock" desc:"Auto unlock after task finish"`
+		LockSeconds   int           `config:"lockSeconds" desc:"Lock ttl"`
+		Delay         time.Duration `config:"delay" desc:"Delay duration"`
+		Timeout       time.Duration `config:"timeout" desc:"Execute timeout, default 6h"`
+		Args          Args          `config:"args" desc:"Schedule arguments"`
 	}
+
+	Args map[string]interface{}
 
 	Type int
 
 	OptionFunc func(*Config)
-
-	ArgsKey struct{}
 )
 
 const (

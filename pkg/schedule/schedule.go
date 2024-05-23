@@ -4,6 +4,7 @@ package schedule
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"runtime/debug"
 	"time"
 
@@ -40,6 +41,9 @@ type (
 		Panic     interface{}
 	}
 	Recorder func(Journal)
+
+	argsKey  struct{}
+	queryKey struct{}
 )
 
 var (
@@ -169,7 +173,7 @@ func (sch *Schedule) exec(handler Handler) {
 
 		defer cancel()
 
-		ctx = context.WithValue(ctx, ArgsKey{}, sch.cfg.Args)
+		ctx = context.WithValue(ctx, argsKey{}, sch.cfg.Args)
 		ctx = context.WithValue(ctx, trace.BizID(), sch.key())
 		ctx = context.WithValue(ctx, trace.ReqID(), strutil.RandomAlphanumeric(10))
 
@@ -235,13 +239,13 @@ func (sch Schedule) serverHttp() error {
 		var err error
 		typ := ctx.DefaultQuery("type", "timing")
 
-		switch typ {
+		switch c := context.WithValue(ctx, queryKey{}, ctx.Request.URL.Query()); typ {
 		case "once":
-			err = sch.cfg.onceHandler(ctx)
+			err = sch.cfg.onceHandler(c)
 		case "timing":
-			err = sch.cfg.timingHandler(ctx)
+			err = sch.cfg.timingHandler(c)
 		default:
-			err = sch.cfg.timingHandler(ctx)
+			err = sch.cfg.timingHandler(c)
 		}
 
 		if err != nil {
@@ -256,4 +260,20 @@ func (sch Schedule) serverHttp() error {
 
 func (sch *Schedule) key() string {
 	return fmt.Sprintf("%s.%s", config.ServiceName(), sch.cfg.path)
+}
+
+func ArgsVal(ctx context.Context) Args {
+	if val, ok := ctx.Value(argsKey{}).(Args); ok {
+		return val
+	}
+
+	return Args{}
+}
+
+func QueryVal(ctx context.Context) url.Values {
+	if val, ok := ctx.Value(queryKey{}).(url.Values); ok {
+		return val
+	}
+
+	return url.Values{}
 }
