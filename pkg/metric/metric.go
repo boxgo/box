@@ -63,8 +63,6 @@ func (m *Metric) Serve(context.Context) error {
 			case <-ticker.C:
 				if err := pusher.Add(); err != nil {
 					logger.Error("metrics.pusher.add.error", err)
-				} else {
-					logger.Debug("metrics.pusher.add.success")
 				}
 			}
 		}
