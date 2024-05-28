@@ -11,6 +11,7 @@ import (
 type (
 	GinProm struct {
 		cfg                *Config
+		processingGauge    *metric.GaugeVec
 		reqSizeSummary     *metric.SummaryVec
 		reqBeginCounter    *metric.CounterVec
 		reqFinishCounter   *metric.CounterVec
@@ -22,6 +23,11 @@ type (
 func newGinProm(c *Config) *GinProm {
 	return &GinProm{
 		cfg: c,
+		processingGauge: metric.NewGaugeVec(
+			"http_server_processing_request",
+			"http server processing request",
+			[]string{"method", "url"},
+		),
 		reqSizeSummary: metric.NewSummaryVec(
 			"http_server_request_size_bytes",
 			"The HTTP request sizes in bytes.",
@@ -81,8 +87,11 @@ func (prom *GinProm) Handler() gin.HandlerFunc {
 
 		reqSz := computeApproximateRequestSize(ctx.Request)
 
+		prom.processingGauge.WithLabelValues(labels...).Inc()
 		prom.reqSizeSummary.WithLabelValues(labels...).Observe(reqSz)
 		prom.reqBeginCounter.WithLabelValues(labels...).Inc()
+
+		defer prom.processingGauge.WithLabelValues(labels...).Dec()
 
 		ctx.Next()
 

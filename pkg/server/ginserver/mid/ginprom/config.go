@@ -69,5 +69,9 @@ func UrlMapping(c *gin.Context) string {
 		url = strings.Replace(url, "/"+p.Value, "/:"+p.Key, 1)
 	}
 
-	return url
+	if len(url) > 200 {
+		return url[:197] + "..."
+	}
+
+	return url[:200]
 }
