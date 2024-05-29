@@ -73,5 +73,5 @@ func UrlMapping(c *gin.Context) string {
 		return url[:197] + "..."
 	}
 
-	return url[:200]
+	return url
 }
