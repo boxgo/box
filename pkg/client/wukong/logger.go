@@ -17,6 +17,7 @@ const (
 	LoggerRequest
 	LoggerResponse
 	LoggerCurl
+	LoggerTrace
 )
 
 func loggerStart(req *Request) error {
@@ -27,7 +28,7 @@ func loggerStart(req *Request) error {
 	}
 
 	if level&LoggerRequest == 0 {
-		logger.Trace(req.Context).Infow("http_client_start")
+		logger.Trace(req.Context).Infow("http_client_start", "baseUrl", req.BaseUrl, "url", req.Url)
 	} else {
 		logger.Trace(req.Context).Infow("http_client_start", "request", req.curl)
 	}
@@ -42,8 +43,21 @@ func loggerAfter(req *Request, resp *Response) error {
 		return nil
 	}
 
+	if level&LoggerTrace != 0 {
+		logger.Trace(req.Context).Infow("http_client_trace", "baseUrl", req.BaseUrl, "url", req.Url,
+			"HostPort", req.TraceInfo.HostPort,
+			"ConnectNetwork", req.TraceInfo.ConnectNetwork,
+			"ConnectAddr", req.TraceInfo.ConnectAddr,
+			"ElapsedTime", req.TraceInfo.ElapsedTime,
+			"GetConnElapsed", req.TraceInfo.GetConnElapsed,
+			"DNSLookupElapsed", req.TraceInfo.DNSLookupElapsed,
+			"ConnectElapsed", req.TraceInfo.ConnectElapsed,
+			"TLSHandshakeElapsed", req.TraceInfo.TLSHandshakeElapsed,
+		)
+	}
+
 	if level&LoggerResponse == 0 {
-		logger.Trace(req.Context).Info("http_client_end")
+		logger.Trace(req.Context).Infow("http_client_end", "baseUrl", req.BaseUrl, "url", req.Url)
 	} else {
 		logger.Trace(req.Context).Infow("http_client_end", "elapsed", req.TraceInfo.ElapsedTime.Milliseconds(), "request", req.curl, "response", string(resp.Bytes()))
 	}

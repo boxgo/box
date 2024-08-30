@@ -1,7 +1,10 @@
 package wukong
 
 import (
+	"math/rand"
+	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/boxgo/box/pkg/logger"
@@ -10,7 +13,8 @@ import (
 type (
 	WuKong struct {
 		baseUrl   string
-		client    *http.Client
+		clients   []*http.Client
+		rwLock    sync.RWMutex
 		logger    LoggerLevel
 		metric    bool
 		basicAuth BasicAuth
@@ -30,19 +34,70 @@ type (
 )
 
 func New(baseUrl string) *WuKong {
+	clients := newClients(1)
+
 	w := &WuKong{
 		baseUrl: baseUrl,
 		logger:  LoggerResponse | LoggerRequest | LoggerCurl,
 		metric:  true,
 		before:  []Before{loggerStart, metricStart},
 		after:   []After{loggerAfter, metricEnd},
-		client: &http.Client{
-			Transport: http.DefaultTransport,
-			Timeout:   time.Second * 10,
-		},
+		clients: clients,
 	}
 
 	return w
+}
+
+func newClients(count int) []*http.Client {
+	clientList := make([]*http.Client, count, count)
+	for index := 0; index < count; index++ {
+		clientList[index] = newClient()
+	}
+	return clientList
+}
+
+func newClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          0,
+			MaxIdleConnsPerHost:   50,
+			MaxConnsPerHost:       0,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+		Timeout: time.Second * 10,
+	}
+}
+
+func (wk *WuKong) client() *http.Client {
+	if len(wk.clients) == 1 {
+		return wk.clients[0]
+	}
+
+	wk.rwLock.RLock()
+	defer wk.rwLock.RUnlock()
+
+	return wk.clients[rand.Int()%len(wk.clients)]
+}
+
+func (wk *WuKong) SetClientCount(count int) *WuKong {
+	wk.rwLock.Lock()
+	defer wk.rwLock.Unlock()
+
+	if clientCnt := len(wk.clients); count > clientCnt {
+		wk.clients = append(wk.clients, newClients(count-clientCnt)...)
+	} else if count < clientCnt {
+		wk.clients = wk.clients[:count]
+	}
+
+	return wk
 }
 
 func (wk *WuKong) UseBefore(fns ...Before) *WuKong {
@@ -58,7 +113,12 @@ func (wk *WuKong) UseAfter(fns ...After) *WuKong {
 }
 
 func (wk *WuKong) SetTransport(transport *http.Transport) *WuKong {
-	wk.client.Transport = transport
+	wk.rwLock.Lock()
+	defer wk.rwLock.Unlock()
+
+	for i := 0; i < len(wk.clients); i++ {
+		wk.clients[i].Transport = transport
+	}
 
 	return wk
 }
@@ -126,13 +186,18 @@ func (wk *WuKong) Trace(path string) *Request {
 }
 
 func (wk *WuKong) Timeout(t time.Duration) *WuKong {
-	wk.client.Timeout = t
+	wk.rwLock.Lock()
+	defer wk.rwLock.Unlock()
+
+	for i := 0; i < len(wk.clients); i++ {
+		wk.clients[i].Timeout = t
+	}
 
 	return wk
 }
 
 func (wk *WuKong) Client() *http.Client {
-	return wk.client
+	return wk.client()
 }
 
 func (wk *WuKong) initRequest(request *Request) *Request {
@@ -175,7 +240,12 @@ func (wk *WuKong) do(req *Request) (resp *Response) {
 			}
 		}
 
-		rawResp, err = wk.client.Do(rawReq)
+		if err != nil {
+			resp = NewResponse(err, req, nil)
+			break
+		}
+
+		rawResp, err = wk.client().Do(rawReq)
 		req.TraceInfo.ElapsedTime = time.Since(startAt)
 
 		resp = NewResponse(err, req, rawResp)

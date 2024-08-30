@@ -5,10 +5,14 @@ import (
 	"testing"
 )
 
-func ExpectEqual(t *testing.T, a, b interface{}) {
-	if !reflect.DeepEqual(a, b) {
-		t.Errorf("\nexpect a == b\nactual\na = %#v\nb = %#v", a, b)
-	} else {
-		t.Logf("\nexpect a == b\nactual a = %#v , b = %#v", a, b)
+func ExpectEqual(t *testing.T, left, right interface{}) {
+	if !reflect.DeepEqual(left, right) {
+		t.Errorf("\nexpect a == b\nactual\na = %#v\nb = %#v", left, right)
+	}
+}
+
+func ExpectEqualB(b *testing.B, left, right interface{}) {
+	if !reflect.DeepEqual(left, right) {
+		b.Errorf("\nexpect a == b\nactual\na = %#v\nb = %#v", left, right)
 	}
 }

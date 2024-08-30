@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"mime"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -128,12 +129,7 @@ func (resp *Response) IsTimeout() bool {
 		return false
 	}
 
-	if strings.Contains(resp.err.Error(), "context deadline exceeded") ||
-		strings.Contains(resp.err.Error(), "net/http: timeout") {
-		return true
-	}
-
-	return false
+	return os.IsTimeout(resp.err)
 }
 
 func (resp *Response) BindIsTimeout(ok *bool) *Response {
