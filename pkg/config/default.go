@@ -10,6 +10,7 @@ import (
 	"github.com/boxgo/box/pkg/config/reader"
 	"github.com/boxgo/box/pkg/config/reader/json"
 	"github.com/boxgo/box/pkg/config/source"
+	"github.com/boxgo/box/pkg/config/validator"
 )
 
 type (
@@ -24,6 +25,8 @@ type (
 		vals reader.Values
 		// scanned fields
 		fields field.Fields
+
+		validator validator.Validator
 	}
 )
 
@@ -45,10 +48,11 @@ func newConfig(opts ...Option) Configurator {
 	vals, _ := options.Reader.Values(snap.ChangeSet)
 
 	c := &config{
-		exit: make(chan bool),
-		opts: options,
-		snap: snap,
-		vals: vals,
+		exit:      make(chan bool),
+		opts:      options,
+		snap:      snap,
+		vals:      vals,
+		validator: options.Validator,
 	}
 
 	go c.run()
@@ -185,6 +189,15 @@ func (c *config) Scan(val Config) error {
 	c.fields.Parse(val)
 
 	return c.vals.Get(val.Path()).Scan(val)
+}
+
+// Validate config to val
+func (c *config) Validate(val Config) error {
+	if c.validator == nil {
+		return nil
+	}
+
+	return c.validator.Validate(val)
 }
 
 // Watch a value for changes

@@ -8,6 +8,7 @@ import (
 	"github.com/boxgo/box/pkg/config/field"
 	"github.com/boxgo/box/pkg/config/reader"
 	"github.com/boxgo/box/pkg/config/source"
+	"github.com/boxgo/box/pkg/config/validator/playground"
 )
 
 type (
@@ -35,6 +36,8 @@ type (
 		Bytes() []byte
 		// Scan to val
 		Scan(val Config) error
+		// Validate val
+		Validate(val Config) error
 		// Watch field change
 		Watch(path ...string) (Watcher, error)
 		// Get value through field
@@ -61,7 +64,9 @@ type (
 
 var (
 	// Default Config Manager
-	Default        = NewConfig()
+	Default = NewConfig(
+		WithValidator(playground.New("zh")),
+	)
 	bootCfg        = bootConfig{Name: "box", Version: "unknown", Tags: []string{}}
 	defaultOnce    sync.Once
 	defaultSources []source.Source
@@ -99,6 +104,12 @@ func Byte() []byte {
 func Scan(val Config) error {
 	lazyLoad()
 	return Default.Scan(val)
+}
+
+// Validate config to val
+func Validate(val Config) error {
+	lazyLoad()
+	return Default.Validate(val)
 }
 
 // Watch a value for changes
