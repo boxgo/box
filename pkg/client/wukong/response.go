@@ -2,12 +2,13 @@ package wukong
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"io"
 	"io/ioutil"
 	"mime"
 	"net/http"
 	"os"
-	"strings"
 )
 
 type (
@@ -145,7 +146,7 @@ func (resp *Response) IsCancel() bool {
 		return false
 	}
 
-	if strings.Contains(resp.err.Error(), "context canceled") {
+	if errors.Is(resp.err, context.Canceled) {
 		return true
 	}
 

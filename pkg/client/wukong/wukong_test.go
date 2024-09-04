@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/boxgo/box/pkg/util/testutil"
 )
@@ -88,6 +89,73 @@ func TestSample(t *testing.T) {
 	testutil.ExpectEqual(t, statusMsg, "200 OK")
 	testutil.ExpectEqual(t, isTimeout, false)
 	testutil.ExpectEqual(t, isCancel, false)
+}
+
+func TestTimeout(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(time.Millisecond * 500)
+		w.WriteHeader(200)
+		w.Write([]byte(`hi`))
+	}))
+	defer ts.Close()
+
+	client := New(ts.URL).Timeout(time.Millisecond * 200)
+
+	var (
+		statusCode int
+		statusMsg  string
+		isTimeout  bool
+		isCancel   bool
+	)
+	err := client.Get("/").WithCTX(context.Background()).End().
+		BindStatusCode(&statusCode).
+		BindStatus(&statusMsg).
+		BindIsTimeout(&isTimeout).
+		BindIsCancel(&isCancel).
+		Error()
+
+	testutil.ExpectEqual(t, err != nil, true)
+	testutil.ExpectEqual(t, statusCode, 0)
+	testutil.ExpectEqual(t, statusMsg, "")
+	testutil.ExpectEqual(t, isTimeout, true)
+	testutil.ExpectEqual(t, isCancel, false)
+}
+
+func TestCancel(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(time.Millisecond * 500)
+		w.WriteHeader(200)
+		w.Write([]byte(`hi`))
+	}))
+	defer ts.Close()
+
+	client := New(ts.URL)
+
+	var (
+		statusCode  int
+		statusMsg   string
+		isTimeout   bool
+		isCancel    bool
+		ctx, cancel = context.WithCancel(context.TODO())
+	)
+
+	go func() {
+		time.Sleep(time.Millisecond * 100)
+		cancel()
+	}()
+
+	err := client.Get("/").WithCTX(ctx).End().
+		BindStatusCode(&statusCode).
+		BindStatus(&statusMsg).
+		BindIsTimeout(&isTimeout).
+		BindIsCancel(&isCancel).
+		Error()
+
+	testutil.ExpectEqual(t, err != nil, true)
+	testutil.ExpectEqual(t, statusCode, 0)
+	testutil.ExpectEqual(t, statusMsg, "")
+	testutil.ExpectEqual(t, isTimeout, false)
+	testutil.ExpectEqual(t, isCancel, true)
 }
 
 func TestUseBefore(t *testing.T) {
