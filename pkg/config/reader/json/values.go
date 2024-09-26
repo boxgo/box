@@ -42,6 +42,7 @@ func newValues(ch *source.ChangeSet) (reader.Values, error) {
 		EscapeHTML:             true,
 		SortMapKeys:            true,
 		ValidateJsonRawMessage: true,
+		CaseSensitive:          true,
 		TagKey:                 defaultTagKey,
 	}.Froze()
 
@@ -56,7 +57,7 @@ func (j *jsonValues) Bytes() []byte {
 }
 
 func (j *jsonValues) Get(path ...string) reader.Value {
-	p := []interface{}{}
+	var p []interface{}
 	for _, pit := range path {
 		for _, it := range strings.Split(pit, ".") {
 			if i, err := strconv.ParseInt(it, 10, 32); err == nil {

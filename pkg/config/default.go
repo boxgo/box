@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -188,7 +190,19 @@ func (c *config) Scan(val Config) error {
 
 	c.fields.Parse(val)
 
-	return c.vals.Get(val.Path()).Scan(val)
+	if strings.Contains(val.Path(), "_") {
+		fmt.Printf("Config path %s contains '_' will not support read from environment\n", val.Path())
+	}
+
+	if err := c.vals.Get(val.Path()).Scan(val); err != nil {
+		return err
+	}
+
+	if err := c.Validate(val); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Validate config to val
@@ -221,6 +235,12 @@ func (c *config) Watch(path ...string) (Watcher, error) {
 func (c *config) Get(path ...string) reader.Value {
 	c.RLock()
 	defer c.RUnlock()
+
+	for _, s := range path {
+		if strings.Contains(s, "_") {
+			fmt.Printf("Config path %s contains '_' will not support read from environment\n", s)
+		}
+	}
 
 	// did sync actually work?
 	if c.vals != nil {

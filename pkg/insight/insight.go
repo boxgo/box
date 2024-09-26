@@ -27,6 +27,8 @@ func init() {
 			ctx.JSON(200, config.Fields())
 		case "table":
 			ctx.Data(200, gin.MIMEPlain, bytes.NewBufferString(config.Fields().Table()).Bytes())
+		case "env":
+			ctx.Data(200, gin.MIMEPlain, bytes.NewBufferString(config.Fields().Env()).Bytes())
 		default:
 			ctx.Data(200, gin.MIMEPlain, bytes.NewBufferString(config.Fields().Table()).Bytes())
 		}

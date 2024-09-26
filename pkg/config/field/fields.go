@@ -56,6 +56,31 @@ func (fs *Fields) Table() string {
 	return builder.String()
 }
 
+func (fs *Fields) Env() string {
+	fs.Sort()
+
+	var (
+		envs []string
+		uniq = map[string]int{}
+	)
+
+	var appendEnv = func(key string, val interface{}) {
+		if _, ok := uniq[key]; ok {
+			return
+		}
+		uniq[key] = 1
+
+		key = strings.ToUpper(strings.ReplaceAll(key, ".", "_"))
+		envs = append(envs, fmt.Sprintf("%s=%v", key, val))
+	}
+
+	for _, f := range *fs {
+		kv(f.String(), f.Value, appendEnv)
+	}
+
+	return strings.Join(envs, "\n")
+}
+
 func (fs *Fields) Parse(c Config) *Fields {
 	fs.parse(c.Path(), "", c)
 
@@ -142,4 +167,44 @@ func hasExport(val reflect.Value) bool {
 	}
 
 	return false
+}
+
+func kv(key string, val reflect.Value, fn func(key string, val interface{})) {
+	switch val.Kind() {
+	case reflect.Bool, reflect.String,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128:
+		fn(key, val.Interface())
+	case reflect.Array, reflect.Slice:
+		var arr = make([]string, val.Len())
+		for i := 0; i < val.Len(); i++ {
+			arr[i] = fmt.Sprintf("%v", val.Index(i).Interface())
+		}
+
+		fn(key, strings.Join(arr, ","))
+	case reflect.Map:
+		iter := val.MapRange()
+
+		for iter.Next() {
+			kv(fmt.Sprintf("%s.%v", key, iter.Key().Interface()), iter.Value(), fn)
+		}
+	case reflect.Struct:
+		typ := reflect.TypeOf(val.Interface())
+
+		for i := 0; i < val.NumField(); i++ {
+			field := typ.Field(i)
+
+			if !field.IsExported() {
+				continue
+			}
+
+			name := field.Tag.Get("config")
+			if name == "" {
+				name = field.Name
+			}
+
+			kv(fmt.Sprintf("%s.%v", key, name), val.Field(i), fn)
+		}
+	}
 }
