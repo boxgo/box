@@ -55,7 +55,7 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 
 func DefaultConfig(key string) *Config {
 	return &Config{
-		path:   "grpc_client." + key,
+		path:   "grpcClient." + key,
 		Dial:   false,
 		Target: ":9001",
 	}

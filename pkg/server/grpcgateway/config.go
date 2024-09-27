@@ -60,7 +60,7 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 
 func DefaultConfig(key string) *Config {
 	return &Config{
-		path:   "grpc_gateway." + key,
+		path:   "grpcGateway." + key,
 		Target: ":9001",
 		Addr:   ":9002",
 		wrap: func(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
