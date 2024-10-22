@@ -359,7 +359,7 @@ func (w *watcher) Next() (*loader.Snapshot, error) {
 	for {
 		select {
 		case <-w.exit:
-			return nil, errors.New("watcher stopped")
+			return nil, source.ErrWatcherStopped
 		case v := <-w.updates:
 			if bytes.Equal(w.value.Bytes(), v.Bytes()) {
 				continue

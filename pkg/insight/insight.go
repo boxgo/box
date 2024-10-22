@@ -33,6 +33,12 @@ func init() {
 			ctx.Data(200, gin.MIMEPlain, bytes.NewBufferString(config.Fields().Table()).Bytes())
 		}
 	})
+
+	Get("/config/:key", func(ctx *gin.Context) {
+		key := ctx.Param("key")
+
+		ctx.Data(200, gin.MIMEPlain, config.Get(key).Bytes())
+	})
 }
 
 func Any(relativePath string, handlers ...gin.HandlerFunc) {

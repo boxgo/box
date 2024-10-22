@@ -1,4 +1,4 @@
-package redis
+package http
 
 import (
 	"log"
@@ -9,14 +9,14 @@ import (
 
 type watcher struct {
 	name       string
-	source     *redisSource
+	source     *httpSource
 	exit       chan bool
 	changeSets chan *source.ChangeSet
 }
 
-func newWatcher(sour *redisSource) (source.Watcher, error) {
+func newWatcher(sour *httpSource) (source.Watcher, error) {
 	w := &watcher{
-		name:       "redis",
+		name:       "http",
 		changeSets: make(chan *source.ChangeSet),
 		exit:       make(chan bool),
 		source:     sour,
@@ -55,7 +55,7 @@ func (w *watcher) watch() {
 		default:
 			data, err := w.source.Read()
 			if err != nil {
-				log.Printf("config redis watch error: %#v", err)
+				log.Printf("config http watch error: %#v", err)
 			}
 
 			w.changeSets <- data

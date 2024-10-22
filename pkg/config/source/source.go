@@ -2,6 +2,7 @@
 package source
 
 import (
+	"errors"
 	"time"
 )
 
@@ -26,3 +27,7 @@ type Watcher interface {
 	Next() (*ChangeSet, error)
 	Stop() error
 }
+
+var (
+	ErrWatcherStopped = errors.New("watcher stopped")
+)
