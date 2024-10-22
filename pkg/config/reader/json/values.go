@@ -42,7 +42,7 @@ func newValues(ch *source.ChangeSet) (reader.Values, error) {
 		EscapeHTML:             true,
 		SortMapKeys:            true,
 		ValidateJsonRawMessage: true,
-		CaseSensitive:          true,
+		CaseSensitive:          false,
 		TagKey:                 defaultTagKey,
 	}.Froze()
 
