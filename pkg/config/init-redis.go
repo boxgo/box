@@ -1,3 +1,4 @@
+//go:build !no_config_init && !no_config_redis
 // +build !no_config_init,!no_config_redis
 
 package config
@@ -19,7 +20,7 @@ func init() {
 		defaultSources[idx] = redis.NewSource(
 			append(
 				redis.WithConfig(cfg.data),
-				redis.WithPrefix(bootCfg.Name),
+				redis.WithPrefix(bootCfg.Service),
 			)...,
 		)
 	}

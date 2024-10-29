@@ -15,26 +15,34 @@ import (
 
 type (
 	httpSource struct {
-		err     error
-		service string
-		version string
-		config  *httpConfig
-		client  *http.Client
+		err        error
+		namespace  string
+		service    string
+		version    string
+		httpConfig *httpConfig
+		client     *http.Client
 	}
 
 	httpConfigData struct {
-		Format string `json:"format"`
-		Data   string `json:"data"`
+		Namespace string `json:"namespace"`
+		Service   string `json:"service"`
+		Version   string `json:"version"`
+		Format    string `json:"format"`
+		Data      string `json:"data"`
 	}
 )
 
 func NewSource(opts ...source.Option) source.Source {
 	var (
-		options          = source.NewOptions(opts...)
-		service, version string
-		client           *http.Client
+		options                     = source.NewOptions(opts...)
+		httpCfg                     *httpConfig
+		namespace, service, version string
+		client                      *http.Client
 	)
 
+	if val, ok := options.Context.Value(namespaceKey{}).(string); ok && val != "" {
+		namespace = val
+	}
 	if val, ok := options.Context.Value(serviceKey{}).(string); ok && val != "" {
 		service = val
 	}
@@ -42,22 +50,19 @@ func NewSource(opts ...source.Option) source.Source {
 		version = val
 	}
 
-	config, ok := options.Context.Value(httpConfigKey{}).(httpConfig)
-	if !ok {
+	if config, ok := options.Context.Value(httpConfigKey{}).(httpConfig); !ok {
 		log.Panic("config source http is not set.")
 	} else {
+		httpCfg = &config
 		client = http.DefaultClient
-
-		if config.Config == "" {
-			config.Config = service
-		}
 	}
 
 	return &httpSource{
-		service: service,
-		version: version,
-		config:  &config,
-		client:  client,
+		namespace:  namespace,
+		service:    service,
+		version:    version,
+		httpConfig: httpCfg,
+		client:     client,
 	}
 }
 
@@ -72,23 +77,23 @@ func (rs *httpSource) Read() (*source.ChangeSet, error) {
 		header     = http.Header{}
 	)
 
-	if fetchUrl, rs.err = url.Parse(rs.config.Url); rs.err != nil {
+	if fetchUrl, rs.err = url.Parse(rs.httpConfig.Url); rs.err != nil {
 		return nil, rs.err
 	} else {
 		fetchUrl.RawQuery = url.Values{
-			"service": []string{rs.service},
-			"version": []string{rs.version},
-			"config":  []string{rs.config.Config},
+			"namespace": []string{rs.namespace},
+			"service":   []string{rs.service},
+			"version":   []string{rs.version},
 		}.Encode()
 	}
 
-	if rs.config.Authorization != nil {
+	if len(rs.httpConfig.Authorization.Type) > 0 && len(rs.httpConfig.Authorization.Type) > 0 {
 		auth := ""
-		switch strings.ToLower(rs.config.Authorization.Type) {
+		switch strings.ToLower(rs.httpConfig.Authorization.Type) {
 		case "basic":
-			auth = fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(rs.config.Authorization.Credentials)))
+			auth = fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(rs.httpConfig.Authorization.Credentials)))
 		case "bearer":
-			auth = fmt.Sprintf("Bearer %s", rs.config.Authorization.Credentials)
+			auth = fmt.Sprintf("Bearer %s", rs.httpConfig.Authorization.Credentials)
 		}
 		header.Add("Authorization", auth)
 	}
@@ -98,10 +103,12 @@ func (rs *httpSource) Read() (*source.ChangeSet, error) {
 		URL:    fetchUrl,
 		Header: header,
 	}); err != nil {
+		log.Printf("config http request error: %#v", err)
 		return nil, err
 	} else {
 		dec := json.NewDecoder(rsp.Body)
 		if err = dec.Decode(&configData); err != nil {
+			log.Printf("config http decode error: %#v", err)
 			return nil, err
 		}
 	}

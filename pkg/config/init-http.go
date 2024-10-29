@@ -4,6 +4,8 @@
 package config
 
 import (
+	"encoding/json"
+
 	"github.com/boxgo/box/pkg/config/source/http"
 )
 
@@ -17,11 +19,30 @@ func init() {
 			continue
 		}
 
+		httpCfg := http.Config{}
+		if err := json.Unmarshal(cfg.data, &httpCfg); err != nil {
+			panic(err)
+		}
+
+		namespace := bootCfg.Namespace
+		service := bootCfg.Service
+		version := bootCfg.Version
+		if httpCfg.Namespace != "" {
+			namespace = httpCfg.Namespace
+		}
+		if httpCfg.Service != "" {
+			service = httpCfg.Service
+		}
+		if httpCfg.Version != "" {
+			version = httpCfg.Version
+		}
+
 		defaultSources[idx] = http.NewSource(
 			append(
 				http.WithConfig(cfg.data),
-				http.WithService(bootCfg.Name),
-				http.WithVersion(bootCfg.Version),
+				http.WithNamespace(namespace),
+				http.WithService(service),
+				http.WithVersion(version),
 			)...,
 		)
 	}

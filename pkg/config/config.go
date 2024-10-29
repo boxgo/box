@@ -47,12 +47,13 @@ type (
 	}
 
 	bootConfig struct {
-		Name    string   `config:"name"`
-		Version string   `config:"version"`
-		Tags    []string `config:"tags"`
-		Loader  string   `config:"loader"`
-		Reader  string   `config:"reader"`
-		Source  []Source `config:"source"`
+		Namespace string   `config:"namespace"`
+		Service   string   `config:"service"`
+		Version   string   `config:"version"`
+		Tags      []string `config:"tags"`
+		Loader    string   `config:"loader"`
+		Reader    string   `config:"reader"`
+		Source    []Source `config:"source"`
 	}
 
 	Source struct {
@@ -67,7 +68,7 @@ var (
 	Default = NewConfig(
 		WithValidator(playground.New("zh")),
 	)
-	bootCfg        = bootConfig{Name: "box", Version: "unknown", Tags: []string{}}
+	bootCfg        = bootConfig{Service: "box", Version: "unknown", Tags: []string{}}
 	defaultOnce    sync.Once
 	defaultSources []source.Source
 	rwMutex        = sync.RWMutex{}
@@ -129,8 +130,12 @@ func Fields() *field.Fields {
 	return Default.Fields()
 }
 
+func ServiceNamespace() string {
+	return bootCfg.Namespace
+}
+
 func ServiceName() string {
-	return bootCfg.Name
+	return bootCfg.Service
 }
 
 func ServiceVersion() string {

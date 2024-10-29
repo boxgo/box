@@ -1,3 +1,4 @@
+//go:build !no_config_init && !no_config_mongo
 // +build !no_config_init,!no_config_mongo
 
 package config
@@ -19,7 +20,7 @@ func init() {
 		defaultSources[idx] = mongodb.NewSource(
 			append(
 				mongodb.WithConfig(cfg.data),
-				mongodb.WithService(bootCfg.Name),
+				mongodb.WithService(bootCfg.Service),
 			)...,
 		)
 	}
