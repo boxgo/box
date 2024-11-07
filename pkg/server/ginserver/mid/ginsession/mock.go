@@ -12,7 +12,7 @@ import (
 )
 
 // MockSet set cookie and return redis sid key and cookie string
-func (s *GinSession) MockSet(value interface{}) (sid string, cookie string, err error) {
+func (s *GinSession) MockSet(value interface{}, serializer serializer.SessionSerializer, cookieName string) (sid string, cookie string, err error) {
 	var (
 		store   *redisstore.RedisStore
 		session *sessions.Session
@@ -25,16 +25,20 @@ func (s *GinSession) MockSet(value interface{}) (sid string, cookie string, err 
 		redisstore.WithMaxLength(s.cfg.MaxLen),
 		redisstore.WithKeyPrefix(s.cfg.KeyPrefix),
 		redisstore.WithKeyPairs([]byte(s.cfg.KeyPair)),
-		redisstore.WithSerializer(serializer.JSONSerializer{}),
+		redisstore.WithSerializer(serializer),
 	); err != nil {
 		return
+	}
+
+	if cookieName == "" {
+		cookieName = s.CookieName()
 	}
 
 	if req, err = http.NewRequest("GET", "http://ginsession_mock", nil); err != nil {
 		return
 	}
 
-	if session, err = store.New(req, s.CookieName()); err != nil {
+	if session, err = store.New(req, cookieName); err != nil {
 		return
 	}
 
