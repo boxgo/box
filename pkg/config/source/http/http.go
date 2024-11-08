@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -32,6 +33,10 @@ type (
 	}
 )
 
+const (
+	timeout = time.Second * 3
+)
+
 func NewSource(opts ...source.Option) source.Source {
 	var (
 		options                     = source.NewOptions(opts...)
@@ -55,6 +60,7 @@ func NewSource(opts ...source.Option) source.Source {
 	} else {
 		httpCfg = &config
 		client = http.DefaultClient
+		client.Timeout = timeout
 	}
 
 	return &httpSource{
@@ -98,11 +104,14 @@ func (rs *httpSource) Read() (*source.ChangeSet, error) {
 		header.Add("Authorization", auth)
 	}
 
-	if rsp, err := rs.client.Do(&http.Request{
+	ctx, cancel := context.WithTimeout(context.TODO(), timeout)
+	defer cancel()
+
+	if rsp, err := rs.client.Do((&http.Request{
 		Method: "GET",
 		URL:    fetchUrl,
 		Header: header,
-	}); err != nil {
+	}).WithContext(ctx)); err != nil {
 		log.Printf("config http request error: %#v", err)
 		return nil, err
 	} else {
