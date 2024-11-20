@@ -25,6 +25,7 @@ func newRedis(cfg *Config) *Redis {
 	})
 
 	client.AddHook(&Metric{cfg: cfg})
+	client.AddHook(&Logger{})
 
 	r := &Redis{
 		cfg:    cfg,
