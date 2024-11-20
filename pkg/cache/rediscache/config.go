@@ -8,10 +8,11 @@ import (
 
 type (
 	Config struct {
-		path       string
-		Prefix     string `config:"prefix" desc:"cache key prefix. if empty, auto prefix with format: ${serviceName}.cache.${key}."`
-		Marshaller string `config:"marshaller" desc:"support json only"`
-		Config     string `config:"config" desc:"redis config path. eg: 'default' means use 'redis.default' config"`
+		path         string
+		Prefix       string `config:"prefix" desc:"cache key prefix. if empty, auto prefix with format: ${serviceName}.cache.${key}."`
+		Marshaller   string `config:"marshaller" desc:"support json only"`
+		Config       string `config:"config" desc:"redis config path. eg: 'default' means use 'redis.default' config"`
+		BigCacheSize int    `config:"bigCacheSize" desc:"big cache size, unit: byte"`
 	}
 )
 
@@ -29,9 +30,10 @@ func StdConfig(key string) *Config {
 
 func DefaultConfig(key string) *Config {
 	return &Config{
-		path:       "cache." + key,
-		Marshaller: "json",
-		Config:     key,
+		path:         "cache." + key,
+		Marshaller:   "json",
+		Config:       key,
+		BigCacheSize: 1000,
 	}
 }
 

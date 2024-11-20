@@ -7,7 +7,7 @@ import (
 
 	"github.com/boxgo/box/pkg/cache"
 	"github.com/boxgo/box/pkg/client/redis"
-	"github.com/boxgo/box/pkg/metric"
+	"github.com/boxgo/box/pkg/logger"
 )
 
 type (
@@ -16,14 +16,6 @@ type (
 		cfg    *Config
 		client *redis.Redis
 	}
-)
-
-var (
-	cacheHitCounter = metric.NewCounterVec(
-		"cache_hit_total",
-		"cache hit counter",
-		[]string{"key", "hit"},
-	)
 )
 
 func newCache(cfg *Config) cache.Cache {
@@ -42,6 +34,10 @@ func (l *redisCache) Set(ctx context.Context, key string, val interface{}, durat
 		return err
 	}
 
+	if cacheSize := len(data); l.cfg.BigCacheSize > 0 && cacheSize > l.cfg.BigCacheSize {
+		logger.Trace(ctx).Warnw("RedisCache.Set.BigCache", "key", key, "size", cacheSize)
+	}
+
 	return l.client.Client().Set(ctx, l.cacheKey(key), data, duration).Err()
 }
 
@@ -49,13 +45,15 @@ func (l *redisCache) Set(ctx context.Context, key string, val interface{}, durat
 func (l *redisCache) Get(ctx context.Context, key string, val interface{}) error {
 	data, err := l.client.Client().Get(ctx, l.cacheKey(key)).Bytes()
 	if err == redis.Nil {
-		cacheHitCounter.WithLabelValues(key, "false").Inc()
 		return cache.ErrCacheMiss
 	} else if err != nil {
 		return nil
 	}
 
-	cacheHitCounter.WithLabelValues(key, "true").Inc()
+	if cacheSize := len(data); l.cfg.BigCacheSize > 0 && cacheSize > l.cfg.BigCacheSize {
+		logger.Trace(ctx).Warnw("RedisCache.Get.BigCache", "key", key, "size", cacheSize)
+	}
+
 	return json.Unmarshal(data, val)
 }
 
