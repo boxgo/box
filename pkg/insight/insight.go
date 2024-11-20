@@ -77,6 +77,10 @@ func PostF(relativePath string, handler http.HandlerFunc) {
 	Default.POST(relativePath, gin.WrapF(handler))
 }
 
+func ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	Default.ServeHTTP(w, req)
+}
+
 func html() string {
 	routes := Default.RoutesInfo()
 	paths := make([]string, len(routes))
