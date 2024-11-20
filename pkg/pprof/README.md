@@ -19,3 +19,8 @@ Or to collect a 5-second execution trace:
 ```sh
 wget http://localhost:9999/debug/pprof/trace?seconds=5
 ```
+
+Trace and upload profile data
+```shell
+curl -X POST --data '{"debug": 0, "gc": 1, "seconds": 10, "profiles": ["profile", "allocs", "heap", "block", "mutex", "goroutine", "threadcreate"], "target": "http://127.0.0.1:9999/debug/pprof/receive"}' http://127.0.0.1:9999/debug/pprof/start
+```
