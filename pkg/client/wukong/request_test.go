@@ -197,6 +197,25 @@ func TestSendJsonStruct(t *testing.T) {
 	}
 }
 
+func TestSendString(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		testutil.ExpectEqual(t, string(data), `0123456789`)
+
+		w.WriteHeader(200)
+	}))
+	defer ts.Close()
+
+	resp := New(ts.URL).Post("/").Send("0123456789").End()
+	if err := resp.Error(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestSendXmlStruct(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data, err := ioutil.ReadAll(r.Body)

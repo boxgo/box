@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/boxgo/box/pkg/codec/json"
+	"github.com/boxgo/box/pkg/util/jsonutil"
 	"github.com/boxgo/box/pkg/util/urlutil"
 	"moul.io/http2curl"
 )
@@ -133,11 +134,11 @@ func (request *Request) Param(param map[string]interface{}) *Request {
 func (request *Request) Query(query interface{}) *Request {
 	switch v := reflect.ValueOf(query); v.Kind() {
 	case reflect.Map, reflect.Struct:
-		request.queryMapOrStruct(request.QueryData, v.Interface())
+		request.queryMapOrStruct(&request.QueryData, v.Interface())
 	case reflect.Ptr:
 		switch v.Elem().Kind() {
 		case reflect.Map, reflect.Struct:
-			request.queryMapOrStruct(request.QueryData, v.Interface())
+			request.queryMapOrStruct(&request.QueryData, v.Interface())
 		}
 	}
 
@@ -147,11 +148,11 @@ func (request *Request) Query(query interface{}) *Request {
 func (request *Request) Form(form interface{}) *Request {
 	switch v := reflect.ValueOf(form); v.Kind() {
 	case reflect.Map, reflect.Struct:
-		request.queryMapOrStruct(request.FormData, v.Interface())
+		request.queryMapOrStruct(&request.FormData, v.Interface())
 	case reflect.Ptr:
 		switch v.Elem().Kind() {
 		case reflect.Map, reflect.Struct:
-			request.queryMapOrStruct(request.FormData, v.Interface())
+			request.queryMapOrStruct(&request.FormData, v.Interface())
 		}
 	}
 
@@ -223,10 +224,15 @@ func (request *Request) RawRequest() (*http.Request, error) {
 	}
 
 	if request.BodyData != nil {
-		if data, err := Decode(request.ContentType, request.BodyData); err != nil {
-			return req, err
-		} else {
-			reader = bytes.NewReader(data)
+		switch body := request.BodyData.(type) {
+		case string:
+			reader = bytes.NewBufferString(body)
+		default:
+			if data, err := Decode(request.ContentType, request.BodyData); err != nil {
+				return req, err
+			} else {
+				reader = bytes.NewReader(data)
+			}
 		}
 	} else if request.Multipart != nil {
 		payload := &bytes.Buffer{}
@@ -332,34 +338,46 @@ func (request *Request) RawRequest() (*http.Request, error) {
 	return req, err
 }
 
-func (request *Request) queryMapOrStruct(urlVal url.Values, query interface{}) {
-	if marshalContent, err := jsonMarshaler.Marshal(query); err != nil {
+func (request *Request) queryMapOrStruct(urlVal *url.Values, query interface{}) {
+	vals, err := Map2URLValues(query)
+	if err != nil {
 		request.Error = err
 	} else {
-		var val map[string]interface{}
-		if err := jsonMarshaler.Unmarshal(marshalContent, &val); err != nil {
-			request.Error = err
-		} else {
-			for k, v := range val {
-				switch val := v.(type) {
-				case []interface{}:
-					for _, e := range val {
-						urlVal.Add(k, fmt.Sprintf("%v", e))
-					}
-				case nil:
-					continue
-				case string:
-					urlVal.Add(k, val)
-				case float64:
-					urlVal.Add(k, strconv.FormatFloat(val, 'f', -1, 64))
-				default:
-					if j, err := jsonMarshaler.Marshal(v); err != nil {
-						continue
-					} else {
-						urlVal.Add(k, string(j))
-					}
-				}
+		*urlVal = vals
+	}
+}
+
+func Map2URLValues(data interface{}) (url.Values, error) {
+	var (
+		err     error
+		dataMap = map[string]interface{}{}
+		values  = url.Values{}
+	)
+
+	if err = jsonutil.Copy(data, &dataMap); err != nil {
+		return nil, err
+	}
+
+	for k, v := range dataMap {
+		switch val := v.(type) {
+		case []interface{}:
+			for _, e := range val {
+				values.Add(k, fmt.Sprintf("%v", e))
+			}
+		case nil:
+			continue
+		case string:
+			values.Add(k, val)
+		case float64:
+			values.Add(k, strconv.FormatFloat(val, 'f', -1, 64))
+		default:
+			if j, err := json.NewMarshaler().Marshal(v); err != nil {
+				continue
+			} else {
+				values.Add(k, string(j))
 			}
 		}
 	}
+
+	return values, nil
 }
