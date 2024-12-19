@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/boxgo/box/pkg/logger"
+	"github.com/profects/gormetrics"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -72,6 +73,12 @@ func newGorm(c *Config) *Gorm {
 		logger.Panicf("Gorm get db error %s %s: %s", c.Driver, c.DSN, err)
 	}
 
+	if err := gormetrics.RegisterV2(db, "main",
+		gormetrics.WithGORMPluginScope("gorm"),
+		gormetrics.WithPrometheusNamespace("gorm"),
+	); err != nil {
+		logger.Panicf("gormetrics.RegisterV2 error %s %s: %s", c.Driver, c.DSN, err)
+	}
 	rawDb.SetMaxOpenConns(c.MaxOpenConns)
 	rawDb.SetMaxIdleConns(c.MaxIdleConns)
 	rawDb.SetConnMaxIdleTime(c.MaxIdleTime)
