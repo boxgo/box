@@ -129,17 +129,20 @@ func TestQuery(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	resp := New(ts.URL).Get("/").Query(map[string]interface{}{
-		"string":          "string",
-		"uint":            uint(0),
-		"int":             1,
-		"float32":         float32(2.3),
-		"float64":         float32(4.5),
-		"bool":            true,
-		"string_array":    []string{"a", "b"},
-		"int_array":       []int{1, 2},
-		"interface_array": []interface{}{0, true, 1.1, "string"},
-	}).End()
+	resp := New(ts.URL).Get("/").
+		Query(map[string]interface{}{
+			"string":  "string",
+			"uint":    uint(0),
+			"int":     1,
+			"float32": float32(2.3),
+		}).
+		Query(map[string]interface{}{
+			"float64":         float32(4.5),
+			"bool":            true,
+			"string_array":    []string{"a", "b"},
+			"int_array":       []int{1, 2},
+			"interface_array": []interface{}{0, true, 1.1, "string"},
+		}).End()
 	if err := resp.Error(); err != nil {
 		t.Fatal(err)
 	}
