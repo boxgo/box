@@ -13,6 +13,7 @@ import (
 type (
 	// Config 配置
 	Config struct {
+		key                                      string
 		path                                     string
 		dial                                     gorm.Dialector
 		Driver                                   string                          `config:"driver" desc:"SQLDrivers: https://github.com/golang/go/wiki/SQLDrivers"`
@@ -34,6 +35,7 @@ type (
 		NamingStrategyTablePrefix                string                          `config:"namingStrategyTablePrefix"`
 		NamingStrategySingularTable              bool                            `config:"namingStrategySingularTable"`
 		NamingStrategyNoLowerCase                bool                            `config:"namingStrategyNoLowerCase"`
+		MetricInterval                           time.Duration                   `config:"metricInterval"`
 		NamingStrategyNameReplacer               schema.Replacer                 `config:"-" json:"-"`
 		NowFunc                                  func() time.Time                `config:"-" json:"-"`
 		ConnPool                                 gorm.ConnPool                   `config:"-" json:"-"`
@@ -106,11 +108,13 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 // DefaultConfig 默认配置
 func DefaultConfig(key string) *Config {
 	return &Config{
-		path:         "gormx." + key,
-		MaxIdleTime:  time.Minute * 5,
-		MaxLifeTime:  time.Hour,
-		MaxIdleConns: 2,
-		MaxOpenConns: 10,
+		key:            key,
+		path:           "gormx." + key,
+		MaxIdleTime:    time.Minute * 5,
+		MaxLifeTime:    time.Hour,
+		MaxIdleConns:   2,
+		MaxOpenConns:   10,
+		MetricInterval: time.Second * 3,
 	}
 }
 
@@ -122,4 +126,8 @@ func (c *Config) Build() *Gorm {
 // Path 实例配置目录
 func (c *Config) Path() string {
 	return c.path
+}
+
+func (c *Config) Key() string {
+	return c.key
 }

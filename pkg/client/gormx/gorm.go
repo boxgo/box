@@ -2,10 +2,8 @@ package gormx
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/boxgo/box/pkg/logger"
-	"github.com/profects/gormetrics"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -14,9 +12,9 @@ import (
 
 type (
 	Gorm struct {
-		cfg   *Config
-		db    *gorm.DB
-		rawDB *sql.DB
+		cfg    *Config
+		db     *gorm.DB
+		metric *Metric
 	}
 )
 
@@ -68,26 +66,24 @@ func newGorm(c *Config) *Gorm {
 		logger.Panicf("Gorm open error %s %s: %s", c.Driver, c.DSN, err)
 	}
 
-	rawDb, err := db.DB()
+	sqlDB, err := db.DB()
 	if err != nil {
 		logger.Panicf("Gorm get db error %s %s: %s", c.Driver, c.DSN, err)
 	}
+	sqlDB.SetMaxOpenConns(c.MaxOpenConns)
+	sqlDB.SetMaxIdleConns(c.MaxIdleConns)
+	sqlDB.SetConnMaxIdleTime(c.MaxIdleTime)
+	sqlDB.SetConnMaxLifetime(c.MaxLifeTime)
 
-	if err := gormetrics.RegisterV2(db, "main",
-		gormetrics.WithGORMPluginScope("gorm"),
-		gormetrics.WithPrometheusNamespace("gorm"),
-	); err != nil {
-		logger.Panicf("gormetrics.RegisterV2 error %s %s: %s", c.Driver, c.DSN, err)
+	metric := newMetric(c.Driver, c.Key(), c.MetricInterval)
+	if err := metric.registerCallback(db); err != nil {
+		logger.Panicf("metric register callback error: %s", err)
 	}
-	rawDb.SetMaxOpenConns(c.MaxOpenConns)
-	rawDb.SetMaxIdleConns(c.MaxIdleConns)
-	rawDb.SetConnMaxIdleTime(c.MaxIdleTime)
-	rawDb.SetConnMaxLifetime(c.MaxLifeTime)
 
 	return &Gorm{
-		cfg:   c,
-		db:    db,
-		rawDB: rawDb,
+		cfg:    c,
+		db:     db,
+		metric: metric,
 	}
 }
 
@@ -101,12 +97,20 @@ func (orm *Gorm) Serve(ctx context.Context) error {
 		return err
 	}
 
+	if err := orm.metric.Run(db); err != nil {
+		return err
+	}
+
 	return db.Ping()
 }
 
 func (orm *Gorm) Shutdown(ctx context.Context) error {
 	db, err := orm.db.DB()
 	if err != nil {
+		return err
+	}
+
+	if err = orm.metric.Stop(); err != nil {
 		return err
 	}
 
