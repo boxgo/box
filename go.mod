@@ -18,13 +18,13 @@ require (
 	github.com/gorilla/sessions v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.4.0
 	github.com/imdario/mergo v0.3.9
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/json-iterator/go v1.1.12
 	github.com/lib/pq v1.6.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.1.2
 	github.com/olekukonko/tablewriter v0.0.5-0.20200416053754-163badb3bac6
-	github.com/profects/gormetrics v0.0.0-20240708120316-e235a67b38fd
 	github.com/prometheus/client_golang v1.6.0
 	github.com/prometheus/procfs v0.1.3 // indirect
 	github.com/robfig/cron v1.2.0
@@ -42,7 +42,7 @@ require (
 	google.golang.org/protobuf v1.34.1
 	gorm.io/driver/mysql v1.1.0
 	gorm.io/driver/postgres v1.1.0
-	gorm.io/gorm v1.25.10
+	gorm.io/gorm v1.21.10
 	honnef.co/go/tools v0.1.1 // indirect
 	moul.io/http2curl v1.0.0
 )
