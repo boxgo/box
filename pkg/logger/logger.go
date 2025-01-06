@@ -56,7 +56,7 @@ func newLogger(cfg *Config) (*Logger, error) {
 	}
 
 	zapLogger := zap.New(
-		core.NewMaskCore(rule, cfg.Level, encoder, outSink),
+		core.NewMaskCore(cfg.SplitLen, rule, cfg.Level, encoder, outSink),
 		buildOptions(&zapCfg, errSink)...,
 	)
 

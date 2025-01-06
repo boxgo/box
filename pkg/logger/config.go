@@ -14,6 +14,7 @@ type (
 	// Config of logger
 	Config struct {
 		path              string
+		SplitLen          int                    `config:"splitLen" json:"splitLen" desc:"split to multi line when reach the len."`
 		WatchInterval     time.Duration          `config:"watchInterval" json:"watchInterval" desc:"config change watch interval, default is 5s"`
 		Level             zap.AtomicLevel        `config:"level" json:"level" desc:"debug,info,warn,error,panic,fatal"`
 		DisableCaller     bool                   `config:"disableCaller" json:"disableCaller"`
@@ -66,6 +67,7 @@ func StdConfig(key string) *Config {
 func DefaultConfig(key string) *Config {
 	return &Config{
 		path:              "logger." + key,
+		SplitLen:          5 * 1024,
 		WatchInterval:     time.Second * 10,
 		Level:             zap.NewAtomicLevel(),
 		Encoding:          "console",
