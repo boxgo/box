@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"runtime/debug"
 	"sort"
 	"strings"
 
@@ -19,6 +20,16 @@ var (
 func init() {
 	Get("/", func(ctx *gin.Context) {
 		ctx.Data(200, gin.MIMEHTML, []byte(html()))
+	})
+
+	Get("/buildInfo", func(ctx *gin.Context) {
+		buildInfoStr := "Unable to determine version information."
+
+		if buildInfo, ok := debug.ReadBuildInfo(); ok {
+			buildInfoStr = buildInfo.String()
+		}
+
+		ctx.Data(200, gin.MIMEPlain, []byte(buildInfoStr))
 	})
 
 	Get("/config", func(ctx *gin.Context) {
