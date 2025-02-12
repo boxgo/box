@@ -10,8 +10,8 @@ import (
 
 type (
 	MutexLocker interface {
-		Lock(context.Context, string, time.Duration) (bool, error)
-		IsLocked(context.Context, string) (bool, error)
+		Lock(context.Context, string, time.Duration) (success bool, err error)
+		IsLocked(context.Context, string) (locked bool, err error)
 		UnLock(context.Context, string) error
 	}
 )
