@@ -33,6 +33,10 @@ func newRedis(cfg *Config) *Redis {
 		logger.Panicf("Redis.InstrumentTracing.Error: %s", err)
 	}
 
+	if err := redisotel.InstrumentTracing(client); err != nil {
+		logger.Panicf("Redis.InstrumentTracing.Error: %s", err)
+	}
+
 	r := &Redis{
 		cfg:    cfg,
 		client: client,
