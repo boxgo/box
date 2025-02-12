@@ -69,6 +69,8 @@ func (l redisCache) cacheKey(key string) string {
 	cacheKey := l.cfg.Prefix
 	if cacheKey == "" {
 		cacheKey = cache.UnifiedKey(key)
+	} else if cacheKey == "-" {
+		cacheKey = key
 	}
 
 	return cacheKey
