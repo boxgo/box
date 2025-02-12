@@ -7,7 +7,7 @@ import (
 
 	"github.com/boxgo/box/pkg/config/source"
 	"github.com/boxgo/box/pkg/util/strutil"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 type (
