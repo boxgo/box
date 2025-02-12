@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 var (
@@ -24,7 +24,7 @@ func Set(ctx context.Context, key string, value interface{}, expiration time.Dur
 }
 
 func SetEX(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
-	return Client().SetEX(ctx, key, value, expiration)
+	return Client().SetEx(ctx, key, value, expiration)
 }
 
 func SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.BoolCmd {
@@ -115,7 +115,7 @@ func HGet(ctx context.Context, key, field string) *redis.StringCmd {
 	return Client().HGet(ctx, key, field)
 }
 
-func HGetAll(ctx context.Context, key string) *redis.StringStringMapCmd {
+func HGetAll(ctx context.Context, key string) *redis.MapStringStringCmd {
 	return Client().HGetAll(ctx, key)
 }
 
@@ -219,40 +219,16 @@ func SUnionStore(ctx context.Context, destination string, keys ...string) *redis
 	return Client().SUnionStore(ctx, destination, keys...)
 }
 
-func ZAdd(ctx context.Context, key string, members ...*redis.Z) *redis.IntCmd {
+func ZAdd(ctx context.Context, key string, members ...redis.Z) *redis.IntCmd {
 	return Client().ZAdd(ctx, key, members...)
 }
 
-func ZAddNX(ctx context.Context, key string, members ...*redis.Z) *redis.IntCmd {
+func ZAddNX(ctx context.Context, key string, members ...redis.Z) *redis.IntCmd {
 	return Client().ZAddNX(ctx, key, members...)
 }
 
-func ZAddXX(ctx context.Context, key string, members ...*redis.Z) *redis.IntCmd {
+func ZAddXX(ctx context.Context, key string, members ...redis.Z) *redis.IntCmd {
 	return Client().ZAddXX(ctx, key, members...)
-}
-
-func ZAddCh(ctx context.Context, key string, members ...*redis.Z) *redis.IntCmd {
-	return Client().ZAddCh(ctx, key, members...)
-}
-
-func ZAddNXCh(ctx context.Context, key string, members ...*redis.Z) *redis.IntCmd {
-	return Client().ZAddNXCh(ctx, key, members...)
-}
-
-func ZAddXXCh(ctx context.Context, key string, members ...*redis.Z) *redis.IntCmd {
-	return Client().ZAddXXCh(ctx, key, members...)
-}
-
-func ZIncr(ctx context.Context, key string, member *redis.Z) *redis.FloatCmd {
-	return Client().ZIncr(ctx, key, member)
-}
-
-func ZIncrNX(ctx context.Context, key string, member *redis.Z) *redis.FloatCmd {
-	return Client().ZIncrNX(ctx, key, member)
-}
-
-func ZIncrXX(ctx context.Context, key string, member *redis.Z) *redis.FloatCmd {
-	return Client().ZIncrXX(ctx, key, member)
 }
 
 func ZCard(ctx context.Context, key string) *redis.IntCmd {

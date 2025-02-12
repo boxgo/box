@@ -3,10 +3,9 @@ package redis
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/boxgo/box/pkg/logger"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 type (
@@ -15,23 +14,35 @@ type (
 	}
 )
 
-func (inst *Logger) BeforeProcess(ctx context.Context, cmd redis.Cmder) (context.Context, error) {
-	return ctx, nil
+func (inst *Logger) DialHook(next redis.DialHook) redis.DialHook {
+	return next
 }
 
-func (inst *Logger) AfterProcess(ctx context.Context, cmd redis.Cmder) error {
-	return nil
+func (inst *Logger) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
+	return func(ctx context.Context, cmd redis.Cmder) error {
+		err := next(ctx, cmd)
+
+		if err != nil {
+			inst.log(ctx, false, cmd)
+		}
+
+		return err
+	}
 }
 
-func (inst *Logger) BeforeProcessPipeline(ctx context.Context, cmds []redis.Cmder) (context.Context, error) {
-	return ctx, nil
+func (inst *Logger) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.ProcessPipelineHook {
+	return func(ctx context.Context, cmds []redis.Cmder) error {
+		err := next(ctx, cmds)
+
+		if err != nil {
+			inst.log(ctx, false, cmds...)
+		}
+
+		return err
+	}
 }
 
-func (inst *Logger) AfterProcessPipeline(ctx context.Context, cmds []redis.Cmder) error {
-	return nil
-}
-
-func (inst *Logger) log(ctx context.Context, pipe bool, elapsed time.Duration, cmds ...redis.Cmder) {
+func (inst *Logger) log(ctx context.Context, pipe bool, cmds ...redis.Cmder) {
 	var (
 		cmdArr = make([]string, len(cmds))
 		errArr = make([]string, len(cmds))
