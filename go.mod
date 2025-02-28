@@ -44,6 +44,7 @@ require (
 require (
 	github.com/aws/aws-sdk-go v1.29.15 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/boxgo/redisstore/v3 v3.0.1 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -100,7 +101,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0 // indirect
 	github.com/redis/go-redis/extra/rediscmd/v9 v9.7.0 // indirect
 	github.com/redis/go-redis/extra/redisotel/v9 v9.7.0 // indirect
-	github.com/redis/go-redis/v9 v9.7.0 // indirect
+	github.com/redis/go-redis/v9 v9.7.1 // indirect
 	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect

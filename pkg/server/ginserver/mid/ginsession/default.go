@@ -1,7 +1,7 @@
 package ginsession
 
 import (
-	"github.com/boxgo/redisstore/v2/serializer"
+	"github.com/boxgo/redisstore/v3/serializer"
 	"github.com/gin-gonic/gin"
 )
 
