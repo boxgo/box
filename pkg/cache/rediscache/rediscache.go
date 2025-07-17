@@ -66,12 +66,9 @@ func (l *redisCache) Expire(ctx context.Context, key string, expiration time.Dur
 }
 
 func (l redisCache) cacheKey(key string) string {
-	cacheKey := l.cfg.Prefix
-	if cacheKey == "" {
-		cacheKey = cache.UnifiedKey(key)
-	} else if cacheKey == "-" {
-		cacheKey = key
+	if l.cfg.Prefix != "" {
+		return l.cfg.Prefix + key
 	}
 
-	return cacheKey
+	return key
 }
