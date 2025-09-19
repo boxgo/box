@@ -42,6 +42,10 @@ func (kfk Kafka) NewConsumerGroup(groupID string) (ConsumerGroup, error) {
 	return sarama.NewConsumerGroupFromClient(groupID, kfk.client)
 }
 
+func (kfk Kafka) NewClusterAdmin() (ClusterAdmin, error) {
+	return sarama.NewClusterAdmin(kfk.cfg.Addrs, kfk.client.Config())
+}
+
 // Config returns the Config struct of the client. This struct should not be
 // altered after it has been created.
 func (kfk Kafka) Config() *ConfigKafka {
