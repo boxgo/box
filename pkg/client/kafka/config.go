@@ -172,6 +172,7 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 // DefaultConfig 默认配置
 func DefaultConfig(key string) *Config {
 	kfkCfg := sarama.NewConfig()
+	kfkCfg.Version = sarama.V2_6_0_0 // Explicitly set to match broker
 
 	return &Config{
 		path:  "kafka." + key,
