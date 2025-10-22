@@ -127,32 +127,65 @@ func (request *Request) Param(param map[string]interface{}) *Request {
 	return request
 }
 
-// Query
+// Query Method sets multiple URL query key-value pairs. It replaces any existing. array values will contact with ",".
 // format:
 //
-//	1.map[string]interface{} {"key": "value", "key1": 1}
+//	1.map[string]interface{} {"key": "value", "key1": 1, "key2": [1,2,3]}
 func (request *Request) Query(query interface{}) *Request {
 	switch v := reflect.ValueOf(query); v.Kind() {
 	case reflect.Map, reflect.Struct:
-		request.queryMapOrStruct(request.QueryData, v.Interface())
+		request.queryMapOrStruct(request.QueryData, v.Interface(), true)
 	case reflect.Ptr:
 		switch v.Elem().Kind() {
 		case reflect.Map, reflect.Struct:
-			request.queryMapOrStruct(request.QueryData, v.Interface())
+			request.queryMapOrStruct(request.QueryData, v.Interface(), true)
 		}
 	}
 
 	return request
 }
 
-func (request *Request) Form(form interface{}) *Request {
-	switch v := reflect.ValueOf(form); v.Kind() {
+// AddQuery Method sets multiple URL query key-value pairs. It appends any existing. array values will contact with ",".
+func (request *Request) AddQuery(query interface{}) *Request {
+	switch v := reflect.ValueOf(query); v.Kind() {
 	case reflect.Map, reflect.Struct:
-		request.queryMapOrStruct(request.FormData, v.Interface())
+		request.queryMapOrStruct(request.QueryData, v.Interface(), false)
 	case reflect.Ptr:
 		switch v.Elem().Kind() {
 		case reflect.Map, reflect.Struct:
-			request.queryMapOrStruct(request.FormData, v.Interface())
+			request.queryMapOrStruct(request.QueryData, v.Interface(), false)
+		}
+	}
+
+	return request
+}
+
+// Form Method sets multiple URL form key-value pairs. It replaces any existing. array values will contact with ",".
+func (request *Request) Form(form interface{}) *Request {
+	switch v := reflect.ValueOf(form); v.Kind() {
+	case reflect.Map, reflect.Struct:
+		request.queryMapOrStruct(request.FormData, v.Interface(), true)
+	case reflect.Ptr:
+		switch v.Elem().Kind() {
+		case reflect.Map, reflect.Struct:
+			request.queryMapOrStruct(request.FormData, v.Interface(), true)
+		}
+	}
+
+	request.Type(MimeTypeFormData)
+
+	return request
+}
+
+// AddForm Method sets multiple URL form key-value pairs. It appends any existing. array values will contact with ",".
+func (request *Request) AddForm(form interface{}) *Request {
+	switch v := reflect.ValueOf(form); v.Kind() {
+	case reflect.Map, reflect.Struct:
+		request.queryMapOrStruct(request.FormData, v.Interface(), false)
+	case reflect.Ptr:
+		switch v.Elem().Kind() {
+		case reflect.Map, reflect.Struct:
+			request.queryMapOrStruct(request.FormData, v.Interface(), false)
 		}
 	}
 
@@ -338,13 +371,13 @@ func (request *Request) RawRequest() (*http.Request, error) {
 	return req, err
 }
 
-func (request *Request) queryMapOrStruct(urlVal url.Values, query interface{}) {
-	if err := Map2URLValues(urlVal, query); err != nil {
+func (request *Request) queryMapOrStruct(urlVal url.Values, query interface{}, replace bool) {
+	if err := Map2URLValues(urlVal, query, replace); err != nil {
 		request.Error = err
 	}
 }
 
-func Map2URLValues(values url.Values, data interface{}) error {
+func Map2URLValues(values url.Values, data interface{}, replace bool) error {
 	var (
 		err     error
 		dataMap = map[string]interface{}{}
@@ -357,20 +390,39 @@ func Map2URLValues(values url.Values, data interface{}) error {
 	for k, v := range dataMap {
 		switch val := v.(type) {
 		case []interface{}:
-			for _, e := range val {
-				values.Add(k, fmt.Sprintf("%v", e))
+			vals := make([]string, len(val))
+			for i, e := range val {
+				vals[i] = fmt.Sprintf("%v", e)
+			}
+
+			if replace {
+				values.Set(k, strings.Join(vals, ","))
+			} else {
+				values.Add(k, strings.Join(vals, ","))
 			}
 		case nil:
 			continue
 		case string:
-			values.Add(k, val)
+			if replace {
+				values.Set(k, val)
+			} else {
+				values.Add(k, val)
+			}
 		case float64:
-			values.Add(k, strconv.FormatFloat(val, 'f', -1, 64))
+			if replace {
+				values.Set(k, strconv.FormatFloat(val, 'f', -1, 64))
+			} else {
+				values.Add(k, strconv.FormatFloat(val, 'f', -1, 64))
+			}
 		default:
 			if j, err := json.NewMarshaler().Marshal(v); err != nil {
 				continue
 			} else {
-				values.Add(k, string(j))
+				if replace {
+					values.Set(k, string(j))
+				} else {
+					values.Add(k, string(j))
+				}
 			}
 		}
 	}
