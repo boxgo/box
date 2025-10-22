@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/boxgo/box/pkg/logger"
+	"github.com/redis/go-redis/extra/redisotel/v9"
+	"github.com/redis/go-redis/v9"
 )
 
 type (
@@ -25,7 +27,11 @@ func newRedis(cfg *Config) *Redis {
 	})
 
 	client.AddHook(&Metric{cfg: cfg})
-	client.AddHook(&Logger{})
+	client.AddHook(&Logger{cfg: cfg})
+
+	if err := redisotel.InstrumentTracing(client); err != nil {
+		logger.Panicf("Redis.InstrumentTracing.Error: %s", err)
+	}
 
 	r := &Redis{
 		cfg:    cfg,

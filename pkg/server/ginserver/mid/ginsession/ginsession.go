@@ -3,8 +3,8 @@ package ginsession
 
 import (
 	"github.com/boxgo/box/pkg/client/redis"
-	"github.com/boxgo/redisstore/v2"
-	"github.com/boxgo/redisstore/v2/serializer"
+	"github.com/boxgo/redisstore/v3"
+	"github.com/boxgo/redisstore/v3/serializer"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"

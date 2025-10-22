@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/boxgo/redisstore/v2"
-	"github.com/boxgo/redisstore/v2/serializer"
+	"github.com/boxgo/redisstore/v3"
+	"github.com/boxgo/redisstore/v3/serializer"
 	"github.com/gorilla/sessions"
 )
 

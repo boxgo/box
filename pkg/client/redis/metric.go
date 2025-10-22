@@ -8,7 +8,7 @@ import (
 
 	"github.com/boxgo/box/pkg/metric"
 	"github.com/boxgo/box/pkg/trace"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 type (
@@ -39,30 +39,32 @@ var (
 	)
 )
 
-func (m *Metric) BeforeProcess(ctx context.Context, cmd redis.Cmder) (context.Context, error) {
-	return context.WithValue(ctx, startKey{}, time.Now()), nil
+func (m *Metric) DialHook(next redis.DialHook) redis.DialHook {
+	return next
 }
 
-func (m *Metric) AfterProcess(ctx context.Context, cmd redis.Cmder) error {
-	start := ctx.Value(startKey{}).(time.Time)
-	elapsed := time.Since(start)
+func (m *Metric) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
+	return func(ctx context.Context, cmd redis.Cmder) error {
+		start := time.Now()
 
-	m.report(ctx, false, elapsed, cmd)
+		err := next(ctx, cmd)
 
-	return nil
+		m.report(ctx, false, time.Since(start), cmd)
+
+		return err
+	}
 }
 
-func (m *Metric) BeforeProcessPipeline(ctx context.Context, cmds []redis.Cmder) (context.Context, error) {
-	return context.WithValue(ctx, startKey{}, time.Now()), nil
-}
+func (m *Metric) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.ProcessPipelineHook {
+	return func(ctx context.Context, cmds []redis.Cmder) error {
+		start := time.Now()
 
-func (m *Metric) AfterProcessPipeline(ctx context.Context, cmds []redis.Cmder) error {
-	start := ctx.Value(startKey{}).(time.Time)
-	elapsed := time.Since(start)
+		err := next(ctx, cmds)
 
-	m.report(ctx, true, elapsed, cmds...)
+		m.report(ctx, false, time.Since(start), cmds...)
 
-	return nil
+		return err
+	}
 }
 
 func (m *Metric) report(ctx context.Context, pipe bool, elapsed time.Duration, cmds ...redis.Cmder) {

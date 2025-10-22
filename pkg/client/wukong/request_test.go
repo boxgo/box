@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -123,7 +124,9 @@ func TestParam(t *testing.T) {
 
 func TestQuery(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		testutil.ExpectEqual(t, r.URL.String(), "/?bool=true&float32=2.3&float64=4.5&int=1&int_array=1&int_array=2&interface_array=0&interface_array=true&interface_array=1.1&interface_array=string&string=string&string_array=a&string_array=b&uint=0")
+		q, _ := url.QueryUnescape(r.URL.String())
+
+		testutil.ExpectEqual(t, q, "/?bool=true&float32=2.3&float64=4.5&int=1&int_array=1,2&interface_array=0,true,1.1,string&string=string&string_array=a,b&uint=0")
 
 		w.WriteHeader(200)
 	}))

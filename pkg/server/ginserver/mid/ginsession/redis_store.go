@@ -1,7 +1,7 @@
 package ginsession
 
 import (
-	"github.com/boxgo/redisstore/v2"
+	"github.com/boxgo/redisstore/v3"
 	"github.com/gin-contrib/sessions"
 )
 

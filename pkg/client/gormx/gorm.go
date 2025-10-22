@@ -8,6 +8,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+
+	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 )
 
 type (
@@ -74,6 +76,10 @@ func newGorm(c *Config) *Gorm {
 	sqlDB.SetMaxIdleConns(c.MaxIdleConns)
 	sqlDB.SetConnMaxIdleTime(c.MaxIdleTime)
 	sqlDB.SetConnMaxLifetime(c.MaxLifeTime)
+
+	if err := db.Use(otelgorm.NewPlugin()); err != nil {
+		panic(err)
+	}
 
 	metric := newMetric(c.Driver, c.Key(), c.MetricInterval)
 	if err := metric.registerCallback(db); err != nil {

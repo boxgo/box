@@ -1,13 +1,17 @@
 package wukong
 
 import (
+	"context"
 	"math/rand"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"sync"
 	"time"
 
 	"github.com/boxgo/box/pkg/logger"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type (
@@ -58,20 +62,26 @@ func newClients(count int) []*http.Client {
 
 func newClient() *http.Client {
 	return &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).DialContext,
-			ForceAttemptHTTP2:     true,
-			MaxIdleConns:          0,
-			MaxIdleConnsPerHost:   50,
-			MaxConnsPerHost:       0,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
+		Transport: otelhttp.NewTransport(
+			&http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DialContext: (&net.Dialer{
+					Timeout:   30 * time.Second,
+					KeepAlive: 30 * time.Second,
+				}).DialContext,
+				DisableKeepAlives:     false,            // 启用连接复用 (KeepAlive)
+				ForceAttemptHTTP2:     true,             // 尝试http2
+				MaxIdleConns:          500,              // 允许最大空闲连接数
+				MaxIdleConnsPerHost:   100,              // 限制每个主机的最大空闲连接数
+				MaxConnsPerHost:       200,              // 限制每个主机的最大连接数 (防止过载)
+				IdleConnTimeout:       90 * time.Second, // 空闲连接超时时间
+				TLSHandshakeTimeout:   10 * time.Second, // TLS握手超时时间
+				ExpectContinueTimeout: 1 * time.Second,  // 100-continue 超时时间
+			},
+			otelhttp.WithClientTrace(func(ctx context.Context) *httptrace.ClientTrace {
+				return otelhttptrace.NewClientTrace(ctx)
+			}),
+		),
 		Timeout: time.Second * 10,
 	}
 }

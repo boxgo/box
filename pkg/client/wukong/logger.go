@@ -57,9 +57,9 @@ func loggerAfter(req *Request, resp *Response) error {
 	}
 
 	if level&LoggerResponse == 0 {
-		logger.Trace(req.Context).Infow("http_client_end", "baseUrl", req.BaseUrl, "url", req.Url)
+		logger.Trace(req.Context).Infow("http_client_end", "elapsed", req.TraceInfo.ElapsedTime.Milliseconds(), "statusCode", resp.StatusCode(), "request", req.curl)
 	} else {
-		logger.Trace(req.Context).Infow("http_client_end", "elapsed", req.TraceInfo.ElapsedTime.Milliseconds(), "request", req.curl, "response", string(resp.Bytes()))
+		logger.Trace(req.Context).Infow("http_client_end", "elapsed", req.TraceInfo.ElapsedTime.Milliseconds(), "statusCode", resp.StatusCode(), "request", req.curl, "response", string(resp.Bytes()))
 	}
 
 	return nil
