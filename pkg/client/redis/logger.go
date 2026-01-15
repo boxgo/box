@@ -10,9 +10,17 @@ import (
 
 type (
 	Logger struct {
-		cfg *Config
+		cfg  *Config
+		addr string
 	}
 )
+
+func newLogger(cfg *Config) *Logger {
+	return &Logger{
+		cfg:  cfg,
+		addr: strings.Join(cfg.Address, ","),
+	}
+}
 
 func (inst *Logger) DialHook(next redis.DialHook) redis.DialHook {
 	return next
@@ -58,7 +66,7 @@ func (inst *Logger) log(ctx context.Context, pipe bool, cmds ...redis.Cmder) {
 
 	if len(errArr) > 0 {
 		logger.Trace(ctx).Errorw("Redis.Error",
-			"address", strings.Join(inst.cfg.Address, ","),
+			"address", inst.addr,
 			"db", inst.cfg.DB,
 			"err", strings.Join(errArr, ";"),
 			"cmd", strings.Join(cmdArr, ";"),

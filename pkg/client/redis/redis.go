@@ -26,8 +26,8 @@ func newRedis(cfg *Config) *Redis {
 		MinIdleConns: cfg.MinIdleConnCnt,
 	})
 
-	client.AddHook(&Metric{cfg: cfg})
-	client.AddHook(&Logger{cfg: cfg})
+	client.AddHook(newMetric(cfg))
+	client.AddHook(newLogger(cfg))
 
 	if err := redisotel.InstrumentTracing(client); err != nil {
 		logger.Panicf("Redis.InstrumentTracing.Error: %s", err)

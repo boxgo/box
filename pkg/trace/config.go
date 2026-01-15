@@ -33,7 +33,7 @@ func StdConfig() *Config {
 func DefaultConfig() *Config {
 	return &Config{
 		TraceUID:    "box.trace.uid",
-		TraceReqID:  "box.trace.reqId",
+		TraceReqID:  "X-Request-Id",
 		TraceSpanID: "box.trace.spanId",
 		TraceBizID:  "box.trace.bizId",
 	}

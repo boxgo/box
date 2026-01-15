@@ -18,7 +18,7 @@ var (
 	boxMetricGauge = metric.Default.NewGaugeVec(
 		"box_info",
 		"Information about the box config and environment.",
-		[]string{"name", "version", "tags", "ip", "localhost", "start"})
+		[]string{"tags", "ip", "localhost", "start"})
 )
 
 func (boxMetric) Name() string {
@@ -27,8 +27,6 @@ func (boxMetric) Name() string {
 
 func (boxMetric) Serve(ctx context.Context) error {
 	boxMetricGauge.WithLabelValues(
-		config.ServiceName(),
-		config.ServiceVersion(),
 		strings.Join(config.ServiceTag(), ","),
 		system.IP(),
 		system.Hostname(),

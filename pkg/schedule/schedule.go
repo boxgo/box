@@ -48,9 +48,16 @@ type (
 
 var (
 	scheduleCounter = metric.NewCounterVec(
-		"schedule_total",
-		"schedule counter",
-		[]string{"task", "error", "panic"},
+		"schedule_jobs_total",
+		"The total number of scheduled jobs executed.",
+		[]string{"task", "result"},
+	)
+	scheduleDuration = metric.NewHistogramVec(
+		"schedule_job_duration_seconds",
+		"The duration of scheduled jobs.",
+		[]string{"task", "result"},
+		// 1s, 2.5s, 5s, 10s, 30s, 60s, 5m, 10m, 30m, 1h
+		[]float64{1, 2.5, 5, 10, 30, 60, 300, 600, 1800, 3600},
 	)
 )
 
@@ -208,24 +215,28 @@ func (sch *Schedule) exec(handler Handler) {
 		defer func() {
 			journal.EndTime = time.Now()
 			journal.Panic = recover()
+			duration := journal.EndTime.Sub(journal.StartTime).Seconds()
+			result := "success"
 
 			if journal.Panic != nil {
+				result = "panic"
 				logger.Trace(ctx).Errorf("Schedule crash: %+v\n%s", journal.Panic, debug.Stack())
-				scheduleCounter.WithLabelValues(sch.key(), "", fmt.Sprintf("%s", journal.Panic)).Inc()
+			} else if journal.Error != nil {
+				result = "error"
+				logger.Trace(ctx).Errorf("Schedule run error: [%s]", journal.Error)
+			} else {
+				logger.Trace(ctx).Infof("Schedule run success")
 			}
+
+			scheduleCounter.WithLabelValues(sch.key(), result).Inc()
+			scheduleDuration.WithLabelValues(sch.key(), result).Observe(duration)
 
 			sch.recorder(journal)
 		}()
 
 		logger.Trace(ctx).Infof("Schedule run start")
 
-		if journal.Error = handler(ctx); journal.Error != nil {
-			logger.Trace(ctx).Errorf("Schedule run error: [%s]", journal.Error)
-			scheduleCounter.WithLabelValues(sch.key(), journal.Error.Error(), "").Inc()
-		} else {
-			logger.Trace(ctx).Infof("Schedule run success")
-			scheduleCounter.WithLabelValues(sch.key(), "", "").Inc()
-		}
+		journal.Error = handler(ctx)
 	}()
 }
 
