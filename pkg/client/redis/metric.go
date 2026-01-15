@@ -2,40 +2,42 @@ package redis
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/boxgo/box/pkg/metric"
-	"github.com/boxgo/box/pkg/trace"
 	"github.com/redis/go-redis/v9"
 )
 
 type (
 	Metric struct {
-		cfg *Config
+		cfg  *Config
+		addr string
 	}
 
 	startKey struct{}
 )
 
+func newMetric(cfg *Config) *Metric {
+	return &Metric{
+		cfg:  cfg,
+		addr: strings.Join(cfg.Address, ","),
+	}
+}
+
 var (
 	cmdTotal = metric.NewCounterVec(
-		"redis_client_command_total",
-		"redis command counter",
-		[]string{"bid", "address", "db", "masterName", "pipe", "cmd", "error"},
+		"redis_client_requests_total",
+		"The total number of Redis commands executed.",
+		[]string{"address", "db", "masterName", "pipe", "cmd", "result"},
 	)
-	cmdDuration = metric.NewSummaryVec(
-		"redis_client_command_duration_seconds",
-		"redis command duration seconds",
-		[]string{"bid", "address", "db", "masterName", "pipe", "cmd", "error"},
-		map[float64]float64{
-			0.5:  0.05,
-			0.75: 0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-			1:    0.001,
-		},
+	cmdDuration = metric.NewHistogramVec(
+		"redis_client_request_duration_seconds",
+		"The Redis command latencies in seconds.",
+		[]string{"address", "db", "masterName", "pipe", "cmd", "result"},
+		// 100us, 250us, 500us, 1ms, 2.5ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms
+		[]float64{0.0001, 0.00025, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5},
 	)
 )
 
@@ -68,38 +70,33 @@ func (m *Metric) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.Proce
 }
 
 func (m *Metric) report(ctx context.Context, pipe bool, elapsed time.Duration, cmds ...redis.Cmder) {
-	addressStr := strings.Join(m.cfg.Address, ",")
-	dbStr := fmt.Sprintf("%d", m.cfg.DB)
-	masterNameStr := m.cfg.MasterName
-	errStr := ""
 	cmdStr := ""
-	pipeStr := fmt.Sprintf("%t", pipe)
+	result := "success"
+	masterNameStr := m.cfg.MasterName
+	addressStr := m.addr
+	dbStr := strconv.Itoa(m.cfg.DB)
+	pipeStr := strconv.FormatBool(pipe)
+
+	if pipe {
+		cmdStr = "pipeline"
+	} else if len(cmds) > 0 {
+		cmdStr = cmds[0].Name()
+	}
 
 	for _, cmd := range cmds {
-		cmdStr += cmd.Name() + ";"
-
 		if err := cmd.Err(); err != nil && err != redis.Nil {
-			errStr += err.Error() + ";"
+			result = "error"
+			break
 		}
-	}
-	cmdStr = strings.TrimSuffix(cmdStr, ";")
-
-	var (
-		bizID string
-	)
-
-	if bizIDStr, ok := ctx.Value(trace.BizID()).(string); ok {
-		bizID = bizIDStr
 	}
 
 	values := []string{
-		bizID,
 		addressStr,
 		dbStr,
 		masterNameStr,
 		pipeStr,
 		cmdStr,
-		errStr,
+		result,
 	}
 
 	cmdDuration.WithLabelValues(values...).Observe(elapsed.Seconds())

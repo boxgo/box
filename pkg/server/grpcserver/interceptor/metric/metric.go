@@ -11,32 +11,41 @@ import (
 )
 
 var (
-	handledCounter = metric.NewCounterVec(
-		"grpc_server_handled_total",
-		"gGPC server handle msg count",
+	// Saturation
+	reqInflight = metric.NewGaugeVec(
+		"grpc_server_requests_inflight",
+		"The number of gRPC requests currently being processed.",
+		[]string{"method", "type"},
+	)
+
+	// Traffic & Errors
+	reqTotal = metric.NewCounterVec(
+		"grpc_server_requests_total",
+		"The total number of gRPC requests processed.",
 		[]string{"method", "type", "code"},
 	)
-	handledSeconds = metric.NewSummaryVec(
-		"grpc_server_handled_second",
-		"gGPC server handle msg duration",
+
+	// Latency
+	reqDuration = metric.NewHistogramVec(
+		"grpc_server_request_duration_seconds",
+		"The gRPC request latencies in seconds.",
 		[]string{"method", "type", "code"},
-		map[float64]float64{
-			0.5:  0.05,
-			0.75: 0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-			1:    0.001,
-		},
+		// .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10
+		[]float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
 	)
 )
 
 func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		start := time.Now()
+		typ := "unary"
+
+		reqInflight.WithLabelValues(info.FullMethod, typ).Inc()
+		defer reqInflight.WithLabelValues(info.FullMethod, typ).Dec()
 
 		resp, err := handler(ctx, req)
 
-		report(info.FullMethod, "unary", start, err)
+		report(info.FullMethod, typ, start, err)
 
 		return resp, err
 	}
@@ -45,16 +54,21 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 func StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		start := time.Now()
+		typ := "stream"
+		if info.IsClientStream && info.IsServerStream {
+			typ = "stream_bidi"
+		} else if info.IsClientStream {
+			typ = "stream_client"
+		} else if info.IsServerStream {
+			typ = "stream_server"
+		}
+
+		reqInflight.WithLabelValues(info.FullMethod, typ).Inc()
+		defer reqInflight.WithLabelValues(info.FullMethod, typ).Dec()
 
 		err := handler(srv, ss)
 
-		if info.IsClientStream && info.IsServerStream {
-			report(info.FullMethod, "stream_bidi", start, err)
-		} else if info.IsClientStream {
-			report(info.FullMethod, "stream_client", start, err)
-		} else if info.IsServerStream {
-			report(info.FullMethod, "stream_server", start, err)
-		}
+		report(info.FullMethod, typ, start, err)
 
 		return err
 	}
@@ -69,6 +83,6 @@ func report(method, typ string, start time.Time, err error) {
 		labels = []string{method, typ, "0"}
 	}
 
-	handledCounter.WithLabelValues(labels...).Inc()
-	handledSeconds.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
+	reqTotal.WithLabelValues(labels...).Inc()
+	reqDuration.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
 }

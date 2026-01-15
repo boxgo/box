@@ -24,19 +24,19 @@ const (
 )
 
 var (
-	metricConnIdle     = metric.NewGaugeVec("db_connections_idle", `The number of idle connections.`, []string{labelDriver, labelDatabase})
-	metricConnInUse    = metric.NewGaugeVec("db_connections_in_use", `The number of connections currently in use.`, []string{labelDriver, labelDatabase})
-	metricConnOpen     = metric.NewGaugeVec("db_connections_open", `The number of established connections both in use and idle.`, []string{labelDriver, labelDatabase})
-	metricConnMaxOpen  = metric.NewGaugeVec("db_connections_max_open", `Maximum number of open connections to the database.`, []string{labelDriver, labelDatabase})
-	metricWaitCount    = metric.NewGaugeVec("db_wait_count", `The total number of connections waited for.`, []string{labelDriver, labelDatabase})
-	metricWaitDuration = metric.NewGaugeVec("db_wait_duration_seconds", `The total time blocked waiting for a new connection.`, []string{labelDriver, labelDatabase})
-	metricSQLSeconds   = metric.NewSummaryVec("db_sql_seconds", `All queries requested seconds`, []string{labelDriver, labelDatabase, labelType, labelError}, map[float64]float64{
-		0.5:  0.05,
-		0.75: 0.05,
-		0.9:  0.01,
-		0.99: 0.001,
-		1:    0.001,
-	})
+	metricConnIdle     = metric.NewGaugeVec("db_client_connections_idle", `The number of idle connections.`, []string{labelDriver, labelDatabase})
+	metricConnInUse    = metric.NewGaugeVec("db_client_connections_in_use", `The number of connections currently in use.`, []string{labelDriver, labelDatabase})
+	metricConnOpen     = metric.NewGaugeVec("db_client_connections_open", `The number of established connections both in use and idle.`, []string{labelDriver, labelDatabase})
+	metricConnMaxOpen  = metric.NewGaugeVec("db_client_connections_max_open", `Maximum number of open connections to the database.`, []string{labelDriver, labelDatabase})
+	metricWaitCount    = metric.NewGaugeVec("db_client_connections_wait_total", `The total number of connections waited for.`, []string{labelDriver, labelDatabase})
+	metricWaitDuration = metric.NewGaugeVec("db_client_connections_wait_seconds", `The total time blocked waiting for a new connection.`, []string{labelDriver, labelDatabase})
+	metricSQLDuration  = metric.NewHistogramVec(
+		"db_client_request_duration_seconds",
+		"The SQL execution latencies in seconds.",
+		[]string{labelDriver, labelDatabase, labelType, "result"},
+		// 250us, 500us, 1ms, 2.5ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s
+		[]float64{0.00025, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5},
+	)
 )
 
 func newMetric(driver, database string, statsInterval time.Duration) *Metric {
@@ -115,11 +115,11 @@ func (m *Metric) beforeCallback(db *DB) {
 
 func (m *Metric) afterCallback(cmdType string) func(*DB) {
 	return func(db *DB) {
-		err := ""
+		result := "success"
 		second := 0.0
 
 		if db.Statement.Error != nil {
-			err = db.Statement.Error.Error()
+			result = "error"
 		}
 
 		if ts, ok := db.InstanceGet("startTime"); ok {
@@ -128,7 +128,7 @@ func (m *Metric) afterCallback(cmdType string) func(*DB) {
 			}
 		}
 
-		metricSQLSeconds.WithLabelValues(m.driver, m.database, cmdType, err).Observe(second)
+		metricSQLDuration.WithLabelValues(m.driver, m.database, cmdType, result).Observe(second)
 	}
 }
 

@@ -10,70 +10,59 @@ import (
 
 type (
 	GinProm struct {
-		cfg                *Config
-		processingGauge    *metric.GaugeVec
-		reqSizeSummary     *metric.SummaryVec
-		reqBeginCounter    *metric.CounterVec
-		reqFinishCounter   *metric.CounterVec
-		reqDurationSummary *metric.SummaryVec
-		resSizeSummary     *metric.SummaryVec
+		cfg *Config
 	}
+)
+
+var (
+	// Saturation: 饱和度 (Requests Inflight)
+	// 衡量服务当前的忙碌程度，通常使用正在处理的请求数来表示。
+	reqInFlight = metric.NewGaugeVec(
+		"http_server_requests_inflight",
+		"The number of HTTP requests currently being processed.",
+		[]string{"method", "url"},
+	)
+
+	// Traffic: 流量 (Request Rate & Size)
+	// 衡量服务的吞吐量，通常使用每秒请求数 (QPS) 或带宽 (IOPS) 来表示。
+	// 这里包含了请求总数(reqTotal)、请求包大小(reqSize)和响应包大小(resSize)。
+	// Errors: 错误 (Error Rate)
+	// 衡量请求失败的比例。
+	// 通过 reqTotal 指标中的 status 和 errcode 标签来计算错误率。
+	reqTotal = metric.NewCounterVec(
+		"http_server_requests_total",
+		"The total number of HTTP requests processed.",
+		[]string{"method", "url", "status", "errcode"},
+	)
+	reqSize = metric.NewHistogramVec(
+		"http_server_request_size_bytes",
+		"The HTTP request body sizes in bytes.",
+		[]string{"method", "url"},
+		// 1KB, 5KB, 10KB, 100KB, 1MB, 10MB
+		[]float64{1024, 5120, 10240, 102400, 1048576, 10485760},
+	)
+	resSize = metric.NewHistogramVec(
+		"http_server_response_size_bytes",
+		"The HTTP response body sizes in bytes.",
+		[]string{"method", "url", "status", "errcode"},
+		// 1KB, 5KB, 10KB, 100KB, 1MB, 10MB
+		[]float64{1024, 5120, 10240, 102400, 1048576, 10485760},
+	)
+
+	// Latency: 延迟 (Request Duration)
+	// 衡量服务处理请求所需的时间。
+	reqDuration = metric.NewHistogramVec(
+		"http_server_request_duration_seconds",
+		"The HTTP request latencies in seconds.",
+		[]string{"method", "url", "status", "errcode"},
+		// 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s
+		[]float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
+	)
 )
 
 func newGinProm(c *Config) *GinProm {
 	return &GinProm{
 		cfg: c,
-		processingGauge: metric.NewGaugeVec(
-			"http_server_processing_request",
-			"http server processing request",
-			[]string{"method", "url"},
-		),
-		reqSizeSummary: metric.NewSummaryVec(
-			"http_server_request_size_bytes",
-			"The HTTP request sizes in bytes.",
-			[]string{"method", "url"},
-			map[float64]float64{
-				0.5:  0.05,
-				0.75: 0.05,
-				0.9:  0.01,
-				0.99: 0.001,
-				1:    0.001,
-			},
-		),
-		reqBeginCounter: metric.NewCounterVec(
-			"http_server_request_begin_total",
-			"How many HTTP requests ready to process.",
-			[]string{"method", "url"},
-		),
-		reqFinishCounter: metric.NewCounterVec(
-			"http_server_request_finish_total",
-			"How many HTTP requests processed.",
-			[]string{"method", "url", "status", "errcode"},
-		),
-		reqDurationSummary: metric.NewSummaryVec(
-			"http_server_request_duration_seconds",
-			"The HTTP request latencies in seconds.",
-			[]string{"method", "url", "status", "errcode"},
-			map[float64]float64{
-				0.5:  0.05,
-				0.75: 0.05,
-				0.9:  0.01,
-				0.99: 0.001,
-				1:    0.001,
-			},
-		),
-		resSizeSummary: metric.NewSummaryVec(
-			"http_server_response_size_bytes",
-			"The HTTP response sizes in bytes.",
-			[]string{"method", "url", "status", "errcode"},
-			map[float64]float64{
-				0.5:  0.05,
-				0.75: 0.05,
-				0.9:  0.01,
-				0.99: 0.001,
-				1:    0.001,
-			},
-		),
 	}
 }
 
@@ -85,13 +74,13 @@ func (prom *GinProm) Handler() gin.HandlerFunc {
 			prom.cfg.requestURLMappingFn(ctx),
 		}
 
+		// Saturation: +1
+		reqInFlight.WithLabelValues(labels...).Inc()
+		defer reqInFlight.WithLabelValues(labels...).Dec()
+
+		// Traffic: Request Size
 		reqSz := computeApproximateRequestSize(ctx.Request)
-
-		prom.processingGauge.WithLabelValues(labels...).Inc()
-		prom.reqSizeSummary.WithLabelValues(labels...).Observe(reqSz)
-		prom.reqBeginCounter.WithLabelValues(labels...).Inc()
-
-		defer prom.processingGauge.WithLabelValues(labels...).Dec()
+		reqSize.WithLabelValues(labels...).Observe(reqSz)
 
 		ctx.Next()
 
@@ -101,8 +90,12 @@ func (prom *GinProm) Handler() gin.HandlerFunc {
 		}
 
 		labels = append(labels, strconv.Itoa(ctx.Writer.Status()), strconv.Itoa(ctx.GetInt("errcode")))
-		prom.resSizeSummary.WithLabelValues(labels...).Observe(float64(resSz))
-		prom.reqFinishCounter.WithLabelValues(labels...).Inc()
-		prom.reqDurationSummary.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
+
+		// Traffic: Response Size & Total Count (implies Errors via labels)
+		resSize.WithLabelValues(labels...).Observe(float64(resSz))
+		reqTotal.WithLabelValues(labels...).Inc()
+
+		// Latency
+		reqDuration.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
 	}
 }

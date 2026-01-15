@@ -19,25 +19,20 @@ type (
 
 var (
 	cmdTotal = metric.NewCounterVec(
-		"mongo_client_command_total",
-		"mongodb client command counter",
-		[]string{"command", "error"},
+		"mongo_client_requests_total",
+		"The total number of MongoDB commands executed.",
+		[]string{"command", "result"},
 	)
-	cmdDuration = metric.NewSummaryVec(
-		"mongo_client_command_duration_seconds",
-		"mongodb client command duration seconds",
-		[]string{"command", "error"},
-		map[float64]float64{
-			0.5:  0.05,
-			0.75: 0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-			1:    0.001,
-		},
+	cmdDuration = metric.NewHistogramVec(
+		"mongo_client_request_duration_seconds",
+		"The MongoDB command latencies in seconds.",
+		[]string{"command", "result"},
+		// 250us, 500us, 1ms, 2.5ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s
+		[]float64{0.00025, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5},
 	)
 	workingSession = metric.NewGaugeVec(
-		"mongo_client_session_in_progress",
-		"mongo client session in progress gauge",
+		"mongo_client_sessions_inflight",
+		"The number of MongoDB sessions currently in progress.",
 		[]string{},
 	)
 )
@@ -80,7 +75,7 @@ func (mon *metricMonitor) Started(ctx context.Context, ev *event.CommandStartedE
 }
 
 func (mon *metricMonitor) Succeeded(ctx context.Context, ev *event.CommandSucceededEvent) {
-	labels := []string{ev.CommandName, ""}
+	labels := []string{ev.CommandName, "success"}
 	cmdTotal.WithLabelValues(labels...).Inc()
 	cmdDuration.WithLabelValues(labels...).Observe(time.Duration(ev.DurationNanos).Seconds())
 
@@ -88,7 +83,7 @@ func (mon *metricMonitor) Succeeded(ctx context.Context, ev *event.CommandSuccee
 }
 
 func (mon *metricMonitor) Failed(ctx context.Context, ev *event.CommandFailedEvent) {
-	labels := []string{ev.CommandName, ev.Failure}
+	labels := []string{ev.CommandName, "error"}
 	cmdTotal.WithLabelValues(labels...).Inc()
 	cmdDuration.WithLabelValues(labels...).Observe(time.Duration(ev.DurationNanos).Seconds())
 
