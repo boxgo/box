@@ -2,6 +2,9 @@ package wukong
 
 import (
 	"context"
+	"errors"
+	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -69,7 +72,7 @@ func metricEnd(request *Request, resp *Response) error {
 	)
 
 	if resp.Error() != nil {
-		errMsg = "error"
+		errMsg = classifyHTTPError(resp.Error())
 	}
 
 	if start, ok := request.Context.Value(metricDurationKey{}).(time.Time); ok {
@@ -83,3 +86,134 @@ func metricEnd(request *Request, resp *Response) error {
 
 	return nil
 }
+
+// classifyHTTPError 将 HTTP 客户端错误分类为有限的几个类别，避免指标爆炸
+// 同时尽可能保留有用的错误信息
+// 注意：HTTP 状态码已通过 status 字段上报，此处不再根据状态码分类
+func classifyHTTPError(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	// 检查标准库超时错误
+	if os.IsTimeout(err) {
+		return "timeout_error"
+	}
+
+	// 检查 context 超时错误
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, os.ErrDeadlineExceeded) {
+		return "timeout_error"
+	}
+
+	// 检查 net.Error 接口的 Timeout() 方法
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		if netErr.Timeout() {
+			return "timeout_error"
+		}
+		// 如果是网络错误但不是超时，归类为连接错误
+		return "connection_error"
+	}
+
+	errStr := strings.ToLower(err.Error())
+
+	// 检查 DNS 相关错误
+	if isDNSError(errStr) {
+		return "dns_error"
+	}
+
+	// 检查 TLS/SSL 相关错误
+	if isTLSError(errStr) {
+		return "tls_error"
+	}
+
+	// 检查连接相关错误
+	if isHTTPConnectionError(errStr) {
+		return "connection_error"
+	}
+
+	// 其他错误统一归类
+	return "other_error"
+}
+
+// isDNSError 判断是否为 DNS 相关错误
+func isDNSError(errStr string) bool {
+	dnsKeywords := []string{
+		"no such host",
+		"no hosts found",
+		"dns",
+		"lookup",
+		"unknown host",
+		"host not found",
+		"name resolution",
+		"getaddrinfo",
+	}
+
+	for _, keyword := range dnsKeywords {
+		if strings.Contains(errStr, keyword) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isTLSError 判断是否为 TLS/SSL 相关错误
+func isTLSError(errStr string) bool {
+	tlsKeywords := []string{
+		"tls",
+		"ssl",
+		"certificate",
+		"x509",
+		"handshake failure",
+		"bad certificate",
+		"certificate verify failed",
+		"unknown authority",
+		"certificate signed by unknown authority",
+		"tls:",
+		"remote error",
+	}
+
+	for _, keyword := range tlsKeywords {
+		if strings.Contains(errStr, keyword) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isHTTPConnectionError 判断是否为连接相关错误
+func isHTTPConnectionError(errStr string) bool {
+	connectionKeywords := []string{
+		"connection",
+		"connect",
+		"connection refused",
+		"connection reset",
+		"connection lost",
+		"connection closed",
+		"no connection",
+		"broken pipe",
+		"network",
+		"dial tcp",
+		"connection timeout",
+		"i/o error",
+		"use of closed network connection",
+		"connection reset by peer",
+		"no route to host",
+		"refused",
+		"closed",
+		"EOF",
+		"unreachable",
+		"network is unreachable",
+	}
+
+	for _, keyword := range connectionKeywords {
+		if strings.Contains(errStr, keyword) {
+			return true
+		}
+	}
+
+	return false
+}
+

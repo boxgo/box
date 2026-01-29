@@ -33,13 +33,19 @@
       - [Goroutine 监控](#goroutine-监控)
       - [内存监控](#内存监控)
       - [GC 监控](#gc-监控)
-  - [5. 常见问题诊断 (Troubleshooting)](#5-常见问题诊断-troubleshooting)
-    - [5.1 Go Runtime 问题](#51-go-runtime-问题)
+  - [5. 错误分类说明 (Error Classification)](#5-错误分类说明-error-classification)
+    - [5.1 错误分类原则](#51-错误分类原则)
+    - [5.2 HTTP Client 错误分类](#52-http-client-错误分类)
+    - [5.3 Redis Client 错误分类](#53-redis-client-错误分类)
+    - [5.4 Database Client 错误分类](#54-database-client-错误分类)
+    - [5.5 错误分类性能影响](#55-错误分类性能影响)
+  - [6. 常见问题诊断 (Troubleshooting)](#6-常见问题诊断-troubleshooting)
+    - [6.1 Go Runtime 问题](#61-go-runtime-问题)
       - [问题 1: Goroutine 泄漏](#问题-1-goroutine-泄漏)
       - [问题 2: 内存泄漏](#问题-2-内存泄漏)
       - [问题 3: GC 压力过大](#问题-3-gc-压力过大)
       - [问题 4: 线程数异常增长](#问题-4-线程数异常增长)
-    - [5.2 中间件与服务问题](#52-中间件与服务问题)
+    - [6.2 中间件与服务问题](#62-中间件与服务问题)
       - [问题 5: 数据库连接池耗尽](#问题-5-数据库连接池耗尽)
       - [问题 6: Redis 延迟抖动](#问题-6-redis-延迟抖动)
       - [问题 7: Context Cancelled / Timeout](#问题-7-context-cancelled--timeout)
@@ -69,6 +75,17 @@
 | `http_client_requests_total`           | Counter   | `method`, `baseUrl`, `url`, `status`, `error` | 发起的 HTTP 请求总数           |
 | `http_client_request_duration_seconds` | Histogram | `method`, `baseUrl`, `url`, `status`, `error` | HTTP 请求耗时分布              |
 
+**错误分类 (`error` 标签值)**:
+
+- `` - 成功（无错误）
+- `timeout_error` - 超时错误（context 超时、I/O 超时等）
+- `connection_error` - 连接错误（连接被拒绝、连接丢失等）
+- `dns_error` - DNS 解析错误
+- `tls_error` - TLS/SSL 错误（证书错误、握手失败等）
+- `other_error` - 其他未分类错误
+
+**注意**: HTTP 状态码通过 `status` 标签单独上报，`error` 标签仅用于底层网络/协议错误。
+
 ### 1.3 gRPC Server
 
 | 指标名称                               | 类型      | Labels                   | 说明                       |
@@ -85,6 +102,18 @@
 | `redis_client_requests_total`           | Counter   | `address`, `db`, `masterName`, `pipe`, `cmd`, `result` | Redis 命令执行总数     |
 | `redis_client_request_duration_seconds` | Histogram | `address`, `db`, `masterName`, `pipe`, `cmd`, `result` | Redis 命令执行耗时分布 |
 
+**错误分类 (`result` 标签值)**:
+
+- `success` - 成功（包括 `redis.Nil`，键不存在是正常情况）
+- `timeout_error` - 超时错误（context 超时、I/O 超时等）
+- `connection_error` - 连接错误（连接被拒绝、连接丢失等）
+- `command_error` - Redis 命令错误（WRONGTYPE、未知命令、参数错误等）
+- `transaction_error` - 事务错误（事务失败、WATCH 失败等）
+- `auth_error` - 权限/认证错误（NOAUTH、认证失败等）
+- `oom_error` - 内存不足错误（OOM、内存限制等）
+- `cluster_error` - 集群相关错误（MOVED、ASK、CLUSTERDOWN 等）
+- `other_error` - 其他未分类错误
+
 ### 1.5 Database Client (GORM)
 
 | 指标名称                             | 类型      | Labels                                 | 说明                       |
@@ -96,6 +125,16 @@
 | `db_client_connections_wait_total`   | Gauge     | `driver`, `database`                   | 等待连接的总次数           |
 | `db_client_connections_wait_seconds` | Gauge     | `driver`, `database`                   | 等待连接的总耗时           |
 | `db_client_request_duration_seconds` | Histogram | `driver`, `database`, `type`, `result` | SQL 执行耗时分布           |
+
+**错误分类 (`result` 标签值)**:
+
+- `success` - 成功（包括 `gorm.ErrRecordNotFound`，记录不存在是正常情况）
+- `timeout_error` - 超时错误（context 超时、查询超时等）
+- `connection_error` - 连接错误（连接被拒绝、连接丢失、连接池耗尽等）
+- `constraint_error` - 约束错误（唯一键冲突、外键约束、非空约束等）
+- `syntax_error` - SQL 语法错误（语法错误、未知列/表等）
+- `transaction_error` - 事务相关错误（死锁、锁等待超时等）
+- `other_error` - 其他未分类错误
 
 ### 1.6 MongoDB Client
 
@@ -285,11 +324,12 @@
 
 ### 2.3 📤 HTTP Client
 
-| 面板名称                      | 说明           | PromQL                                                                                                                                                                      |
-| :---------------------------- | :------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **HTTP Client QPS**           | 客户端请求 QPS | `sum(rate(http_client_requests_total{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (baseUrl, url)`                                                |
-| **HTTP Client Latency (P99)** | 客户端延迟     | `histogram_quantile(0.99, sum(rate(http_client_request_duration_seconds_bucket{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (le, baseUrl, url))` |
-| **HTTP Client Errors**        | 客户端错误     | `sum(rate(http_client_requests_total{namespace=~"$namespace",job=~"$service",instance=~"$instance",error!=""}[1m])) by (baseUrl, url)`                                      |
+| 面板名称                       | 说明           | PromQL                                                                                                                                                                      |
+| :----------------------------- | :------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **HTTP Client QPS**            | 客户端请求 QPS | `sum(rate(http_client_requests_total{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (baseUrl, url)`                                                |
+| **HTTP Client Latency (P99)**  | 客户端延迟     | `histogram_quantile(0.99, sum(rate(http_client_request_duration_seconds_bucket{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (le, baseUrl, url))` |
+| **HTTP Client Errors**         | 客户端错误     | `sum(rate(http_client_requests_total{namespace=~"$namespace",job=~"$service",instance=~"$instance",error!=""}[1m])) by (baseUrl, url, error)`                               |
+| **HTTP Client Errors by Type** | 按错误类型分类 | `sum(rate(http_client_requests_total{namespace=~"$namespace",job=~"$service",instance=~"$instance",error!=""}[1m])) by (error)`                                             |
 
 ### 2.4 🔌 gRPC Server
 
@@ -321,12 +361,13 @@
 
 ### 2.7 🗄️ Database (DB)
 
-| 面板名称                   | 说明       | PromQL                                                                                                                                                                                                                                                                                                         |
-| :------------------------- | :--------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **DB Connection Pool**     | 连接池状态 | Open: `db_client_connections_open{namespace=~"$namespace",job=~"$service",instance=~"$instance"}`<br>InUse: `db_client_connections_in_use{namespace=~"$namespace",job=~"$service",instance=~"$instance"}`<br>Idle: `db_client_connections_idle{namespace=~"$namespace",job=~"$service",instance=~"$instance"}` |
-| **DB Query Latency (P99)** | 查询延迟   | `histogram_quantile(0.99, sum(rate(db_client_request_duration_seconds_bucket{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (le, type, database))`                                                                                                                                    |
-| **DB Query QPS**           | 查询 QPS   | `sum(rate(db_client_request_duration_seconds_count{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (type, database)`                                                                                                                                                                   |
-| **DB Query Errors**        | 查询错误   | `sum(rate(db_client_request_duration_seconds_count{namespace=~"$namespace",job=~"$service",instance=~"$instance",result="error"}[1m])) by (type, database)`                                                                                                                                                    |
+| 面板名称                   | 说明           | PromQL                                                                                                                                                                                                                                                                                                         |
+| :------------------------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **DB Connection Pool**     | 连接池状态     | Open: `db_client_connections_open{namespace=~"$namespace",job=~"$service",instance=~"$instance"}`<br>InUse: `db_client_connections_in_use{namespace=~"$namespace",job=~"$service",instance=~"$instance"}`<br>Idle: `db_client_connections_idle{namespace=~"$namespace",job=~"$service",instance=~"$instance"}` |
+| **DB Query Latency (P99)** | 查询延迟       | `histogram_quantile(0.99, sum(rate(db_client_request_duration_seconds_bucket{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (le, type, database))`                                                                                                                                    |
+| **DB Query QPS**           | 查询 QPS       | `sum(rate(db_client_request_duration_seconds_count{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (type, database)`                                                                                                                                                                   |
+| **DB Query Errors**        | 查询错误       | `sum(rate(db_client_request_duration_seconds_count{namespace=~"$namespace",job=~"$service",instance=~"$instance",result!="success"}[1m])) by (type, database, result)`                                                                                                                                         |
+| **DB Errors by Type**      | 按错误类型分类 | `sum(rate(db_client_request_duration_seconds_count{namespace=~"$namespace",job=~"$service",instance=~"$instance",result!="success"}[1m])) by (result)`                                                                                                                                                         |
 
 ### 2.8 🍃 MongoDB
 
@@ -390,9 +431,118 @@ go_memstats_sys_bytes (从系统获取的总内存)
   - GC 频率过高 (>5 次/s): 分配速率过快，考虑对象池复用
   - GC CPU 占比过高 (>30%): 严重影响业务性能
 
-## 5. 常见问题诊断 (Troubleshooting)
+## 5. 错误分类说明 (Error Classification)
 
-### 5.1 Go Runtime 问题
+为了在保留有用错误信息的同时避免指标爆炸（cardinality explosion），框架对错误进行了分类汇总。
+
+### 5.1 错误分类原则
+
+1. **避免指标爆炸**: 将错误归类为有限的几个类别（通常 5-10 个），而不是每个错误一个指标
+2. **保留有用信息**: 通过类别区分常见错误类型，便于监控和告警
+3. **性能优化**: 错误分类开销极小（< 200ns），相对于网络/IO 操作可忽略不计
+
+### 5.2 HTTP Client 错误分类
+
+HTTP 客户端错误通过 `error` 标签分类：
+
+| 错误类型           | 说明           | 常见场景                              |
+| ------------------ | -------------- | ------------------------------------- |
+| `success`          | 成功（无错误） | 请求成功完成                          |
+| `timeout_error`    | 超时错误       | context 超时、I/O 超时、网络超时      |
+| `connection_error` | 连接错误       | 连接被拒绝、连接丢失、EOF、网络不可达 |
+| `dns_error`        | DNS 解析错误   | 主机未找到、DNS 查询失败              |
+| `tls_error`        | TLS/SSL 错误   | 证书错误、握手失败、X509 验证失败     |
+| `other_error`      | 其他错误       | 未分类的错误                          |
+
+**注意**: HTTP 状态码（如 404、500）通过 `status` 标签单独上报，`error` 标签仅用于底层网络/协议错误。
+
+**示例 PromQL**:
+
+```promql
+# 查看超时错误
+sum(rate(http_client_requests_total{error="timeout_error"}[5m])) by (baseUrl, url)
+
+# 查看连接错误
+sum(rate(http_client_requests_total{error="connection_error"}[5m])) by (baseUrl, url)
+
+# 查看 DNS 错误
+sum(rate(http_client_requests_total{error="dns_error"}[5m])) by (baseUrl, url)
+```
+
+### 5.3 Redis Client 错误分类
+
+Redis 客户端错误通过 `result` 标签分类：
+
+| 错误类型            | 说明     | 常见场景                                |
+| ------------------- | -------- | --------------------------------------- |
+| `success`           | 成功     | 命令执行成功（包括 `redis.Nil`）        |
+| `timeout_error`     | 超时错误 | context 超时、I/O 超时                  |
+| `connection_error`  | 连接错误 | 连接被拒绝、连接丢失、连接关闭          |
+| `command_error`     | 命令错误 | WRONGTYPE、未知命令、参数错误、NOSCRIPT |
+| `transaction_error` | 事务错误 | 事务失败、WATCH 失败、EXECABORT         |
+| `auth_error`        | 权限错误 | NOAUTH、认证失败、ACL 权限错误          |
+| `oom_error`         | 内存不足 | OOM、内存限制                           |
+| `cluster_error`     | 集群错误 | MOVED、ASK、CLUSTERDOWN、跨槽错误       |
+| `other_error`       | 其他错误 | 未分类的错误                            |
+
+**示例 PromQL**:
+
+```promql
+# 查看连接错误
+sum(rate(redis_client_requests_total{result="connection_error"}[5m])) by (cmd)
+
+# 查看命令错误（可能是代码问题）
+sum(rate(redis_client_requests_total{result="command_error"}[5m])) by (cmd)
+
+# 查看内存不足错误（紧急）
+sum(rate(redis_client_requests_total{result="oom_error"}[5m]))
+```
+
+### 5.4 Database Client 错误分类
+
+数据库客户端错误通过 `result` 标签分类：
+
+| 错误类型            | 说明         | 常见场景                                  |
+| ------------------- | ------------ | ----------------------------------------- |
+| `success`           | 成功         | 查询成功（包括 `gorm.ErrRecordNotFound`） |
+| `timeout_error`     | 超时错误     | context 超时、查询超时、I/O 超时          |
+| `connection_error`  | 连接错误     | 连接被拒绝、连接丢失、连接池耗尽          |
+| `constraint_error`  | 约束错误     | 唯一键冲突、外键约束、非空约束            |
+| `syntax_error`      | SQL 语法错误 | 语法错误、未知列/表、表不存在             |
+| `transaction_error` | 事务错误     | 死锁、锁等待超时、事务回滚                |
+| `other_error`       | 其他错误     | 未分类的错误                              |
+
+**示例 PromQL**:
+
+```promql
+# 查看连接错误
+sum(rate(db_client_request_duration_seconds_count{result="connection_error"}[5m])) by (database)
+
+# 查看超时错误
+sum(rate(db_client_request_duration_seconds_count{result="timeout_error"}[5m])) by (database)
+
+# 查看约束错误（可能是业务逻辑问题）
+sum(rate(db_client_request_duration_seconds_count{result="constraint_error"}[5m])) by (database)
+
+# 查看死锁错误（紧急）
+sum(rate(db_client_request_duration_seconds_count{result="transaction_error"}[5m])) by (database)
+```
+
+### 5.5 错误分类性能影响
+
+错误分类的性能开销极小：
+
+- **绝对开销**: 50-200 纳秒（ns）
+- **相对开销**: < 0.2%（相对于网络/IO 操作）
+- **内存开销**: 每次 1-2 个字符串分配（< 100 bytes）
+
+详细性能分析请参考：[错误分类性能分析文档](./error_classification_performance_analysis.md)
+
+---
+
+## 6. 常见问题诊断 (Troubleshooting)
+
+### 6.1 Go Runtime 问题
 
 #### 问题 1: Goroutine 泄漏
 
@@ -473,7 +623,7 @@ go_threads
 - 限制并发度
 - 检查 CGO 代码逻辑
 
-### 5.2 中间件与服务问题
+### 6.2 中间件与服务问题
 
 #### 问题 5: 数据库连接池耗尽
 
