@@ -124,6 +124,7 @@
 | `db_client_connections_max_open`     | Gauge     | `driver`, `database`                   | 连接池最大允许打开的连接数 |
 | `db_client_connections_wait_total`   | Gauge     | `driver`, `database`                   | 等待连接的总次数           |
 | `db_client_connections_wait_seconds` | Gauge     | `driver`, `database`                   | 等待连接的总耗时           |
+| `db_client_requests_total`           | Counter   | `driver`, `database`, `type`, `result` | 数据库请求执行总数         |
 | `db_client_request_duration_seconds` | Histogram | `driver`, `database`, `type`, `result` | SQL 执行耗时分布           |
 
 **错误分类 (`result` 标签值)**:
@@ -365,9 +366,9 @@
 | :------------------------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **DB Connection Pool**     | 连接池状态     | Open: `db_client_connections_open{namespace=~"$namespace",job=~"$service",instance=~"$instance"}`<br>InUse: `db_client_connections_in_use{namespace=~"$namespace",job=~"$service",instance=~"$instance"}`<br>Idle: `db_client_connections_idle{namespace=~"$namespace",job=~"$service",instance=~"$instance"}` |
 | **DB Query Latency (P99)** | 查询延迟       | `histogram_quantile(0.99, sum(rate(db_client_request_duration_seconds_bucket{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (le, type, database))`                                                                                                                                    |
-| **DB Query QPS**           | 查询 QPS       | `sum(rate(db_client_request_duration_seconds_count{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (type, database)`                                                                                                                                                                   |
-| **DB Query Errors**        | 查询错误       | `sum(rate(db_client_request_duration_seconds_count{namespace=~"$namespace",job=~"$service",instance=~"$instance",result!="success"}[1m])) by (type, database, result)`                                                                                                                                         |
-| **DB Errors by Type**      | 按错误类型分类 | `sum(rate(db_client_request_duration_seconds_count{namespace=~"$namespace",job=~"$service",instance=~"$instance",result!="success"}[1m])) by (result)`                                                                                                                                                         |
+| **DB Query QPS**           | 查询 QPS       | `sum(rate(db_client_requests_total{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (type, database)`                                                                                                                                                                   |
+| **DB Query Errors**        | 查询错误       | `sum(rate(db_client_requests_total{namespace=~"$namespace",job=~"$service",instance=~"$instance",result!="success"}[1m])) by (type, database, result)`                                                                                                                                         |
+| **DB Errors by Type**      | 按错误类型分类 | `sum(rate(db_client_requests_total{namespace=~"$namespace",job=~"$service",instance=~"$instance",result!="success"}[1m])) by (result)`                                                                                                                                                         |
 
 ### 2.8 🍃 MongoDB
 
@@ -516,16 +517,16 @@ sum(rate(redis_client_requests_total{result="oom_error"}[5m]))
 
 ```promql
 # 查看连接错误
-sum(rate(db_client_request_duration_seconds_count{result="connection_error"}[5m])) by (database)
+sum(rate(db_client_requests_total{result="connection_error"}[5m])) by (database)
 
 # 查看超时错误
-sum(rate(db_client_request_duration_seconds_count{result="timeout_error"}[5m])) by (database)
+sum(rate(db_client_requests_total{result="timeout_error"}[5m])) by (database)
 
 # 查看约束错误（可能是业务逻辑问题）
-sum(rate(db_client_request_duration_seconds_count{result="constraint_error"}[5m])) by (database)
+sum(rate(db_client_requests_total{result="constraint_error"}[5m])) by (database)
 
 # 查看死锁错误（紧急）
-sum(rate(db_client_request_duration_seconds_count{result="transaction_error"}[5m])) by (database)
+sum(rate(db_client_requests_total{result="transaction_error"}[5m])) by (database)
 ```
 
 ### 5.5 错误分类性能影响

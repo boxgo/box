@@ -112,6 +112,8 @@ sed -E \
     -e "s/grpc_server_requests_total\{/grpc_server_requests_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
     -e "s/grpc_server_requests_total\[/grpc_server_requests_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/grpc_server_panics_total\[/grpc_server_panics_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
+    -e "s/db_client_requests_total\{/db_client_requests_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
+    -e "s/db_client_requests_total\[/db_client_requests_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/db_client_request_duration_seconds_count\{/db_client_request_duration_seconds_count{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
     -e "s/db_client_request_duration_seconds_count\[/db_client_request_duration_seconds_count{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/db_client_request_duration_seconds_bucket\{/db_client_request_duration_seconds_bucket{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
@@ -126,6 +128,9 @@ sed -E \
     -e "s/mongo_client_request_duration_seconds_bucket\{/mongo_client_request_duration_seconds_bucket{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
     -e "s/mongo_client_request_duration_seconds_bucket\[/mongo_client_request_duration_seconds_bucket{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/schedule_jobs_total\{/schedule_jobs_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
+    -e "s/schedule_jobs_total\[/schedule_jobs_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
+    -e "s/schedule_job_duration_seconds_bucket\{/schedule_job_duration_seconds_bucket{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
+    -e "s/schedule_job_duration_seconds_bucket\[/schedule_job_duration_seconds_bucket{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/go_goroutines\{/go_goroutines{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
     -e "s/go_goroutines\[/go_goroutines{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/go_goroutines([^{[])/go_goroutines{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}\1/g" \
@@ -161,6 +166,7 @@ else
         "http_client_request_duration_seconds_bucket"
         "grpc_server_requests_total"
         "grpc_server_panics_total"
+        "db_client_requests_total"
         "db_client_request_duration_seconds_count"
         "db_client_request_duration_seconds_bucket"
         "db_client_connections_in_use"
@@ -170,6 +176,7 @@ else
         "mongo_client_requests_total"
         "mongo_client_request_duration_seconds_bucket"
         "schedule_jobs_total"
+        "schedule_job_duration_seconds_bucket"
         "go_goroutines"
         "go_threads"
         "go_memstats_sys_bytes"

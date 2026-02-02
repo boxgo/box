@@ -33,12 +33,12 @@ var (
 	cmdTotal = metric.NewCounterVec(
 		"redis_client_requests_total",
 		"The total number of Redis commands executed.",
-		[]string{"address", "db", "masterName", "pipe", "cmd", "result"},
+		[]string{"pipe", "cmd", "result"},
 	)
 	cmdDuration = metric.NewHistogramVec(
 		"redis_client_request_duration_seconds",
 		"The Redis command latencies in seconds.",
-		[]string{"address", "db", "masterName", "pipe", "cmd", "result"},
+		[]string{"pipe", "cmd", "result"},
 		// 100us, 250us, 500us, 1ms, 2.5ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms
 		[]float64{0.0001, 0.00025, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5},
 	)
@@ -75,9 +75,6 @@ func (m *Metric) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.Proce
 func (m *Metric) report(ctx context.Context, pipe bool, elapsed time.Duration, cmds ...redis.Cmder) {
 	cmdStr := ""
 	result := "success"
-	masterNameStr := m.cfg.MasterName
-	addressStr := m.addr
-	dbStr := strconv.Itoa(m.cfg.DB)
 	pipeStr := strconv.FormatBool(pipe)
 
 	if pipe {
@@ -94,9 +91,6 @@ func (m *Metric) report(ctx context.Context, pipe bool, elapsed time.Duration, c
 	}
 
 	values := []string{
-		addressStr,
-		dbStr,
-		masterNameStr,
 		pipeStr,
 		cmdStr,
 		result,

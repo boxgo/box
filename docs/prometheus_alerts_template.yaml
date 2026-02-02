@@ -140,7 +140,7 @@ groups:
 
       # Error Result Rate - Critical
       - alert: HttpClientErrorRateCritical
-        expr: ((sum by(namespace,job,instance,method,baseUrl,url) (rate(http_client_requests_total{error!=""}[1m]))) / (sum by(namespace,job,instance,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 1
+        expr: ((sum by(namespace,job,instance,method,baseUrl,url,error) (rate(http_client_requests_total{error!=""}[1m]))) / (sum by(namespace,job,instance,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 1
         for: 0s
         labels:
           severity: critical
@@ -148,11 +148,11 @@ groups:
           type: availability
         annotations:
           summary: "HTTP Client error rate: {{ $value | printf \"%.2f\" }}%"
-          description: "{{ $labels.method }} {{$labels.baseUrl}}{{ $labels.url }}"
+          description: "{{ $labels.method }} {{$labels.baseUrl}}{{ $labels.url }} error: {{ $labels.error }}"
 
       # Error Result Rate - Warning
       - alert: HttpClientErrorRateHigh
-        expr: ((sum by(namespace,job,instance,method,baseUrl,url) (rate(http_client_requests_total{error!=""}[1m]))) / (sum by(namespace,job,instance,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 0.1
+        expr: ((sum by(namespace,job,instance,method,baseUrl,url,error) (rate(http_client_requests_total{error!=""}[1m]))) / (sum by(namespace,job,instance,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 0.1
         for: 10s
         labels:
           severity: warning
@@ -160,6 +160,32 @@ groups:
           type: availability
         annotations:
           summary: "HTTP Client error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{$labels.baseUrl}}{{ $labels.url }} error: {{ $labels.error }}"
+
+      # Timeout Error Rate - Critical
+      - alert: HttpClientTimeoutErrorRateCritical
+        expr: ((sum by(namespace,job,instance,method,baseUrl,url) (rate(http_client_requests_total{error="timeout_error"}[1m]))) / (sum by(namespace,job,instance,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          component: http-client
+          type: availability
+          error_type: timeout
+        annotations:
+          summary: "HTTP Client timeout error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{$labels.baseUrl}}{{ $labels.url }}"
+
+      # Connection Error Rate - Critical
+      - alert: HttpClientConnectionErrorRateCritical
+        expr: ((sum by(namespace,job,instance,method,baseUrl,url) (rate(http_client_requests_total{error="connection_error"}[1m]))) / (sum by(namespace,job,instance,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          component: http-client
+          type: availability
+          error_type: connection
+        annotations:
+          summary: "HTTP Client connection error rate: {{ $value | printf \"%.2f\" }}%"
           description: "{{ $labels.method }} {{$labels.baseUrl}}{{ $labels.url }}"
 
       # Latency - Critical
@@ -239,9 +265,9 @@ groups:
 
       - alert: DbErrorRateHigh
         expr: |
-          (sum by(namespace, job) (rate(db_client_request_duration_seconds_count{result="error"}[1m]))
+          (sum by(namespace, job, result) (rate(db_client_requests_total{result!="success"}[1m]))
           /
-          sum by(namespace, job) (rate(db_client_request_duration_seconds_count[1m]))) > 0.05
+          sum by(namespace, job) (rate(db_client_requests_total[1m]))) > 0.05
         for: 2m
         labels:
           severity: critical
@@ -249,7 +275,39 @@ groups:
           type: availability
         annotations:
           summary: "Database error rate: {{ $value | humanizePercentage }}"
-          description: "Database query error rate is above 5%."
+          description: "Database query error rate is above 5%. Error type: {{ $labels.result }}"
+
+      # Database Connection Error Rate - Critical
+      - alert: DbConnectionErrorRateCritical
+        expr: |
+          (sum by(namespace, job, type, database) (rate(db_client_requests_total{result="connection_error"}[1m]))
+          /
+          sum by(namespace, job, type, database) (rate(db_client_requests_total[1m]))) > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          type: availability
+          error_type: connection
+        annotations:
+          summary: "Database connection error rate: {{ $value | humanizePercentage }}"
+          description: "Database {{ $labels.type }} {{ $labels.database }} connection error rate is above 1%."
+
+      # Database Timeout Error Rate - Critical
+      - alert: DbTimeoutErrorRateCritical
+        expr: |
+          (sum by(namespace, job, type, database) (rate(db_client_requests_total{result="timeout_error"}[1m]))
+          /
+          sum by(namespace, job, type, database) (rate(db_client_requests_total[1m]))) > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          type: availability
+          error_type: timeout
+        annotations:
+          summary: "Database timeout error rate: {{ $value | humanizePercentage }}"
+          description: "Database {{ $labels.type }} {{ $labels.database }} timeout error rate is above 1%."
 
       - alert: DbLatencyP99High
         expr: histogram_quantile(0.99, sum(rate(db_client_request_duration_seconds_bucket[5m])) by (le, namespace, job)) > 0.5
@@ -284,7 +342,7 @@ groups:
       # ==========================================================
 
       - alert: RedisCommandFailureHigh
-        expr: increase(redis_client_requests_total{result="error"}[1m]) > 5
+        expr: increase(redis_client_requests_total{result!="success"}[1m]) > 5
         for: 10s
         labels:
           severity: critical
@@ -292,7 +350,39 @@ groups:
           type: availability
         annotations:
           summary: "Redis command failure count: {{ $value }}"
-          description: "{{ $labels.cmd }} on {{ $labels.address }}"
+          description: "{{ $labels.cmd }} on {{ $labels.address }}. Error type: {{ $labels.result }}"
+
+      # Redis Connection Error Rate - Critical
+      - alert: RedisConnectionErrorRateCritical
+        expr: |
+          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{result="connection_error"}[1m]))
+          /
+          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total[1m]))) > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          component: redis
+          type: availability
+          error_type: connection
+        annotations:
+          summary: "Redis connection error rate: {{ $value | humanizePercentage }}"
+          description: "Redis command {{ $labels.cmd }} on {{ $labels.address }} connection error rate is above 1%."
+
+      # Redis Timeout Error Rate - Critical
+      - alert: RedisTimeoutErrorRateCritical
+        expr: |
+          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{result="timeout_error"}[1m]))
+          /
+          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total[1m]))) > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          component: redis
+          type: availability
+          error_type: timeout
+        annotations:
+          summary: "Redis timeout error rate: {{ $value | humanizePercentage }}"
+          description: "Redis command {{ $labels.cmd }} on {{ $labels.address }} timeout error rate is above 1%."
 
       - alert: RedisLatencyP99High
         expr: histogram_quantile(0.99, sum(rate(redis_client_request_duration_seconds_bucket[5m])) by (le, namespace, job)) > 0.1
@@ -341,9 +431,40 @@ groups:
 
       # ==========================================================
       # Schedule Job Alerts
-      # 定时任务相关告警：失败、Panic
+      # 定时任务相关告警：失败、Panic、延迟
       # ==========================================================
 
+      # Job Failure Rate - Critical
+      - alert: ScheduleJobFailureRateCritical
+        expr: |
+          (sum by(namespace, job, task, result) (rate(schedule_jobs_total{result!="success"}[1m]))
+          /
+          sum by(namespace, job, task) (rate(schedule_jobs_total[1m]))) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          component: schedule
+          type: availability
+        annotations:
+          summary: "Schedule job failure rate: {{ $value | humanizePercentage }}"
+          description: "Job {{ $labels.task }} failure rate is above 10%. Error type: {{ $labels.result }}"
+
+      # Job Failure Rate - Warning
+      - alert: ScheduleJobFailureRateHigh
+        expr: |
+          (sum by(namespace, job, task, result) (rate(schedule_jobs_total{result!="success"}[1m]))
+          /
+          sum by(namespace, job, task) (rate(schedule_jobs_total[1m]))) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: schedule
+          type: availability
+        annotations:
+          summary: "Schedule job failure rate: {{ $value | humanizePercentage }}"
+          description: "Job {{ $labels.task }} failure rate is above 5%. Error type: {{ $labels.result }}"
+
+      # Job Failed - Immediate Alert
       - alert: ScheduleJobFailed
         expr: increase(schedule_jobs_total{result="error"}[1m]) > 0
         for: 0s
@@ -351,10 +472,12 @@ groups:
           severity: critical
           component: schedule
           type: availability
+          error_type: error
         annotations:
           summary: "Schedule job failed"
-          description: "Job {{ $labels.name }} failed with error"
+          description: "Job {{ $labels.task }} failed with error"
 
+      # Job Panic - Immediate Alert
       - alert: ScheduleJobPanic
         expr: increase(schedule_jobs_total{result="panic"}[1m]) > 0
         for: 0s
@@ -362,9 +485,34 @@ groups:
           severity: critical
           component: schedule
           type: availability
+          error_type: panic
         annotations:
           summary: "Schedule job panic"
-          description: "Job {{ $labels.name }} recovered from panic"
+          description: "Job {{ $labels.task }} recovered from panic"
+
+      # Job Latency - Critical
+      - alert: ScheduleJobLatencyCritical
+        expr: histogram_quantile(0.99, sum(rate(schedule_job_duration_seconds_bucket{result="success"}[5m])) by (le, namespace, job, task)) > 300
+        for: 5m
+        labels:
+          severity: critical
+          component: schedule
+          type: performance
+        annotations:
+          summary: "Schedule job P99 latency: {{ $value }}s"
+          description: "Job {{ $labels.task }} P99 latency is above 5 minutes."
+
+      # Job Latency - Warning
+      - alert: ScheduleJobLatencyHigh
+        expr: histogram_quantile(0.99, sum(rate(schedule_job_duration_seconds_bucket{result="success"}[5m])) by (le, namespace, job, task)) > 60
+        for: 5m
+        labels:
+          severity: warning
+          component: schedule
+          type: performance
+        annotations:
+          summary: "Schedule job P99 latency: {{ $value }}s"
+          description: "Job {{ $labels.task }} P99 latency is above 1 minute."
 
 
 
