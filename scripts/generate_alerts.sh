@@ -3,15 +3,34 @@
 # Generate and verify Prometheus alert rules for specific namespace and job
 #
 # Usage:
-#   ./scripts/generate_alerts.sh <namespace> <job> [output_file] [--no-verify]
+#   ./scripts/generate_alerts.sh <namespace> <job> [output_file] [options]
+#
+# Options:
+#   --no-verify                 Skip metric filter verification
+#   --all-modules               Include all @box_module sections (incl. grpc_server, mongodb)
+#   --modules <list>            Comma-separated module ids (overrides default selection)
+#   --modules=a,b               Same as --modules a,b
+#
+# Module ids: http_server, http_client, grpc_server, db_client, redis, mongodb, schedule, go_runtime
+# Aliases:    grpc, db, database, mongo, go, ...
+#
+# Default (when --modules / --all-modules not used): all modules except grpc_server and mongodb.
 #
 # Examples:
 #   ./scripts/generate_alerts.sh prod api-service
 #   ./scripts/generate_alerts.sh prod api-service alerts/prod_api.yaml
 #   ./scripts/generate_alerts.sh prod api-service --no-verify
+#   ./scripts/generate_alerts.sh prod api-service --all-modules
+#   ./scripts/generate_alerts.sh prod api-service --modules http_server,http_client,db_client
 #
 
 set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EXTRACT_PY="${SCRIPT_DIR}/extract_alert_modules.py"
+
+# Default: no gRPC, no MongoDB
+DEFAULT_MODULES_CSV="http_server,http_client,db_client,redis,schedule,go_runtime"
 
 # Colors for output
 RED='\033[0;31m'
@@ -20,25 +39,30 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+ERRORS=0
+WARNINGS=0
+
 # Check arguments
 if [ $# -lt 2 ]; then
     echo -e "${RED}Error: Missing required arguments${NC}"
     echo ""
-    echo "Usage: $0 <namespace> <job> [output_file] [--no-verify]"
-    echo ""
-    echo "Examples:"
-    echo "  $0 prod api-service"
-    echo "  $0 prod api-service alerts/custom.yaml"
-    echo "  $0 prod api-service --no-verify"
+    echo "Usage: $0 <namespace> <job> [output_file] [options]"
+    echo "  See script header for --modules / --all-modules."
     echo ""
     exit 1
 fi
 
 NAMESPACE="$1"
 JOB="$2"
-TEMPLATE="docs/prometheus_alerts_template.yaml"
+if [ -f "docs/prometheus_alerts_template.yaml" ]; then
+    TEMPLATE="docs/prometheus_alerts_template.yaml"
+else
+    TEMPLATE="${SCRIPT_DIR}/../docs/prometheus_alerts_template.yaml"
+fi
 OUTPUT=""
 SKIP_VERIFY=false
+ALL_MODULES=false
+MODULES_CSV_USER=""
 
 # Parse arguments
 shift 2
@@ -46,12 +70,29 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --no-verify)
             SKIP_VERIFY=true
+            shift
+            ;;
+        --all-modules)
+            ALL_MODULES=true
+            shift
+            ;;
+        --modules=*)
+            MODULES_CSV_USER="${1#--modules=}"
+            shift
+            ;;
+        --modules)
+            if [ -z "$2" ]; then
+                echo -e "${RED}Error: --modules requires a comma-separated list${NC}" >&2
+                exit 1
+            fi
+            MODULES_CSV_USER="$2"
+            shift 2
             ;;
         *)
             OUTPUT="$1"
+            shift
             ;;
     esac
-    shift
 done
 
 # Set default output if not specified
@@ -59,9 +100,28 @@ if [ -z "$OUTPUT" ]; then
     OUTPUT="docs/${NAMESPACE}_${JOB}_alerts.yaml"
 fi
 
+if [ "$ALL_MODULES" = true ] && [ -n "$MODULES_CSV_USER" ]; then
+    echo -e "${RED}Error: use either --all-modules or --modules, not both${NC}" >&2
+    exit 1
+fi
+
+if [ "$ALL_MODULES" = true ]; then
+    MODARG="ALL"
+else
+    if [ -n "$MODULES_CSV_USER" ]; then
+        MODARG="$MODULES_CSV_USER"
+    else
+        MODARG="$DEFAULT_MODULES_CSV"
+    fi
+fi
+
 # Check if template exists
 if [ ! -f "$TEMPLATE" ]; then
     echo -e "${RED}Error: Template file not found: $TEMPLATE${NC}"
+    exit 1
+fi
+if [ ! -f "$EXTRACT_PY" ]; then
+    echo -e "${RED}Error: extract module helper not found: $EXTRACT_PY${NC}"
     exit 1
 fi
 
@@ -73,6 +133,7 @@ echo -e "${YELLOW}📋 Configuration:${NC}"
 echo "  Namespace: $NAMESPACE"
 echo "  Job: $JOB"
 echo "  Template: $TEMPLATE"
+echo "  Modules:  $MODARG"
 echo "  Output: $OUTPUT"
 echo "  Verify: $([ "$SKIP_VERIFY" = true ] && echo "Disabled" || echo "Enabled")"
 echo ""
@@ -85,18 +146,29 @@ echo -e "${YELLOW}🔨 Step 1: Generating alert rules...${NC}"
 # Create output directory if it doesn't exist
 mkdir -p "$(dirname "$OUTPUT")"
 
-# Generate header
+# Generate header + top-level group wrapper (rule fragments from template live under rules:)
 cat > "$OUTPUT" << EOF
 # Prometheus Alert Rules
 # Generated for namespace: ${NAMESPACE}, job: ${JOB}
 #
 # This file is auto-generated. Do not edit manually.
-# To regenerate, run: ./scripts/generate_alerts.sh ${NAMESPACE} ${JOB}
+# To regenerate, run:
+#   ./scripts/generate_alerts.sh ${NAMESPACE} ${JOB} [output] [--all-modules | --modules a,b]
+# Default modules omit grpc_server and mongodb.
+
+groups:
+  - name: box-alerts
+    rules:
 
 EOF
 
-# Process the template file
-# Add namespace and job filters to all metric queries
+FRAG=$(mktemp)
+trap 'rm -f "$FRAG"' EXIT
+
+python3 "$EXTRACT_PY" "$TEMPLATE" "$MODARG" > "$FRAG"
+
+# Add namespace and job filters to all metric queries in the extracted fragment.
+# go_*: only rewrite bare "metric >" in expr (not annotation text) — keep annotations free of go_ names.
 sed -E \
     -e "s/http_server_requests_total\{/http_server_requests_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
     -e "s/http_server_requests_total\[/http_server_requests_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
@@ -121,6 +193,7 @@ sed -E \
     -e "s/db_client_connections_in_use([^{])/db_client_connections_in_use{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}\1/g" \
     -e "s/db_client_connections_max_open([^{])/db_client_connections_max_open{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}\1/g" \
     -e "s/redis_client_requests_total\{/redis_client_requests_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
+    -e "s/redis_client_requests_total\[/redis_client_requests_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/redis_client_request_duration_seconds_bucket\{/redis_client_request_duration_seconds_bucket{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
     -e "s/redis_client_request_duration_seconds_bucket\[/redis_client_request_duration_seconds_bucket{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/mongo_client_requests_total\{/mongo_client_requests_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
@@ -133,15 +206,15 @@ sed -E \
     -e "s/schedule_job_duration_seconds_bucket\[/schedule_job_duration_seconds_bucket{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/go_goroutines\{/go_goroutines{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
     -e "s/go_goroutines\[/go_goroutines{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
-    -e "s/go_goroutines([^{[])/go_goroutines{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}\1/g" \
+    -e "s/go_goroutines[[:space:]]+>/go_goroutines{namespace=\"${NAMESPACE}\",job=\"${JOB}\"} >/g" \
     -e "s/go_threads\{/go_threads{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
-    -e "s/go_threads([^{])/go_threads{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}\1/g" \
-    -e "s/go_memstats_sys_bytes([^{])/go_memstats_sys_bytes{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}\1/g" \
+    -e "s/go_threads[[:space:]]+>/go_threads{namespace=\"${NAMESPACE}\",job=\"${JOB}\"} >/g" \
+    -e "s/go_memstats_sys_bytes[[:space:]]+>/go_memstats_sys_bytes{namespace=\"${NAMESPACE}\",job=\"${JOB}\"} >/g" \
     -e "s/go_memstats_heap_alloc_bytes\[/go_memstats_heap_alloc_bytes{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/go_gc_duration_seconds\{/go_gc_duration_seconds{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
     -e "s/go_gc_duration_seconds_count\[/go_gc_duration_seconds_count{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
-    -e "s/go_memstats_gc_cpu_fraction([^{])/go_memstats_gc_cpu_fraction{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}\1/g" \
-    "$TEMPLATE" >> "$OUTPUT"
+    -e "s/go_memstats_gc_cpu_fraction[[:space:]]+>/go_memstats_gc_cpu_fraction{namespace=\"${NAMESPACE}\",job=\"${JOB}\"} >/g" \
+    "$FRAG" >> "$OUTPUT"
 
 echo -e "${GREEN}✓ Alert rules generated successfully!${NC}"
 echo ""

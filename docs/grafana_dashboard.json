@@ -1470,6 +1470,7 @@
         }
       ],
       "title": "HTTP Client Errors by Type",
+      "description": "按 `error` 标签汇总的网络/协议类错误率（`error!=\"\"`）。HTTP 状态码请用 `status` 标签或其它面板。",
       "type": "timeseries"
     },
     {
@@ -1479,383 +1480,6 @@
         "w": 24,
         "x": 0,
         "y": 51
-      },
-      "id": 400,
-      "panels": [],
-      "title": "🔌 gRPC Server",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "reqps"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 52
-      },
-      "id": 401,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(grpc_server_requests_total{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\"}[1m])) by (method, type)",
-          "legendFormat": "{{type}} {{method}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "gRPC Server QPS",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "s"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 52
-      },
-      "id": 402,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(grpc_server_request_duration_seconds_bucket{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\"}[1m])) by (le, method))",
-          "legendFormat": "P99 {{method}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "gRPC Server Latency (P99)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "reqps"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 60
-      },
-      "id": 403,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(grpc_server_requests_total{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\",code!=\"OK\"}[1m])) by (method, code)",
-          "legendFormat": "{{code}} {{method}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "gRPC Server Errors",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "cpm"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 60
-      },
-      "id": 404,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "increase(grpc_server_panics_total{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\"}[1m])",
-          "legendFormat": "Panic {{method}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "gRPC Server Panics",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 68
       },
       "id": 600,
       "panels": [],
@@ -1919,7 +1543,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 69
+        "y": 52
       },
       "id": 601,
       "options": {
@@ -2010,7 +1634,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 69
+        "y": 52
       },
       "id": 602,
       "options": {
@@ -2123,7 +1747,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 69
+        "y": 52
       },
       "id": 603,
       "options": {
@@ -2225,7 +1849,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 77
+        "y": 60
       },
       "id": 604,
       "options": {
@@ -2317,7 +1941,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 77
+        "y": 60
       },
       "id": 605,
       "options": {
@@ -2408,7 +2032,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 77
+        "y": 60
       },
       "id": 606,
       "options": {
@@ -2447,7 +2071,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 85
+        "y": 68
       },
       "id": 700,
       "panels": [],
@@ -2511,7 +2135,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 86
+        "y": 69
       },
       "id": 701,
       "options": {
@@ -2624,7 +2248,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 86
+        "y": 69
       },
       "id": 702,
       "options": {
@@ -2715,7 +2339,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 94
+        "y": 77
       },
       "id": 703,
       "options": {
@@ -2806,7 +2430,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 94
+        "y": 77
       },
       "id": 704,
       "options": {
@@ -2895,9 +2519,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 94
+        "w": 24,
+        "x": 0,
+        "y": 85
       },
       "id": 905,
       "options": {
@@ -2937,7 +2561,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 102
+        "y": 93
       },
       "id": 800,
       "panels": [],
@@ -3001,7 +2625,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 103
+        "y": 94
       },
       "id": 801,
       "options": {
@@ -3092,7 +2716,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 103
+        "y": 94
       },
       "id": 802,
       "options": {
@@ -3183,7 +2807,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 111
+        "y": 102
       },
       "id": 803,
       "options": {
@@ -3274,7 +2898,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 111
+        "y": 102
       },
       "id": 906,
       "options": {
@@ -3314,293 +2938,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 119
-      },
-      "id": 900,
-      "panels": [],
-      "title": "🍃 MongoDB",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "reqps"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 120
-      },
-      "id": 901,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(mongo_client_requests_total{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\"}[1m])) by (command)",
-          "legendFormat": "{{command}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "MongoDB Command QPS",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "s"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 120
-      },
-      "id": 902,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(mongo_client_request_duration_seconds_bucket{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\"}[1m])) by (le, command))",
-          "legendFormat": "P99 {{command}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "MongoDB Command Latency (P99)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "reqps"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 128
-      },
-      "id": 903,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(mongo_client_requests_total{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\",result=\"error\"}[1m])) by (command)",
-          "legendFormat": "Error {{command}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "MongoDB Command Errors",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 137
+        "y": 111
       },
       "id": 907,
       "panels": [],
@@ -3657,14 +2995,14 @@
               }
             ]
           },
-          "unit": "req/h"
+          "unit": "ops"
         }
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 138
+        "y": 112
       },
       "id": 908,
       "options": {
@@ -3689,13 +3027,13 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(schedule_jobs_total{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\"}[1m])) by (task) * 3600",
+          "expr": "sum(rate(schedule_jobs_total{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\"}[1m])) by (task)",
           "legendFormat": "{{task}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Schedule Job QPS",
+      "title": "Schedule Job 执行频率 (次/秒)",
       "type": "timeseries"
     },
     {
@@ -3755,7 +3093,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 138
+        "y": 112
       },
       "id": 909,
       "options": {
@@ -3780,13 +3118,14 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(schedule_job_duration_seconds_bucket{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\"}[1m])) by (le, task))",
-          "legendFormat": "P99 {{task}}",
+          "expr": "histogram_quantile(0.99, sum(rate(schedule_job_duration_seconds_bucket{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\",result=\"success\"}[1m])) by (le, task))",
+          "legendFormat": "P99 {{task}} (success)",
           "range": true,
           "refId": "A"
         }
       ],
       "title": "Schedule Job Latency (P99)",
+      "description": "仅统计 result=success 的任务耗时，避免失败/极短重试拉偏 P99。",
       "type": "timeseries"
     },
     {
@@ -3839,14 +3178,14 @@
               }
             ]
           },
-          "unit": "req/h"
+          "unit": "ops"
         }
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 146
+        "y": 120
       },
       "id": 910,
       "options": {
@@ -3871,13 +3210,13 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(schedule_jobs_total{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\",result!=\"success\"}[1m])) by (task, result) * 3600",
+          "expr": "sum(rate(schedule_jobs_total{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\",result!=\"success\"}[1m])) by (task, result)",
           "legendFormat": "{{result}} {{task}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Schedule Job Errors",
+      "title": "Schedule Job 错误率 (次/秒)",
       "type": "timeseries"
     },
     {
@@ -3930,14 +3269,14 @@
               }
             ]
           },
-          "unit": "req/h"
+          "unit": "ops"
         }
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 146
+        "y": 120
       },
       "id": 911,
       "options": {
@@ -3962,13 +3301,13 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(schedule_jobs_total{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\",result!=\"success\"}[1m])) by (result) * 3600",
+          "expr": "sum(rate(schedule_jobs_total{namespace=~\"$namespace\",job=~\"$service\",instance=~\"$instance\",result!=\"success\"}[1m])) by (result)",
           "legendFormat": "{{result}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Schedule Errors by Type",
+      "title": "Schedule 按结果类型 (次/秒)",
       "type": "timeseries"
     }
   ],
@@ -4104,5 +3443,5 @@
   "uid": "box-server-dashboard",
   "version": 1,
   "weekStart": "",
-  "refresh": "5s"
+  "refresh": "1m"
 }

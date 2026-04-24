@@ -1,6 +1,15 @@
+# Prometheus Alert Rules
+# Generated for namespace: wechat, job: portfolio
+#
+# This file is auto-generated. Do not edit manually.
+# To regenerate, run:
+#   ./scripts/generate_alerts.sh wechat portfolio [output] [--all-modules | --modules a,b]
+# Default modules omit grpc_server and mongodb.
+
 groups:
   - name: box-alerts
     rules:
+
       # @box_module: http_server
       # ==========================================================
       # HTTP Server Alerts
@@ -11,11 +20,11 @@ groups:
       - alert: HttpServerApdexScoreLow
         expr: |
           (
-            sum by(namespace, job) (rate(http_server_request_duration_seconds_bucket{le="0.25"}[5m])) * 0.5 +
-            sum by(namespace, job) (rate(http_server_request_duration_seconds_bucket{le="1"}[5m])) * 0.5
+            sum by(namespace, job) (rate(http_server_request_duration_seconds_bucket{namespace="wechat",job="portfolio",le="0.25"}[5m])) * 0.5 +
+            sum by(namespace, job) (rate(http_server_request_duration_seconds_bucket{namespace="wechat",job="portfolio",le="1"}[5m])) * 0.5
           )
           /
-          sum by(namespace, job) (rate(http_server_request_duration_seconds_count[5m])) < 0.7
+          sum by(namespace, job) (rate(http_server_request_duration_seconds_count{namespace="wechat",job="portfolio"}[5m])) < 0.7
         for: 5m
         labels:
           severity: warning
@@ -27,7 +36,7 @@ groups:
 
       # QPS / Traffic
       - alert: HttpServerQpsHigh
-        expr: sum by (namespace, job) (rate(http_server_requests_total[1m])) > 1000
+        expr: sum by (namespace, job) (rate(http_server_requests_total{namespace="wechat",job="portfolio"}[1m])) > 1000
         for: 10s
         labels:
           severity: warning
@@ -39,7 +48,7 @@ groups:
 
       # Error Rate - Critical
       - alert: HttpServerStatusCodeErrorRateCritical
-        expr: ((sum by(namespace,job,method,status,url) (rate(http_server_requests_total{status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,status,url) (rate(http_server_requests_total[1m])))) * 100 > 1
+        expr: ((sum by(namespace,job,method,status,url) (rate(http_server_requests_total{namespace="wechat",job="portfolio",status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,status,url) (rate(http_server_requests_total{namespace="wechat",job="portfolio"}[1m])))) * 100 > 1
         for: 0s
         labels:
           severity: critical
@@ -51,7 +60,7 @@ groups:
 
       # Error Rate - Warning
       - alert: HttpServerStatusCodeErrorRateHigh
-        expr: ((sum by(namespace,job,method,status,url) (rate(http_server_requests_total{status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,status,url) (rate(http_server_requests_total[1m])))) * 100 > 0.1
+        expr: ((sum by(namespace,job,method,status,url) (rate(http_server_requests_total{namespace="wechat",job="portfolio",status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,status,url) (rate(http_server_requests_total{namespace="wechat",job="portfolio"}[1m])))) * 100 > 0.1
         for: 10s
         labels:
           severity: warning
@@ -63,7 +72,7 @@ groups:
 
       # Error Code Rate - Critical
       - alert: HttpServerErrorCodeRateCritical
-        expr: ((sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total{errcode!="0"}[1m]))) / (sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total[1m])))) * 100 > 1
+        expr: ((sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total{namespace="wechat",job="portfolio",errcode!="0"}[1m]))) / (sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total{namespace="wechat",job="portfolio"}[1m])))) * 100 > 1
         for: 0s
         labels:
           severity: critical
@@ -75,7 +84,7 @@ groups:
 
       # Error Code Rate - Warning
       - alert: HttpServerErrorCodeRateHigh
-        expr: ((sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total{errcode!="0"}[1m]))) / (sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total[1m])))) * 100 > 0.1
+        expr: ((sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total{namespace="wechat",job="portfolio",errcode!="0"}[1m]))) / (sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total{namespace="wechat",job="portfolio"}[1m])))) * 100 > 0.1
         for: 10s
         labels:
           severity: warning
@@ -87,7 +96,7 @@ groups:
 
       # Latency
       - alert: HttpServerLatencyP99Critical
-        expr: histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket[1m])) by (le, namespace, job, method, url)) > 5
+        expr: histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket{namespace="wechat",job="portfolio"}[1m])) by (le, namespace, job, method, url)) > 5
         for: 0s
         labels:
           severity: critical
@@ -98,7 +107,7 @@ groups:
           description: "{{ $labels.method }} {{ $labels.url }}"
 
       - alert: HttpServerLatencyP99High
-        expr: histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket[1m])) by (le, namespace, job, method, url)) > 0.5
+        expr: histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket{namespace="wechat",job="portfolio"}[1m])) by (le, namespace, job, method, url)) > 0.5
         for: 10s
         labels:
           severity: warning
@@ -118,7 +127,7 @@ groups:
 
       # Status Code Error Rate - Critical
       - alert: HttpClientStatusCodeErrorRateCritical
-        expr: ((sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total{status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total[1m])))) * 100 > 1
+        expr: ((sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total{namespace="wechat",job="portfolio",status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total{namespace="wechat",job="portfolio"}[1m])))) * 100 > 1
         for: 0s
         labels:
           severity: critical
@@ -130,7 +139,7 @@ groups:
 
       # Status Code Error Rate - Warning
       - alert: HttpClientStatusCodeErrorRateHigh
-        expr: ((sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total{status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total[1m])))) * 100 > 0.1
+        expr: ((sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total{namespace="wechat",job="portfolio",status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total{namespace="wechat",job="portfolio"}[1m])))) * 100 > 0.1
         for: 10s
         labels:
           severity: warning
@@ -142,7 +151,7 @@ groups:
 
       # Error Result Rate - Critical
       - alert: HttpClientErrorRateCritical
-        expr: ((sum by(namespace,job,method,baseUrl,url,error) (rate(http_client_requests_total{error!=""}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 1
+        expr: ((sum by(namespace,job,method,baseUrl,url,error) (rate(http_client_requests_total{namespace="wechat",job="portfolio",error!=""}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total{namespace="wechat",job="portfolio"}[1m])))) * 100 > 1
         for: 0s
         labels:
           severity: critical
@@ -154,7 +163,7 @@ groups:
 
       # Error Result Rate - Warning
       - alert: HttpClientErrorRateHigh
-        expr: ((sum by(namespace,job,method,baseUrl,url,error) (rate(http_client_requests_total{error!=""}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 0.1
+        expr: ((sum by(namespace,job,method,baseUrl,url,error) (rate(http_client_requests_total{namespace="wechat",job="portfolio",error!=""}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total{namespace="wechat",job="portfolio"}[1m])))) * 100 > 0.1
         for: 10s
         labels:
           severity: warning
@@ -166,7 +175,7 @@ groups:
 
       # Timeout Error Rate - Critical
       - alert: HttpClientTimeoutErrorRateCritical
-        expr: ((sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total{error="timeout_error"}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 0.5
+        expr: ((sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total{namespace="wechat",job="portfolio",error="timeout_error"}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total{namespace="wechat",job="portfolio"}[1m])))) * 100 > 0.5
         for: 1m
         labels:
           severity: critical
@@ -179,7 +188,7 @@ groups:
 
       # Connection Error Rate - Critical
       - alert: HttpClientConnectionErrorRateCritical
-        expr: ((sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total{error="connection_error"}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 0.5
+        expr: ((sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total{namespace="wechat",job="portfolio",error="connection_error"}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total{namespace="wechat",job="portfolio"}[1m])))) * 100 > 0.5
         for: 1m
         labels:
           severity: critical
@@ -192,7 +201,7 @@ groups:
 
       # Latency - Critical
       - alert: HttpClientLatencyP99Critical
-        expr: histogram_quantile(0.99, sum(rate(http_client_request_duration_seconds_bucket[1m])) by (le, namespace, job, method, baseUrl, url)) > 10
+        expr: histogram_quantile(0.99, sum(rate(http_client_request_duration_seconds_bucket{namespace="wechat",job="portfolio"}[1m])) by (le, namespace, job, method, baseUrl, url)) > 10
         for: 0s
         labels:
           severity: critical
@@ -204,7 +213,7 @@ groups:
 
       # Latency - Warning
       - alert: HttpClientLatencyP99High
-        expr: histogram_quantile(0.99, sum(rate(http_client_request_duration_seconds_bucket[1m])) by (le, namespace, job, method, baseUrl, url)) > 0.5
+        expr: histogram_quantile(0.99, sum(rate(http_client_request_duration_seconds_bucket{namespace="wechat",job="portfolio"}[1m])) by (le, namespace, job, method, baseUrl, url)) > 0.5
         for: 10s
         labels:
           severity: warning
@@ -216,7 +225,7 @@ groups:
 
       # Inflight / Saturation
       - alert: HttpClientInflightHigh
-        expr: http_client_requests_inflight > 20
+        expr: http_client_requests_inflight{namespace="wechat",job="portfolio"} > 20
         for: 10s
         labels:
           severity: warning
@@ -228,39 +237,6 @@ groups:
 
 
 
-      # @box_module: grpc_server
-      # ==========================================================
-      # gRPC Server Alerts
-      # gRPC 服务器相关告警：错误率、Panic
-      # ==========================================================
-
-      - alert: GrpcServerErrorRateHigh
-        expr: |
-          (sum by(namespace, job) (rate(grpc_server_requests_total{code!="OK"}[1m]))
-          /
-          sum by(namespace, job) (rate(grpc_server_requests_total[1m]))) > 0.05
-        for: 2m
-        labels:
-          severity: critical
-          component: grpc-server
-          type: availability
-        annotations:
-          summary: "gRPC Server error rate: {{ $value | humanizePercentage }}"
-          description: "gRPC error rate is above 5% for the last 2 minutes."
-
-      - alert: GrpcServerPanic
-        expr: increase(grpc_server_panics_total[1m]) > 0
-        for: 0m
-        labels:
-          severity: critical
-          component: grpc-server
-          type: availability
-        annotations:
-          summary: "gRPC Server panic detected"
-          description: "gRPC service recovered from a panic."
-
-
-
       # @box_module: db_client
       # ==========================================================
       # Database Alerts
@@ -269,9 +245,9 @@ groups:
 
       - alert: DbErrorRateHigh
         expr: |
-          (sum by(namespace, job, result) (rate(db_client_requests_total{result!="success"}[1m]))
+          (sum by(namespace, job, result) (rate(db_client_requests_total{namespace="wechat",job="portfolio",result!="success"}[1m]))
           /
-          sum by(namespace, job) (rate(db_client_requests_total[1m]))) > 0.05
+          sum by(namespace, job) (rate(db_client_requests_total{namespace="wechat",job="portfolio"}[1m]))) > 0.05
         for: 2m
         labels:
           severity: critical
@@ -284,9 +260,9 @@ groups:
       # Database Connection Error Rate - Critical
       - alert: DbConnectionErrorRateCritical
         expr: |
-          (sum by(namespace, job, type, database) (rate(db_client_requests_total{result="connection_error"}[1m]))
+          (sum by(namespace, job, type, database) (rate(db_client_requests_total{namespace="wechat",job="portfolio",result="connection_error"}[1m]))
           /
-          sum by(namespace, job, type, database) (rate(db_client_requests_total[1m]))) > 0.01
+          sum by(namespace, job, type, database) (rate(db_client_requests_total{namespace="wechat",job="portfolio"}[1m]))) > 0.01
         for: 1m
         labels:
           severity: critical
@@ -300,9 +276,9 @@ groups:
       # Database Timeout Error Rate - Critical
       - alert: DbTimeoutErrorRateCritical
         expr: |
-          (sum by(namespace, job, type, database) (rate(db_client_requests_total{result="timeout_error"}[1m]))
+          (sum by(namespace, job, type, database) (rate(db_client_requests_total{namespace="wechat",job="portfolio",result="timeout_error"}[1m]))
           /
-          sum by(namespace, job, type, database) (rate(db_client_requests_total[1m]))) > 0.01
+          sum by(namespace, job, type, database) (rate(db_client_requests_total{namespace="wechat",job="portfolio"}[1m]))) > 0.01
         for: 1m
         labels:
           severity: critical
@@ -314,7 +290,7 @@ groups:
           description: "Database {{ $labels.type }} {{ $labels.database }} timeout error rate is above 1%."
 
       - alert: DbLatencyP99High
-        expr: histogram_quantile(0.99, sum(rate(db_client_request_duration_seconds_bucket[5m])) by (le, namespace, job)) > 0.5
+        expr: histogram_quantile(0.99, sum(rate(db_client_request_duration_seconds_bucket{namespace="wechat",job="portfolio"}[5m])) by (le, namespace, job)) > 0.5
         for: 5m
         labels:
           severity: warning
@@ -326,9 +302,9 @@ groups:
 
       - alert: DbConnectionPoolSaturationHigh
         expr: |
-          sum by(namespace, job, database) (db_client_connections_in_use)
+          sum by(namespace, job, database) (db_client_connections_in_use{namespace="wechat",job="portfolio"})
           /
-          sum by(namespace, job, database) (db_client_connections_max_open) > 0.8
+          sum by(namespace, job, database) (db_client_connections_max_open{namespace="wechat",job="portfolio"}) > 0.8
         for: 5m
         labels:
           severity: warning
@@ -347,7 +323,7 @@ groups:
       # ==========================================================
 
       - alert: RedisCommandFailureHigh
-        expr: increase(redis_client_requests_total{result!="success"}[1m]) > 5
+        expr: increase(redis_client_requests_total{namespace="wechat",job="portfolio",result!="success"}[1m]) > 5
         for: 10s
         labels:
           severity: critical
@@ -360,9 +336,9 @@ groups:
       # Redis Connection Error Rate - Critical
       - alert: RedisConnectionErrorRateCritical
         expr: |
-          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{result="connection_error"}[1m]))
+          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{namespace="wechat",job="portfolio",result="connection_error"}[1m]))
           /
-          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total[1m]))) > 0.01
+          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{namespace="wechat",job="portfolio"}[1m]))) > 0.01
         for: 1m
         labels:
           severity: critical
@@ -376,9 +352,9 @@ groups:
       # Redis Timeout Error Rate - Critical
       - alert: RedisTimeoutErrorRateCritical
         expr: |
-          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{result="timeout_error"}[1m]))
+          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{namespace="wechat",job="portfolio",result="timeout_error"}[1m]))
           /
-          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total[1m]))) > 0.01
+          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{namespace="wechat",job="portfolio"}[1m]))) > 0.01
         for: 1m
         labels:
           severity: critical
@@ -390,7 +366,7 @@ groups:
           description: "Redis command {{ $labels.cmd }} on {{ $labels.address }} timeout error rate is above 1%."
 
       - alert: RedisLatencyP99High
-        expr: histogram_quantile(0.99, sum(rate(redis_client_request_duration_seconds_bucket[5m])) by (le, namespace, job)) > 0.1
+        expr: histogram_quantile(0.99, sum(rate(redis_client_request_duration_seconds_bucket{namespace="wechat",job="portfolio"}[5m])) by (le, namespace, job)) > 0.1
         for: 5m
         labels:
           severity: warning
@@ -399,39 +375,6 @@ groups:
         annotations:
           summary: "Redis P99 latency: {{ $value }}s"
           description: "Redis P99 latency is above 100ms for the last 5 minutes."
-
-
-
-      # @box_module: mongodb
-      # ==========================================================
-      # MongoDB Alerts
-      # MongoDB 相关告警：错误率、延迟
-      # ==========================================================
-
-      - alert: MongoErrorRateHigh
-        expr: |
-          (sum by(namespace, job) (rate(mongo_client_requests_total{result="error"}[1m]))
-          /
-          sum by(namespace, job) (rate(mongo_client_requests_total[1m]))) > 0.05
-        for: 2m
-        labels:
-          severity: critical
-          component: mongodb
-          type: availability
-        annotations:
-          summary: "MongoDB error rate: {{ $value | humanizePercentage }}"
-          description: "MongoDB command error rate is above 5%."
-
-      - alert: MongoLatencyP99High
-        expr: histogram_quantile(0.99, sum(rate(mongo_client_request_duration_seconds_bucket[5m])) by (le, namespace, job)) > 0.5
-        for: 5m
-        labels:
-          severity: warning
-          component: mongodb
-          type: performance
-        annotations:
-          summary: "MongoDB P99 latency: {{ $value }}s"
-          description: "MongoDB P99 latency is above 500ms for the last 5 minutes."
 
 
 
@@ -444,9 +387,9 @@ groups:
       # Job Failure Rate - Critical
       - alert: ScheduleJobFailureRateCritical
         expr: |
-          (sum by(namespace, job, task, result) (rate(schedule_jobs_total{result!="success"}[1m]))
+          (sum by(namespace, job, task, result) (rate(schedule_jobs_total{namespace="wechat",job="portfolio",result!="success"}[1m]))
           /
-          sum by(namespace, job, task) (rate(schedule_jobs_total[1m]))) > 0.1
+          sum by(namespace, job, task) (rate(schedule_jobs_total{namespace="wechat",job="portfolio"}[1m]))) > 0.1
         for: 5m
         labels:
           severity: critical
@@ -459,9 +402,9 @@ groups:
       # Job Failure Rate - Warning
       - alert: ScheduleJobFailureRateHigh
         expr: |
-          (sum by(namespace, job, task, result) (rate(schedule_jobs_total{result!="success"}[1m]))
+          (sum by(namespace, job, task, result) (rate(schedule_jobs_total{namespace="wechat",job="portfolio",result!="success"}[1m]))
           /
-          sum by(namespace, job, task) (rate(schedule_jobs_total[1m]))) > 0.05
+          sum by(namespace, job, task) (rate(schedule_jobs_total{namespace="wechat",job="portfolio"}[1m]))) > 0.05
         for: 5m
         labels:
           severity: warning
@@ -473,7 +416,7 @@ groups:
 
       # Job Failed - Immediate Alert
       - alert: ScheduleJobFailed
-        expr: increase(schedule_jobs_total{result="error"}[1m]) > 0
+        expr: increase(schedule_jobs_total{namespace="wechat",job="portfolio",result="error"}[1m]) > 0
         for: 0s
         labels:
           severity: critical
@@ -486,7 +429,7 @@ groups:
 
       # Job Panic - Immediate Alert
       - alert: ScheduleJobPanic
-        expr: increase(schedule_jobs_total{result="panic"}[1m]) > 0
+        expr: increase(schedule_jobs_total{namespace="wechat",job="portfolio",result="panic"}[1m]) > 0
         for: 0s
         labels:
           severity: critical
@@ -499,7 +442,7 @@ groups:
 
       # Job Latency - Critical
       - alert: ScheduleJobLatencyCritical
-        expr: histogram_quantile(0.99, sum(rate(schedule_job_duration_seconds_bucket{result="success"}[5m])) by (le, namespace, job, task)) > 300
+        expr: histogram_quantile(0.99, sum(rate(schedule_job_duration_seconds_bucket{namespace="wechat",job="portfolio",result="success"}[5m])) by (le, namespace, job, task)) > 300
         for: 5m
         labels:
           severity: critical
@@ -511,7 +454,7 @@ groups:
 
       # Job Latency - Warning
       - alert: ScheduleJobLatencyHigh
-        expr: histogram_quantile(0.99, sum(rate(schedule_job_duration_seconds_bucket{result="success"}[5m])) by (le, namespace, job, task)) > 60
+        expr: histogram_quantile(0.99, sum(rate(schedule_job_duration_seconds_bucket{namespace="wechat",job="portfolio",result="success"}[5m])) by (le, namespace, job, task)) > 60
         for: 5m
         labels:
           severity: warning
@@ -531,7 +474,7 @@ groups:
 
       # Goroutine Issues
       - alert: GoGoroutinesCritical
-        expr: go_goroutines > 2000
+        expr: go_goroutines{namespace="wechat",job="portfolio"} > 2000
         for: 10s
         labels:
           severity: critical
@@ -542,7 +485,7 @@ groups:
           description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。当前 Goroutine 数超过 2000。"
 
       - alert: GoGoroutinesHigh
-        expr: go_goroutines > 500
+        expr: go_goroutines{namespace="wechat",job="portfolio"} > 500
         for: 10s
         labels:
           severity: warning
@@ -553,7 +496,7 @@ groups:
           description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。当前 Goroutine 数超过 500。"
 
       - alert: GoGoroutineLeak
-        expr: rate(go_goroutines[5m]) > 100
+        expr: rate(go_goroutines{namespace="wechat",job="portfolio"}[5m]) > 100
         for: 10m
         labels:
           severity: critical
@@ -565,7 +508,7 @@ groups:
 
       # Thread Issues
       - alert: GoThreadsCritical
-        expr: go_threads > 500
+        expr: go_threads{namespace="wechat",job="portfolio"} > 500
         for: 10s
         labels:
           severity: critical
@@ -576,7 +519,7 @@ groups:
           description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。系统线程数超过 500。"
 
       - alert: GoThreadsHigh
-        expr: go_threads > 200
+        expr: go_threads{namespace="wechat",job="portfolio"} > 200
         for: 10s
         labels:
           severity: warning
@@ -588,7 +531,7 @@ groups:
 
       # Memory Issues
       - alert: GoMemoryUsageCritical
-        expr: go_memstats_sys_bytes > 4096000000
+        expr: go_memstats_sys_bytes{namespace="wechat",job="portfolio"} > 4096000000
         for: 1m
         labels:
           severity: critical
@@ -599,7 +542,7 @@ groups:
           description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。Sys 超过 4GB。"
 
       - alert: GoMemoryUsageHigh
-        expr: go_memstats_sys_bytes > 1024000000
+        expr: go_memstats_sys_bytes{namespace="wechat",job="portfolio"} > 1024000000
         for: 1m
         labels:
           severity: warning
@@ -610,7 +553,7 @@ groups:
           description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。Sys 超过 1GB。"
 
       - alert: GoMemoryLeak
-        expr: rate(go_memstats_heap_alloc_bytes[5m]) > 5e6
+        expr: rate(go_memstats_heap_alloc_bytes{namespace="wechat",job="portfolio"}[5m]) > 5e6
         for: 15m
         labels:
           severity: critical
@@ -622,7 +565,7 @@ groups:
 
       # GC Issues
       - alert: GoGcDurationCritical
-        expr: go_gc_duration_seconds{quantile="1"} > 0.1
+        expr: go_gc_duration_seconds{namespace="wechat",job="portfolio",quantile="1"} > 0.1
         for: 10s
         labels:
           severity: critical
@@ -633,7 +576,7 @@ groups:
           description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。P100 停顿时间超过 100ms。"
 
       - alert: GoGcDurationHigh
-        expr: go_gc_duration_seconds{quantile="1"} > 0.01
+        expr: go_gc_duration_seconds{namespace="wechat",job="portfolio",quantile="1"} > 0.01
         for: 10s
         labels:
           severity: warning
@@ -644,7 +587,7 @@ groups:
           description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。P100 停顿时间超过 10ms。"
 
       - alert: GoGcRateHigh
-        expr: rate(go_gc_duration_seconds_count[1m]) > 5
+        expr: rate(go_gc_duration_seconds_count{namespace="wechat",job="portfolio"}[1m]) > 5
         for: 5m
         labels:
           severity: warning
@@ -655,7 +598,7 @@ groups:
           description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。每秒 GC 次数 > 5。"
 
       - alert: GoGcCpuUsageHigh
-        expr: go_memstats_gc_cpu_fraction > 0.3
+        expr: go_memstats_gc_cpu_fraction{namespace="wechat",job="portfolio"} > 0.3
         for: 5m
         labels:
           severity: warning
