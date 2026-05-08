@@ -19,6 +19,7 @@ ALIASES = {
     "db_client": {"db_client", "db", "database", "gorm"},
     "redis": {"redis"},
     "mongodb": {"mongo", "mongodb", "mongo_client"},
+    "kafka": {"kafka", "eventbus"},
     "schedule": {"schedule", "cron"},
     "go_runtime": {"go_runtime", "go", "golang", "runtime"},
 }
@@ -34,7 +35,7 @@ def canonicalize(token: str) -> str:
     if t in CANONICAL:
         return CANONICAL[t]
     raise ValueError(
-        f"Unknown module: {token!r}. Use one of: {sorted(set(ALIASES))} (or aliases: go, db, grpc, mongo, ...)"
+        f"Unknown module: {token!r}. Use one of: {sorted(set(ALIASES))} (or aliases: go, db, grpc, mongo, kafka, ...)"
     )
 
 

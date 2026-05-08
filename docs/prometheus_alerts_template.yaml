@@ -435,6 +435,89 @@ groups:
 
 
 
+      # @box_module: kafka
+      # ==========================================================
+      # Kafka (EventBus) Alerts
+      # 应用侧 EventBus（kafka_producer_send_total / kafka_consumer_*）本地序列化、业务回调与消费限速
+      # ==========================================================
+
+      - alert: KafkaProducerLocalErrorRateCritical
+        expr: |
+          (
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total{error!=""}[1m]))
+            /
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total[1m]))
+          ) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka producer local error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} local errors (e.g. marshal) exceed 5% of producer send counter increments."
+
+      - alert: KafkaProducerLocalErrorRateHigh
+        expr: |
+          (
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total{error!=""}[1m]))
+            /
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total[1m]))
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka producer local error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} local errors exceed 1% of producer send counter increments."
+
+      - alert: KafkaConsumerHandlerErrorRateCritical
+        expr: |
+          (
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total{error!=""}[1m]))
+            /
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total[1m]))
+          ) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka consumer handler error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} group {{ $labels.group }} handler errors exceed 5% of receive counter increments."
+
+      - alert: KafkaConsumerHandlerErrorRateHigh
+        expr: |
+          (
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total{error!=""}[1m]))
+            /
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total[1m]))
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka consumer handler error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} group {{ $labels.group }} handler errors exceed 1% of receive counter increments."
+
+      - alert: KafkaConsumerRatelimitSustained
+        expr: sum by(namespace, job, topic, group) (rate(kafka_consumer_ratelimit_total[5m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+          component: kafka
+          type: saturation
+        annotations:
+          summary: "Kafka consumer rate limit active"
+          description: "Topic {{ $labels.topic }} group {{ $labels.group }} is repeatedly hitting consumer-side rate limits."
+
+
+
       # @box_module: schedule
       # ==========================================================
       # Schedule Job Alerts

@@ -15,6 +15,7 @@
       - [MSpan / MCache 统计](#mspan--mcache-统计)
       - [GC 统计](#gc-统计)
       - [其他系统内存](#其他系统内存)
+    - [1.9 Kafka (EventBus)](#19-kafka-eventbus)
   - [2. 推荐看板指标 (Grafana PromQL)](#2-推荐看板指标-grafana-promql)
     - [2.1 📊 概览 (Overview)](#21--概览-overview)
       - [Apdex Score](#apdex-score)
@@ -26,6 +27,7 @@
     - [2.6 🔴 Redis](#26--redis)
     - [2.7 🗄️ Database (DB)](#27-️-database-db)
     - [2.8 🍃 MongoDB](#28--mongodb)
+    - [2.9 📨 Kafka (EventBus)](#29--kafka-eventbus)
   - [3. 告警规则 (Alerting Rules)](#3-告警规则-alerting-rules)
   - [4. Go Runtime 指标解读](#4-go-runtime-指标解读)
     - [4.1 内存指标关系](#41-内存指标关系)
@@ -217,6 +219,21 @@
 | `go_memstats_buck_hash_sys_bytes` | Gauge | -      | 性能分析哈希表使用的内存字节数 |
 | `go_memstats_other_sys_bytes`     | Gauge | -      | 其他系统分配的内存字节数       |
 
+### 1.9 Kafka (EventBus)
+
+指标由应用侧 EventBus 封装注册（本地参考：`gfkit/eventbus`，实现见 `producer.go` / `consumer.go`），底层使用 `box` 的 Kafka 客户端。
+
+| 指标名称                         | 类型    | Labels                        | 说明                                                                                                                                 |
+| :------------------------------- | :------ | :---------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| `kafka_producer_send_total`      | Counter | `topic`, `error`              | 生产者发送计数：`error` 为空表示 JSON 序列化成功且消息已写入异步生产者队列（**非** Broker ACK）；非空为序列化等本地错误               |
+| `kafka_consumer_receive_total`   | Counter | `topic`, `group`, `error`     | 消费者业务处理计数：`error` 为空表示一次消费回调处理成功；非空为 `consume` 返回的错误文案                                             |
+| `kafka_consumer_ratelimit_total` | Counter | `topic`, `group`, `ratelimit` | 消费限速触发次数：`ratelimit` 为 `"1"` 时表示命中限流分支（令牌桶耗尽）                                                               |
+
+**说明**:
+
+- `error` 标签在失败路径使用 `err.Error()` 原文，种类多时会增加基数，排障仍建议结合日志与链路。
+- 异步生产者的网络/Broker 侧错误由日志 `Producer.Receive.Error` 输出，**未**计入上述 Counter。
+
 ---
 
 ## 2. 推荐看板指标 (Grafana PromQL)
@@ -233,6 +250,7 @@
 - **Database (DB)** - 数据库详细指标
 - **Redis** - Redis 详细指标
 - **MongoDB** - MongoDB 详细指标
+- **Kafka (EventBus)** - Kafka 生产/消费与消费限速
 
 ### 2.1 📊 概览 (Overview)
 
@@ -377,6 +395,16 @@
 | **MongoDB Command QPS**           | 命令 QPS | `sum(rate(mongo_client_requests_total{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (command)`                                                |
 | **MongoDB Command Latency (P99)** | 命令延迟 | `histogram_quantile(0.99, sum(rate(mongo_client_request_duration_seconds_bucket{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (le, command))` |
 | **MongoDB Command Errors**        | 命令错误 | `sum(rate(mongo_client_requests_total{namespace=~"$namespace",job=~"$service",instance=~"$instance",result="error"}[1m])) by (command)`                                 |
+
+### 2.9 📨 Kafka (EventBus)
+
+| 面板名称                         | 说明           | PromQL |
+| :------------------------------- | :------------- | :----- |
+| **Kafka Producer Send Rate**     | 生产者写入队列速率（含成功入队） | `sum(rate(kafka_producer_send_total{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (topic)` |
+| **Kafka Producer Errors**        | 生产者本地错误（如序列化失败） | `sum(rate(kafka_producer_send_total{namespace=~"$namespace",job=~"$service",instance=~"$instance",error!=""}[1m])) by (topic, error)` |
+| **Kafka Consumer Receive Rate**    | 消费者业务处理成功速率       | `sum(rate(kafka_consumer_receive_total{namespace=~"$namespace",job=~"$service",instance=~"$instance",error=""}[1m])) by (topic, group)` |
+| **Kafka Consumer Errors**        | 消费者业务错误               | `sum(rate(kafka_consumer_receive_total{namespace=~"$namespace",job=~"$service",instance=~"$instance",error!=""}[1m])) by (topic, group, error)` |
+| **Kafka Consumer Ratelimit**     | 消费侧限速触发速率           | `sum(rate(kafka_consumer_ratelimit_total{namespace=~"$namespace",job=~"$service",instance=~"$instance"}[1m])) by (topic, group)` |
 
 ---
 

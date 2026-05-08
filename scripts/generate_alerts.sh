@@ -11,8 +11,8 @@
 #   --modules <list>            Comma-separated module ids (overrides default selection)
 #   --modules=a,b               Same as --modules a,b
 #
-# Module ids: http_server, http_client, grpc_server, db_client, redis, mongodb, schedule, go_runtime
-# Aliases:    grpc, db, database, mongo, go, ...
+# Module ids: http_server, http_client, grpc_server, db_client, redis, mongodb, kafka, schedule, go_runtime
+# Aliases:    grpc, db, database, mongo, kafka, eventbus, go, ...
 #
 # Default (when --modules / --all-modules not used): all modules except grpc_server and mongodb.
 #
@@ -30,7 +30,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXTRACT_PY="${SCRIPT_DIR}/extract_alert_modules.py"
 
 # Default: no gRPC, no MongoDB
-DEFAULT_MODULES_CSV="http_server,http_client,db_client,redis,schedule,go_runtime"
+DEFAULT_MODULES_CSV="http_server,http_client,db_client,redis,kafka,schedule,go_runtime"
 
 # Colors for output
 RED='\033[0;31m'
@@ -200,6 +200,12 @@ sed -E \
     -e "s/mongo_client_requests_total\[/mongo_client_requests_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/mongo_client_request_duration_seconds_bucket\{/mongo_client_request_duration_seconds_bucket{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
     -e "s/mongo_client_request_duration_seconds_bucket\[/mongo_client_request_duration_seconds_bucket{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
+    -e "s/kafka_producer_send_total\{/kafka_producer_send_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
+    -e "s/kafka_producer_send_total\[/kafka_producer_send_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
+    -e "s/kafka_consumer_receive_total\{/kafka_consumer_receive_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
+    -e "s/kafka_consumer_receive_total\[/kafka_consumer_receive_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
+    -e "s/kafka_consumer_ratelimit_total\{/kafka_consumer_ratelimit_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
+    -e "s/kafka_consumer_ratelimit_total\[/kafka_consumer_ratelimit_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/schedule_jobs_total\{/schedule_jobs_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
     -e "s/schedule_jobs_total\[/schedule_jobs_total{namespace=\"${NAMESPACE}\",job=\"${JOB}\"}[/g" \
     -e "s/schedule_job_duration_seconds_bucket\{/schedule_job_duration_seconds_bucket{namespace=\"${NAMESPACE}\",job=\"${JOB}\",/g" \
@@ -248,6 +254,9 @@ else
         "redis_client_request_duration_seconds_bucket"
         "mongo_client_requests_total"
         "mongo_client_request_duration_seconds_bucket"
+        "kafka_producer_send_total"
+        "kafka_consumer_receive_total"
+        "kafka_consumer_ratelimit_total"
         "schedule_jobs_total"
         "schedule_job_duration_seconds_bucket"
         "go_goroutines"
@@ -264,10 +273,10 @@ else
     WARNINGS=0
 
     for metric in "${METRICS[@]}"; do
-        # Find lines with this metric
-        if grep -q "$metric" "$OUTPUT"; then
+        # Find lines with this metric (ignore comments: template fragments may name metrics in # lines)
+        if grep -v '^[[:space:]]*#' "$OUTPUT" | grep -q "$metric"; then
             # Check if all occurrences have the correct filter
-            unfiltered=$(grep "$metric" "$OUTPUT" | grep -v "{namespace=\"${NAMESPACE}\",job=\"${JOB}\"" || true)
+            unfiltered=$(grep -v '^[[:space:]]*#' "$OUTPUT" | grep "$metric" | grep -v "{namespace=\"${NAMESPACE}\",job=\"${JOB}\"" || true)
 
             if [ -n "$unfiltered" ]; then
                 echo -e "${RED}✗ Found unfiltered metric: $metric${NC}"
@@ -279,7 +288,7 @@ else
     done
 
     # Check for any metrics that might have been missed
-    missed=$(grep -E '(http_|grpc_|db_|redis_|mongo_|schedule_|go_)' "$OUTPUT" | \
+    missed=$(grep -E '(http_|grpc_|db_|redis_|mongo_|kafka_|schedule_|go_)' "$OUTPUT" | \
              grep -v "^#" | \
              grep -v "{namespace=\"${NAMESPACE}\",job=\"${JOB}\"" | \
              grep -v "namespace:" | \
