@@ -12,9 +12,9 @@ import (
 
 var (
 	panicCounter = metric.NewCounterVec(
-		"grpc_server_panic_total",
-		"grpc server panic counter",
-		[]string{"method", "panic"},
+		"grpc_server_panics_total",
+		"The total number of gRPC server panics.",
+		[]string{"method"},
 	)
 )
 
@@ -27,7 +27,7 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 				logger.Errorw("grpc unary server panic:", "panicked", panicked, "panic", panicErr)
 
 				err = errcode.ErrGRPCServerPanic.Build(panicErr)
-				panicCounter.WithLabelValues(info.FullMethod, fmt.Sprintf("%s", panicErr)).Inc()
+				panicCounter.WithLabelValues(info.FullMethod).Inc()
 			}
 		}()
 
@@ -47,7 +47,7 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 				logger.Errorw("grpc stream server panic:", "panicked", panicked, "panic", panicErr)
 
 				err = errcode.ErrGRPCServerPanic.Build(panicErr)
-				panicCounter.WithLabelValues(info.FullMethod, fmt.Sprintf("%s", panicErr)).Inc()
+				panicCounter.WithLabelValues(info.FullMethod).Inc()
 			}
 		}()
 

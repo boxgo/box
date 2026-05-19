@@ -1,0 +1,134 @@
+# Box — 企业微信 (WeCom) 告警（与「系统通知」机器人样式一致）
+#
+# WeCom 群机器人 + markdown 时，正文前会带一级标题: # {Title}
+#   Title:   '{{ template "boxwecom.title" . }}'   → 建议固定为「系统通知」
+#   Message: '{{ template "boxwecom.message" . }}'
+#   msgtype: markdown
+#   touser:  @all
+#
+# 纯文本: msgtype: text，Message: '{{ template "boxwecom.message_text" . }}'（无引述块样式）
+#
+apiVersion: 1
+templates:
+  - orgId: 1
+    name: box_wecom
+    template: |
+      {{ define "boxwecom.title" -}}
+      系统通知
+      {{ end }}
+
+      {{ define "boxwecom.severity" -}}
+      {{- $s := or (index .Labels "severity") (index .Labels "Severity") -}}
+      {{- if $s }}{{ if or (eq $s "critical") (eq $s "Critical") (eq $s "CRITICAL") -}}
+      🔥🔥 **Critical**
+      {{- else if or (eq $s "warning") (eq $s "Warning") (eq $s "WARNING") -}}
+      ⚠️ **{{ $s }}**
+      {{- else if or (eq $s "info") (eq $s "Info") (eq $s "INFO") -}}
+      ℹ️ **{{ $s }}**
+      {{- else -}}
+      `{{ $s }}`
+      {{- end }}{{ else -}}—
+      {{- end -}}
+      {{ end }}
+
+      {{/* gf_log_url: 在通知侧拼日志平台 search URL。time_range: StartsAt—EndsAt；firing 且 EndsAt 为空时用 time.Now。 */}}
+      {{/* 展示：与「点击查看 Grafana 详情」同一行，" | " 分隔，[日志详情](...)。用 tmpl.Exec 取 gf_log_url 的字符串。 */}}
+      {{ define "boxwecom.gf_log_url" -}}
+      {{- $comp := or (index .Labels "component") (index .Labels "Component") "" -}}
+      {{- if and (or (eq $comp "http-server") (eq $comp "http-client")) (not .StartsAt.IsZero) -}}
+        {{- $ns := or (index .Labels "namespace") (index .Labels "Namespace") "" -}}
+        {{- $job := or (index .Labels "job") (index .Labels "Job") "" -}}
+        {{- $method := or (index .Labels "method") (index .Labels "Method") "" -}}
+        {{- $url := or (index .Labels "url") (index .Labels "Url") "" -}}
+        {{- $baseUrl := or (index .Labels "baseUrl") (index .Labels "BaseUrl") "" -}}
+        {{- $raw := "" -}}
+        {{- if and (eq $comp "http-server") (ne (trimSpace $url) "") -}}
+          {{- $raw = printf "appname:%s json.app_name:%s %q %q" $ns $job $method $url -}}
+        {{- else if eq $comp "http-server" -}}
+          {{- $raw = printf "appname:%s json.app_name:%s" $ns $job -}}
+        {{- else if and (eq $comp "http-client") (ne (trimSpace (print $baseUrl $url)) "") -}}
+          {{- $raw = printf "appname:%s json.app_name:%s %q %q" $ns $job $method (print $baseUrl $url) -}}
+        {{- else if eq $comp "http-client" -}}
+          {{- $raw = printf "appname:%s json.app_name:%s" $ns $job -}}
+        {{- end -}}
+        {{- if ne $raw "" -}}
+          {{- $enc := reReplaceAll ":" "%3A" (reReplaceAll " " "%20" (reReplaceAll "\"" "%22" (reReplaceAll "%" "%25" $raw))) -}}
+          {{- $start := .StartsAt.UnixMilli -}}
+          {{- $end := .EndsAt.UnixMilli -}}
+          {{- if .EndsAt.IsZero -}}
+            {{- $end = (time.Now).UnixMilli -}}
+          {{- end -}}
+          {{- print "http://log.gf.com.cn/search/?query=" $enc "&page=0&size=50&order=desc&time_range=" $start "%2C" $end -}}
+        {{- end -}}
+      {{- end -}}
+      {{ end }}
+
+      {{ define "boxwecom.grafana_log_links" -}}
+      {{- $u := or .GeneratorURL (or .PanelURL .DashboardURL) -}}
+      {{- $log := trimSpace (tmpl.Exec "boxwecom.gf_log_url" .) -}}
+      > 🔗 {{ if and $u $log -}}[点击查看 Grafana 详情]({{ $u }}) | [日志详情]({{ $log }}){{ else if $u -}}[点击查看 Grafana 详情]({{ $u }}){{ else if $log -}}[日志详情]({{ $log }}){{ else -}}(无链接){{ end -}}
+      {{ end }}
+
+      {{ define "boxwecom.grafana_log_links_text" -}}
+      {{- $u := or .GeneratorURL (or .PanelURL .DashboardURL) -}}
+      {{- $log := trimSpace (tmpl.Exec "boxwecom.gf_log_url" .) -}}
+      链接: {{ if and $u $log -}}{{ $u }} | 日志详情: {{ $log }}{{ else if $u -}}{{ $u }}{{ else if $log -}}日志详情: {{ $log }}{{ else -}}无{{ end -}}
+      {{ end }}
+
+      {{ define "boxwecom.alert_block" -}}
+      > **告警名称:** `{{ with (index .Labels "alertname") }}{{ . }}{{ else }}—{{ end }}`
+      > **严重等级:** {{ template "boxwecom.severity" . }}
+      > **命名空间:** `{{ with (or (index .Labels "namespace") (index .Labels "Namespace")) }}{{ . }}{{ else }}—{{ end }}`
+      > **实例 (instance):** `{{ with (index .Labels "instance") }}{{ . }}{{ else }}—{{ end }}`
+      > **摘要信息:** {{ with (or (index .Annotations "summary") (index .Annotations "Summary")) }}{{ . }}{{ else }}{{ with .ValueString }}{{ . }}{{ else }}—{{ end }}{{ end }}
+      > **详细描述:** {{ with (or (index .Annotations "description") (index .Annotations "Description")) }}{{ . }}{{ else }}—{{ end }}
+      > **触发时间:** {{ if not .StartsAt.IsZero }}{{ .StartsAt.Format "2006-01-02 15:04:05" }}{{ else }}—{{ end }}
+      > **恢复时间:** {{ if not .EndsAt.IsZero }}{{ .EndsAt.Format "2006-01-02 15:04:05" }}{{ else }}—{{ end }}
+      {{ template "boxwecom.grafana_log_links" . }}
+      {{ end }}
+
+      {{ define "boxwecom.message" -}}
+      {{ if gt (len .Alerts.Firing) 0 -}}
+      🔥 <font color="warning">**告警触发 ({{ len .Alerts.Firing }})**</font>
+      {{ range $i, $a := .Alerts.Firing }}{{ if $i }}
+
+      {{ end }}{{ template "boxwecom.alert_block" $a }}{{ end -}}
+      {{ end -}}
+      {{ if gt (len .Alerts.Resolved) 0 -}}
+      {{ if gt (len .Alerts.Firing) 0 }}
+
+      {{ end -}}
+      🟢 <font color="info">**告警恢复 ({{ len .Alerts.Resolved }})**</font>
+      {{ range $i, $a := .Alerts.Resolved }}{{ if $i }}
+
+      {{ end }}{{ template "boxwecom.alert_block" $a }}{{ end -}}
+      {{ end -}}
+      {{ end }}
+
+      {{ define "boxwecom.message_text" -}}
+      [Grafana] {{ if .ExternalURL }}{{ .ExternalURL }}{{ end }}
+      {{ if gt (len .Alerts.Firing) 0 -}}
+      告警触发 ({{ len .Alerts.Firing }})
+      {{ range $i, $a := .Alerts.Firing }}{{ if $i }}
+
+      {{ end }}{{ template "boxwecom.alert_block_text" $a }}{{ end -}}
+      {{ end -}}
+      {{ if gt (len .Alerts.Resolved) 0 -}}
+      告警恢复 ({{ len .Alerts.Resolved }})
+      {{ range $i, $a := .Alerts.Resolved }}{{ if $i }}
+
+      {{ end }}{{ template "boxwecom.alert_block_text" $a }}{{ end -}}
+      {{ end -}}
+      {{ end }}
+
+      {{ define "boxwecom.alert_block_text" -}}
+      告警名称: {{ with (index .Labels "alertname") }}{{ . }}{{ else }}—{{ end }} | 严重: {{ with (index .Labels "severity") }}{{ . }}{{ else }}—{{ end }} | namespace: {{ with (or (index .Labels "namespace") (index .Labels "Namespace")) }}{{ . }}{{ else }}—{{ end }} | instance: {{ with (index .Labels "instance") }}{{ . }}{{ else }}—{{ end }}
+      摘要: {{ with (or (index .Annotations "summary") (index .Annotations "Summary")) }}{{ . }}{{ else }}{{ with .ValueString }}{{ . }}{{ else }}—{{ end }}{{ end }}
+      描述: {{ with (or (index .Annotations "description") (index .Annotations "Description")) }}{{ . }}{{ else }}—{{ end }}
+      触发: {{ if not .StartsAt.IsZero }}{{ .StartsAt.Format "2006-01-02 15:04:05" }}{{ else }}—{{ end }} / 恢复: {{ if not .EndsAt.IsZero }}{{ .EndsAt.Format "2006-01-02 15:04:05" }}{{ else }}—{{ end }}
+      {{ template "boxwecom.grafana_log_links_text" . }}
+      {{ end }}
+
+      {{ define "boxwecom.title_english" -}}
+      {{ template "default.title" . }}
+      {{ end }}

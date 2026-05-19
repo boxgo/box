@@ -1,0 +1,749 @@
+groups:
+  - name: box-alerts
+    rules:
+      # @box_module: http_server
+      # ==========================================================
+      # HTTP Server Alerts
+      # HTTP 服务器相关告警：用户体验、错误率、延迟
+      # ==========================================================
+
+      # Apdex Score
+      - alert: HttpServerApdexScoreLow
+        expr: |
+          (
+            sum by(namespace, job) (rate(http_server_request_duration_seconds_bucket{le="0.25"}[5m])) * 0.5 +
+            sum by(namespace, job) (rate(http_server_request_duration_seconds_bucket{le="1"}[5m])) * 0.5
+          )
+          /
+          sum by(namespace, job) (rate(http_server_request_duration_seconds_count[5m])) < 0.7
+        for: 5m
+        labels:
+          severity: warning
+          component: http-server
+          type: performance
+        annotations:
+          summary: 'HTTP Server Apdex score: {{ $value | printf "%.2f" }}'
+          description: "User satisfaction score (Apdex) is below 0.7 (Fair)."
+
+      # QPS / Traffic
+      - alert: HttpServerQpsHigh
+        expr: sum by (namespace, job) (rate(http_server_requests_total[1m])) > 1000
+        for: 10s
+        labels:
+          severity: warning
+          component: http-server
+          type: saturation
+        annotations:
+          summary: "HTTP Server QPS: {{ $value | printf \"%.0f\" }}"
+          description: "QPS exceeded 1000 requests per second"
+
+      # Error Rate - Critical
+      - alert: HttpServerStatusCodeErrorRateCritical
+        expr: ((sum by(namespace,job,method,status,url) (rate(http_server_requests_total{status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,status,url) (rate(http_server_requests_total[1m])))) * 100 > 1
+        for: 0s
+        labels:
+          severity: critical
+          component: http-server
+          type: availability
+        annotations:
+          summary: "HTTP Server status code error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{ $labels.url }} status: {{ $labels.status }}"
+
+      # Error Rate - Warning
+      - alert: HttpServerStatusCodeErrorRateHigh
+        expr: ((sum by(namespace,job,method,status,url) (rate(http_server_requests_total{status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,status,url) (rate(http_server_requests_total[1m])))) * 100 > 0.1
+        for: 10s
+        labels:
+          severity: warning
+          component: http-server
+          type: availability
+        annotations:
+          summary: "HTTP Server status code error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{ $labels.url }} status: {{ $labels.status }}"
+
+      # Error Code Rate - Critical
+      - alert: HttpServerErrorCodeRateCritical
+        expr: ((sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total{errcode!="0"}[1m]))) / (sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total[1m])))) * 100 > 1
+        for: 0s
+        labels:
+          severity: critical
+          component: http-server
+          type: availability
+        annotations:
+          summary: "HTTP Server business error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{ $labels.url }} errcode: {{ $labels.errcode }}"
+
+      # Error Code Rate - Warning
+      - alert: HttpServerErrorCodeRateHigh
+        expr: ((sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total{errcode!="0"}[1m]))) / (sum by(namespace,job,method,errcode,url) (rate(http_server_requests_total[1m])))) * 100 > 0.1
+        for: 10s
+        labels:
+          severity: warning
+          component: http-server
+          type: availability
+        annotations:
+          summary: "HTTP Server business error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{ $labels.url }} errcode: {{ $labels.errcode }}"
+
+      # Latency
+      - alert: HttpServerLatencyP99Critical
+        expr: histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket[1m])) by (le, namespace, job, method, url)) > 5
+        for: 0s
+        labels:
+          severity: critical
+          component: http-server
+          type: performance
+        annotations:
+          summary: "HTTP Server P99 latency: {{ $value | humanizeDuration }}"
+          description: "{{ $labels.method }} {{ $labels.url }}"
+
+      - alert: HttpServerLatencyP99High
+        expr: histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket[1m])) by (le, namespace, job, method, url)) > 0.5
+        for: 10s
+        labels:
+          severity: warning
+          component: http-server
+          type: performance
+        annotations:
+          summary: "HTTP Server P99 latency: {{ $value | humanizeDuration }}"
+          description: "{{ $labels.method }} {{ $labels.url }}"
+
+
+
+      # @box_module: http_client
+      # ==========================================================
+      # HTTP Client Alerts
+      # HTTP 客户端相关告警：下游服务调用错误、延迟、并发
+      # ==========================================================
+
+      # Status Code Error Rate - Critical
+      - alert: HttpClientStatusCodeErrorRateCritical
+        expr: ((sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total{status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total[1m])))) * 100 > 1
+        for: 0s
+        labels:
+          severity: critical
+          component: http-client
+          type: availability
+        annotations:
+          summary: "HTTP Client status code error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{ $labels.status }} {{$labels.baseUrl}}{{ $labels.url }}"
+
+      # Status Code Error Rate - Warning
+      - alert: HttpClientStatusCodeErrorRateHigh
+        expr: ((sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total{status=~"4..|5.."}[1m]))) / (sum by(namespace,job,method,baseUrl,url,status) (rate(http_client_requests_total[1m])))) * 100 > 0.1
+        for: 10s
+        labels:
+          severity: warning
+          component: http-client
+          type: availability
+        annotations:
+          summary: "HTTP Client status code error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{ $labels.status }} {{$labels.baseUrl}}{{ $labels.url }}"
+
+      # Error Result Rate - Critical
+      - alert: HttpClientErrorRateCritical
+        expr: ((sum by(namespace,job,method,baseUrl,url,error) (rate(http_client_requests_total{error!=""}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 1
+        for: 0s
+        labels:
+          severity: critical
+          component: http-client
+          type: availability
+        annotations:
+          summary: "HTTP Client error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{$labels.baseUrl}}{{ $labels.url }} error: {{ $labels.error }}"
+
+      # Error Result Rate - Warning
+      - alert: HttpClientErrorRateHigh
+        expr: ((sum by(namespace,job,method,baseUrl,url,error) (rate(http_client_requests_total{error!=""}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 0.1
+        for: 10s
+        labels:
+          severity: warning
+          component: http-client
+          type: availability
+        annotations:
+          summary: "HTTP Client error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{$labels.baseUrl}}{{ $labels.url }} error: {{ $labels.error }}"
+
+      # Timeout Error Rate - Critical
+      - alert: HttpClientTimeoutErrorRateCritical
+        expr: ((sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total{error="timeout_error"}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          component: http-client
+          type: availability
+          error_type: timeout
+        annotations:
+          summary: "HTTP Client timeout error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{$labels.baseUrl}}{{ $labels.url }}"
+
+      # Connection Error Rate - Critical
+      - alert: HttpClientConnectionErrorRateCritical
+        expr: ((sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total{error="connection_error"}[1m]))) / (sum by(namespace,job,method,baseUrl,url) (rate(http_client_requests_total[1m])))) * 100 > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          component: http-client
+          type: availability
+          error_type: connection
+        annotations:
+          summary: "HTTP Client connection error rate: {{ $value | printf \"%.2f\" }}%"
+          description: "{{ $labels.method }} {{$labels.baseUrl}}{{ $labels.url }}"
+
+      # Latency - Critical
+      - alert: HttpClientLatencyP99Critical
+        expr: histogram_quantile(0.99, sum(rate(http_client_request_duration_seconds_bucket[1m])) by (le, namespace, job, method, baseUrl, url)) > 10
+        for: 0s
+        labels:
+          severity: critical
+          component: http-client
+          type: performance
+        annotations:
+          summary: "HTTP Client P99 latency: {{ $value | humanizeDuration }}"
+          description: "{{ $labels.method }} {{$labels.baseUrl}}{{ $labels.url }}"
+
+      # Latency - Warning
+      - alert: HttpClientLatencyP99High
+        expr: histogram_quantile(0.99, sum(rate(http_client_request_duration_seconds_bucket[1m])) by (le, namespace, job, method, baseUrl, url)) > 0.5
+        for: 10s
+        labels:
+          severity: warning
+          component: http-client
+          type: performance
+        annotations:
+          summary: "HTTP Client P99 latency: {{ $value | humanizeDuration }}"
+          description: "{{ $labels.method }} {{$labels.baseUrl}}{{ $labels.url }}"
+
+      # Inflight / Saturation
+      - alert: HttpClientInflightHigh
+        expr: http_client_requests_inflight > 20
+        for: 10s
+        labels:
+          severity: warning
+          component: http-client
+          type: saturation
+        annotations:
+          summary: "HTTP Client inflight requests: {{ $value }}"
+          description: "{{ $labels.method }} {{ $labels.url }}"
+
+
+
+      # @box_module: grpc_server
+      # ==========================================================
+      # gRPC Server Alerts
+      # gRPC 服务器相关告警：错误率、Panic
+      # ==========================================================
+
+      - alert: GrpcServerErrorRateHigh
+        expr: |
+          (sum by(namespace, job) (rate(grpc_server_requests_total{code!="OK"}[1m]))
+          /
+          sum by(namespace, job) (rate(grpc_server_requests_total[1m]))) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: grpc-server
+          type: availability
+        annotations:
+          summary: "gRPC Server error rate: {{ $value | humanizePercentage }}"
+          description: "gRPC error rate is above 5% for the last 2 minutes."
+
+      - alert: GrpcServerPanic
+        expr: increase(grpc_server_panics_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          component: grpc-server
+          type: availability
+        annotations:
+          summary: "gRPC Server panic detected"
+          description: "gRPC service recovered from a panic."
+
+
+
+      # @box_module: db_client
+      # ==========================================================
+      # Database Alerts
+      # 数据库相关告警：错误率、延迟、连接池饱和
+      # ==========================================================
+
+      - alert: DbErrorRateHigh
+        expr: |
+          (sum by(namespace, job, result) (rate(db_client_requests_total{result!="success"}[1m]))
+          /
+          sum by(namespace, job) (rate(db_client_requests_total[1m]))) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+          type: availability
+        annotations:
+          summary: "Database error rate: {{ $value | humanizePercentage }}"
+          description: "Database query error rate is above 5%. Error type: {{ $labels.result }}"
+
+      # Database Connection Error Rate - Critical
+      - alert: DbConnectionErrorRateCritical
+        expr: |
+          (sum by(namespace, job, type, database) (rate(db_client_requests_total{result="connection_error"}[1m]))
+          /
+          sum by(namespace, job, type, database) (rate(db_client_requests_total[1m]))) > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          type: availability
+          error_type: connection
+        annotations:
+          summary: "Database connection error rate: {{ $value | humanizePercentage }}"
+          description: "Database {{ $labels.type }} {{ $labels.database }} connection error rate is above 1%."
+
+      # Database Timeout Error Rate - Critical
+      - alert: DbTimeoutErrorRateCritical
+        expr: |
+          (sum by(namespace, job, type, database) (rate(db_client_requests_total{result="timeout_error"}[1m]))
+          /
+          sum by(namespace, job, type, database) (rate(db_client_requests_total[1m]))) > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          type: availability
+          error_type: timeout
+        annotations:
+          summary: "Database timeout error rate: {{ $value | humanizePercentage }}"
+          description: "Database {{ $labels.type }} {{ $labels.database }} timeout error rate is above 1%."
+
+      - alert: DbLatencyP99High
+        expr: histogram_quantile(0.99, sum(rate(db_client_request_duration_seconds_bucket[5m])) by (le, namespace, job)) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+          type: performance
+        annotations:
+          summary: "Database P99 latency: {{ $value }}s"
+          description: "Database P99 latency is above 500ms for the last 5 minutes."
+
+      - alert: DbConnectionPoolSaturationHigh
+        expr: |
+          sum by(namespace, job, database) (db_client_connections_in_use)
+          /
+          sum by(namespace, job, database) (db_client_connections_max_open) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+          type: saturation
+        annotations:
+          summary: "Database connection pool saturation: {{ $value | humanizePercentage }}"
+          description: "Database {{ $labels.database }} connection pool usage is above 80%."
+
+
+
+      # @box_module: redis
+      # ==========================================================
+      # Redis Alerts
+      # Redis 相关告警：命令失败、延迟
+      # ==========================================================
+
+      - alert: RedisCommandFailureHigh
+        expr: increase(redis_client_requests_total{result!="success"}[1m]) > 5
+        for: 10s
+        labels:
+          severity: critical
+          component: redis
+          type: availability
+        annotations:
+          summary: "Redis command failure count: {{ $value }}"
+          description: "{{ $labels.cmd }} on {{ $labels.address }}. Error type: {{ $labels.result }}"
+
+      # Redis Connection Error Rate - Critical
+      - alert: RedisConnectionErrorRateCritical
+        expr: |
+          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{result="connection_error"}[1m]))
+          /
+          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total[1m]))) > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          component: redis
+          type: availability
+          error_type: connection
+        annotations:
+          summary: "Redis connection error rate: {{ $value | humanizePercentage }}"
+          description: "Redis command {{ $labels.cmd }} on {{ $labels.address }} connection error rate is above 1%."
+
+      # Redis Timeout Error Rate - Critical
+      - alert: RedisTimeoutErrorRateCritical
+        expr: |
+          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{result="timeout_error"}[1m]))
+          /
+          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total[1m]))) > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          component: redis
+          type: availability
+          error_type: timeout
+        annotations:
+          summary: "Redis timeout error rate: {{ $value | humanizePercentage }}"
+          description: "Redis command {{ $labels.cmd }} on {{ $labels.address }} timeout error rate is above 1%."
+
+      - alert: RedisLatencyP99High
+        expr: histogram_quantile(0.99, sum(rate(redis_client_request_duration_seconds_bucket[5m])) by (le, namespace, job)) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+          type: performance
+        annotations:
+          summary: "Redis P99 latency: {{ $value }}s"
+          description: "Redis P99 latency is above 100ms for the last 5 minutes."
+
+
+
+      # @box_module: mongodb
+      # ==========================================================
+      # MongoDB Alerts
+      # MongoDB 相关告警：错误率、延迟
+      # ==========================================================
+
+      - alert: MongoErrorRateHigh
+        expr: |
+          (sum by(namespace, job) (rate(mongo_client_requests_total{result="error"}[1m]))
+          /
+          sum by(namespace, job) (rate(mongo_client_requests_total[1m]))) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: mongodb
+          type: availability
+        annotations:
+          summary: "MongoDB error rate: {{ $value | humanizePercentage }}"
+          description: "MongoDB command error rate is above 5%."
+
+      - alert: MongoLatencyP99High
+        expr: histogram_quantile(0.99, sum(rate(mongo_client_request_duration_seconds_bucket[5m])) by (le, namespace, job)) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: mongodb
+          type: performance
+        annotations:
+          summary: "MongoDB P99 latency: {{ $value }}s"
+          description: "MongoDB P99 latency is above 500ms for the last 5 minutes."
+
+
+
+      # @box_module: kafka
+      # ==========================================================
+      # Kafka (EventBus) Alerts
+      # 应用侧 EventBus（kafka_producer_send_total / kafka_consumer_*）本地序列化、业务回调与消费限速
+      # ==========================================================
+
+      - alert: KafkaProducerLocalErrorRateCritical
+        expr: |
+          (
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total{error!=""}[1m]))
+            /
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total[1m]))
+          ) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka producer local error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} local errors (e.g. marshal) exceed 5% of producer send counter increments."
+
+      - alert: KafkaProducerLocalErrorRateHigh
+        expr: |
+          (
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total{error!=""}[1m]))
+            /
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total[1m]))
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka producer local error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} local errors exceed 1% of producer send counter increments."
+
+      - alert: KafkaConsumerHandlerErrorRateCritical
+        expr: |
+          (
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total{error!=""}[1m]))
+            /
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total[1m]))
+          ) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka consumer handler error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} group {{ $labels.group }} handler errors exceed 5% of receive counter increments."
+
+      - alert: KafkaConsumerHandlerErrorRateHigh
+        expr: |
+          (
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total{error!=""}[1m]))
+            /
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total[1m]))
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka consumer handler error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} group {{ $labels.group }} handler errors exceed 1% of receive counter increments."
+
+      - alert: KafkaConsumerRatelimitSustained
+        expr: sum by(namespace, job, topic, group) (rate(kafka_consumer_ratelimit_total[5m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+          component: kafka
+          type: saturation
+        annotations:
+          summary: "Kafka consumer rate limit active"
+          description: "Topic {{ $labels.topic }} group {{ $labels.group }} is repeatedly hitting consumer-side rate limits."
+
+
+
+      # @box_module: schedule
+      # ==========================================================
+      # Schedule Job Alerts
+      # 定时任务相关告警：失败、Panic、延迟
+      # ==========================================================
+
+      # Job Failure Rate - Critical
+      - alert: ScheduleJobFailureRateCritical
+        expr: |
+          (sum by(namespace, job, task, result) (rate(schedule_jobs_total{result!="success"}[1m]))
+          /
+          sum by(namespace, job, task) (rate(schedule_jobs_total[1m]))) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          component: schedule
+          type: availability
+        annotations:
+          summary: "Schedule job failure rate: {{ $value | humanizePercentage }}"
+          description: "Job {{ $labels.task }} failure rate is above 10%. Error type: {{ $labels.result }}"
+
+      # Job Failure Rate - Warning
+      - alert: ScheduleJobFailureRateHigh
+        expr: |
+          (sum by(namespace, job, task, result) (rate(schedule_jobs_total{result!="success"}[1m]))
+          /
+          sum by(namespace, job, task) (rate(schedule_jobs_total[1m]))) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: schedule
+          type: availability
+        annotations:
+          summary: "Schedule job failure rate: {{ $value | humanizePercentage }}"
+          description: "Job {{ $labels.task }} failure rate is above 5%. Error type: {{ $labels.result }}"
+
+      # Job Failed - Immediate Alert
+      - alert: ScheduleJobFailed
+        expr: increase(schedule_jobs_total{result="error"}[1m]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          component: schedule
+          type: availability
+          error_type: error
+        annotations:
+          summary: "Schedule job failed"
+          description: "Job {{ $labels.task }} failed with error"
+
+      # Job Panic - Immediate Alert
+      - alert: ScheduleJobPanic
+        expr: increase(schedule_jobs_total{result="panic"}[1m]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          component: schedule
+          type: availability
+          error_type: panic
+        annotations:
+          summary: "Schedule job panic"
+          description: "Job {{ $labels.task }} recovered from panic"
+
+      # Job Latency - Critical
+      - alert: ScheduleJobLatencyCritical
+        expr: histogram_quantile(0.99, sum(rate(schedule_job_duration_seconds_bucket{result="success"}[5m])) by (le, namespace, job, task)) > 300
+        for: 5m
+        labels:
+          severity: critical
+          component: schedule
+          type: performance
+        annotations:
+          summary: "Schedule job P99 latency: {{ $value }}s"
+          description: "Job {{ $labels.task }} P99 latency is above 5 minutes."
+
+      # Job Latency - Warning
+      - alert: ScheduleJobLatencyHigh
+        expr: histogram_quantile(0.99, sum(rate(schedule_job_duration_seconds_bucket{result="success"}[5m])) by (le, namespace, job, task)) > 60
+        for: 5m
+        labels:
+          severity: warning
+          component: schedule
+          type: performance
+        annotations:
+          summary: "Schedule job P99 latency: {{ $value }}s"
+          description: "Job {{ $labels.task }} P99 latency is above 1 minute."
+
+
+
+      # @box_module: go_runtime
+      # ==========================================================
+      # Go Runtime Alerts
+      # Go 运行时：每条规则按指标时间序列求值（per-instance=每个 instance 独立告警）。
+      # ==========================================================
+
+      # Goroutine Issues
+      - alert: GoGoroutinesCritical
+        expr: go_goroutines > 2000
+        for: 10s
+        labels:
+          severity: critical
+          component: go-runtime
+          type: saturation
+        annotations:
+          summary: "Goroutine 数严重过高 (critical): {{ $value | printf \"%.0f\" }}"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。当前 Goroutine 数超过 2000。"
+
+      - alert: GoGoroutinesHigh
+        expr: go_goroutines > 500
+        for: 10s
+        labels:
+          severity: warning
+          component: go-runtime
+          type: saturation
+        annotations:
+          summary: "Goroutine 数偏高 (warning): {{ $value | printf \"%.0f\" }}"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。当前 Goroutine 数超过 500。"
+
+      - alert: GoGoroutineLeak
+        expr: rate(go_goroutines[5m]) > 100
+        for: 10m
+        labels:
+          severity: critical
+          component: go-runtime
+          type: saturation
+        annotations:
+          summary: "Goroutine 5 分钟增速异常，疑似泄漏"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。5m rate 超过 100/s，Goroutine 增长过快。"
+
+      # Thread Issues
+      - alert: GoThreadsCritical
+        expr: go_threads > 500
+        for: 10s
+        labels:
+          severity: critical
+          component: go-runtime
+          type: saturation
+        annotations:
+          summary: "OS 线程数严重过高 (critical): {{ $value | printf \"%.0f\" }}"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。系统线程数超过 500。"
+
+      - alert: GoThreadsHigh
+        expr: go_threads > 200
+        for: 10s
+        labels:
+          severity: warning
+          component: go-runtime
+          type: saturation
+        annotations:
+          summary: "OS 线程数偏高 (warning): {{ $value | printf \"%.0f\" }}"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。系统线程数超过 200。"
+
+      # Memory Issues
+      - alert: GoMemoryUsageCritical
+        expr: go_memstats_sys_bytes > 4096000000
+        for: 1m
+        labels:
+          severity: critical
+          component: go-runtime
+          type: saturation
+        annotations:
+          summary: "从操作系统向进程申请的系统内存 (Sys) 已超严重阈值: {{ $value | humanize1024 }}B"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。Sys 超过 4GB。"
+
+      - alert: GoMemoryUsageHigh
+        expr: go_memstats_sys_bytes > 1024000000
+        for: 1m
+        labels:
+          severity: warning
+          component: go-runtime
+          type: saturation
+        annotations:
+          summary: "从操作系统向进程申请的系统内存 (Sys) 已超 warning 阈值: {{ $value | humanize1024 }}B"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。Sys 超过 1GB。"
+
+      - alert: GoMemoryLeak
+        expr: rate(go_memstats_heap_alloc_bytes[5m]) > 5e6
+        for: 15m
+        labels:
+          severity: critical
+          component: go-runtime
+          type: saturation
+        annotations:
+          summary: "堆上分配增速异常 (疑似堆泄漏风险)"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。近 5 分钟堆分配增加速率 > 5MB/s。"
+
+      # GC Issues
+      - alert: GoGcDurationCritical
+        expr: go_gc_duration_seconds{quantile="1"} > 0.1
+        for: 10s
+        labels:
+          severity: critical
+          component: go-runtime
+          type: performance
+        annotations:
+          summary: "GC 单次 P100 停顿已超严重阈值: {{ $value | humanizeDuration }}"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。P100 停顿时间超过 100ms。"
+
+      - alert: GoGcDurationHigh
+        expr: go_gc_duration_seconds{quantile="1"} > 0.01
+        for: 10s
+        labels:
+          severity: warning
+          component: go-runtime
+          type: performance
+        annotations:
+          summary: "GC 单次 P100 停顿已超 warning 阈值: {{ $value | humanizeDuration }}"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。P100 停顿时间超过 10ms。"
+
+      - alert: GoGcRateHigh
+        expr: rate(go_gc_duration_seconds_count[1m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: go-runtime
+          type: performance
+        annotations:
+          summary: "GC 发生过于频繁: 约 {{ $value | printf \"%.2f\" }} 次/秒"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。每秒 GC 次数 > 5。"
+
+      - alert: GoGcCpuUsageHigh
+        expr: go_memstats_gc_cpu_fraction > 0.3
+        for: 5m
+        labels:
+          severity: warning
+          component: go-runtime
+          type: performance
+        annotations:
+          summary: "GC 占用 CPU 时间比例偏高: {{ $value | humanizePercentage }}"
+          description: "namespace {{ $labels.namespace }}, job {{ $labels.job }}, 实例: {{ $labels.instance }}。GC 占用 CPU 时间比例长期高于 30%。"
