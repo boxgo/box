@@ -355,14 +355,14 @@ groups:
           type: availability
         annotations:
           summary: "Redis command failure count: {{ $value }}"
-          description: "{{ $labels.cmd }} on {{ $labels.address }}. Error type: {{ $labels.result }}"
+          description: "{{ $labels.cmd }} error type: {{ $labels.result }}"
 
       # Redis Connection Error Rate - Critical
       - alert: RedisConnectionErrorRateCritical
         expr: |
-          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{result="connection_error"}[1m]))
+          (sum by(namespace, job, cmd) (rate(redis_client_requests_total{result="connection_error"}[1m]))
           /
-          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total[1m]))) > 0.01
+          sum by(namespace, job, cmd) (rate(redis_client_requests_total[1m]))) > 0.01
         for: 1m
         labels:
           severity: critical
@@ -371,14 +371,14 @@ groups:
           error_type: connection
         annotations:
           summary: "Redis connection error rate: {{ $value | humanizePercentage }}"
-          description: "Redis command {{ $labels.cmd }} on {{ $labels.address }} connection error rate is above 1%."
+          description: "Redis command {{ $labels.cmd }} connection error rate is above 1%."
 
       # Redis Timeout Error Rate - Critical
       - alert: RedisTimeoutErrorRateCritical
         expr: |
-          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{result="timeout_error"}[1m]))
+          (sum by(namespace, job, cmd) (rate(redis_client_requests_total{result="timeout_error"}[1m]))
           /
-          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total[1m]))) > 0.01
+          sum by(namespace, job, cmd) (rate(redis_client_requests_total[1m]))) > 0.01
         for: 1m
         labels:
           severity: critical
@@ -387,7 +387,7 @@ groups:
           error_type: timeout
         annotations:
           summary: "Redis timeout error rate: {{ $value | humanizePercentage }}"
-          description: "Redis command {{ $labels.cmd }} on {{ $labels.address }} timeout error rate is above 1%."
+          description: "Redis command {{ $labels.cmd }} timeout error rate is above 1%."
 
       - alert: RedisLatencyP99High
         expr: histogram_quantile(0.99, sum(rate(redis_client_request_duration_seconds_bucket[5m])) by (le, namespace, job)) > 0.1

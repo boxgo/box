@@ -71,18 +71,18 @@ func newGinProm(c *Config) *GinProm {
 func (prom *GinProm) Handler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		start := time.Now()
-		labels := []string{
+		baseLabels := []string{
 			ctx.Request.Method,
 			prom.cfg.requestURLMappingFn(ctx),
 		}
 
 		// Saturation: +1
-		reqInFlight.WithLabelValues(labels...).Inc()
-		defer reqInFlight.WithLabelValues(labels...).Dec()
+		reqInFlight.WithLabelValues(baseLabels...).Inc()
+		defer reqInFlight.WithLabelValues(baseLabels...).Dec()
 
 		// Traffic: Request Size
 		reqSz := computeApproximateRequestSize(ctx.Request)
-		reqSize.WithLabelValues(labels...).Observe(reqSz)
+		reqSize.WithLabelValues(baseLabels...).Observe(reqSz)
 
 		ctx.Next()
 
@@ -91,13 +91,16 @@ func (prom *GinProm) Handler() gin.HandlerFunc {
 			resSz = 0
 		}
 
-		labels = append(labels, strconv.Itoa(ctx.Writer.Status()), strconv.Itoa(ctx.GetInt("errcode")))
+		status := strconv.Itoa(ctx.Writer.Status())
+		errCode := strconv.Itoa(ctx.GetInt("errcode"))
+		statusLabels := append(baseLabels, status)
+		totalLabels := append(statusLabels, errCode)
 
 		// Traffic: Response Size & Total Count (implies Errors via labels)
-		resSize.WithLabelValues(labels...).Observe(float64(resSz))
-		reqTotal.WithLabelValues(labels...).Inc()
+		resSize.WithLabelValues(baseLabels...).Observe(float64(resSz))
+		reqTotal.WithLabelValues(totalLabels...).Inc()
 
 		// Latency
-		reqDuration.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
+		reqDuration.WithLabelValues(statusLabels...).Observe(time.Since(start).Seconds())
 	}
 }

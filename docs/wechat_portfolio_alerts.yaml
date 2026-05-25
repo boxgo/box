@@ -331,14 +331,14 @@ groups:
           type: availability
         annotations:
           summary: "Redis command failure count: {{ $value }}"
-          description: "{{ $labels.cmd }} on {{ $labels.address }}. Error type: {{ $labels.result }}"
+          description: "{{ $labels.cmd }} error type: {{ $labels.result }}"
 
       # Redis Connection Error Rate - Critical
       - alert: RedisConnectionErrorRateCritical
         expr: |
-          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{namespace="wechat",job="portfolio",result="connection_error"}[1m]))
+          (sum by(namespace, job, cmd) (rate(redis_client_requests_total{namespace="wechat",job="portfolio",result="connection_error"}[1m]))
           /
-          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{namespace="wechat",job="portfolio"}[1m]))) > 0.01
+          sum by(namespace, job, cmd) (rate(redis_client_requests_total{namespace="wechat",job="portfolio"}[1m]))) > 0.01
         for: 1m
         labels:
           severity: critical
@@ -347,14 +347,14 @@ groups:
           error_type: connection
         annotations:
           summary: "Redis connection error rate: {{ $value | humanizePercentage }}"
-          description: "Redis command {{ $labels.cmd }} on {{ $labels.address }} connection error rate is above 1%."
+          description: "Redis command {{ $labels.cmd }} connection error rate is above 1%."
 
       # Redis Timeout Error Rate - Critical
       - alert: RedisTimeoutErrorRateCritical
         expr: |
-          (sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{namespace="wechat",job="portfolio",result="timeout_error"}[1m]))
+          (sum by(namespace, job, cmd) (rate(redis_client_requests_total{namespace="wechat",job="portfolio",result="timeout_error"}[1m]))
           /
-          sum by(namespace, job, cmd, address) (rate(redis_client_requests_total{namespace="wechat",job="portfolio"}[1m]))) > 0.01
+          sum by(namespace, job, cmd) (rate(redis_client_requests_total{namespace="wechat",job="portfolio"}[1m]))) > 0.01
         for: 1m
         labels:
           severity: critical
@@ -363,7 +363,7 @@ groups:
           error_type: timeout
         annotations:
           summary: "Redis timeout error rate: {{ $value | humanizePercentage }}"
-          description: "Redis command {{ $labels.cmd }} on {{ $labels.address }} timeout error rate is above 1%."
+          description: "Redis command {{ $labels.cmd }} timeout error rate is above 1%."
 
       - alert: RedisLatencyP99High
         expr: histogram_quantile(0.99, sum(rate(redis_client_request_duration_seconds_bucket{namespace="wechat",job="portfolio"}[5m])) by (le, namespace, job)) > 0.1
@@ -375,6 +375,89 @@ groups:
         annotations:
           summary: "Redis P99 latency: {{ $value }}s"
           description: "Redis P99 latency is above 100ms for the last 5 minutes."
+
+
+
+      # @box_module: kafka
+      # ==========================================================
+      # Kafka (EventBus) Alerts
+      # 应用侧 EventBus（kafka_producer_send_total / kafka_consumer_*）本地序列化、业务回调与消费限速
+      # ==========================================================
+
+      - alert: KafkaProducerLocalErrorRateCritical
+        expr: |
+          (
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total{namespace="wechat",job="portfolio",error!=""}[1m]))
+            /
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total{namespace="wechat",job="portfolio"}[1m]))
+          ) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka producer local error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} local errors (e.g. marshal) exceed 5% of producer send counter increments."
+
+      - alert: KafkaProducerLocalErrorRateHigh
+        expr: |
+          (
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total{namespace="wechat",job="portfolio",error!=""}[1m]))
+            /
+            sum by(namespace, job, topic) (rate(kafka_producer_send_total{namespace="wechat",job="portfolio"}[1m]))
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka producer local error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} local errors exceed 1% of producer send counter increments."
+
+      - alert: KafkaConsumerHandlerErrorRateCritical
+        expr: |
+          (
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total{namespace="wechat",job="portfolio",error!=""}[1m]))
+            /
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total{namespace="wechat",job="portfolio"}[1m]))
+          ) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka consumer handler error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} group {{ $labels.group }} handler errors exceed 5% of receive counter increments."
+
+      - alert: KafkaConsumerHandlerErrorRateHigh
+        expr: |
+          (
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total{namespace="wechat",job="portfolio",error!=""}[1m]))
+            /
+            sum by(namespace, job, topic, group) (rate(kafka_consumer_receive_total{namespace="wechat",job="portfolio"}[1m]))
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          component: kafka
+          type: availability
+        annotations:
+          summary: "Kafka consumer handler error rate: {{ $value | humanizePercentage }}"
+          description: "Topic {{ $labels.topic }} group {{ $labels.group }} handler errors exceed 1% of receive counter increments."
+
+      - alert: KafkaConsumerRatelimitSustained
+        expr: sum by(namespace, job, topic, group) (rate(kafka_consumer_ratelimit_total{namespace="wechat",job="portfolio"}[5m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+          component: kafka
+          type: saturation
+        annotations:
+          summary: "Kafka consumer rate limit active"
+          description: "Topic {{ $labels.topic }} group {{ $labels.group }} is repeatedly hitting consumer-side rate limits."
 
 
 
