@@ -65,9 +65,15 @@
 | :------------------------------------- | :-------- | :----------------------------------- | :------------------------------------------ |
 | `http_server_requests_inflight`        | Gauge     | `method`, `url`                      | 当前正在处理的 HTTP 请求数 (饱和度)         |
 | `http_server_requests_total`           | Counter   | `method`, `url`, `status`, `errcode` | 处理的 HTTP 请求总数 (流量 & 错误)          |
-| `http_server_request_duration_seconds` | Histogram | `method`, `url`, `status`, `errcode` | HTTP 请求耗时分布 (延迟)，桶：.005s - 10s   |
+| `http_server_request_duration_seconds` | Histogram | `method`, `url`, `status`            | HTTP 请求耗时分布 (延迟)，桶：.005s - 10s   |
 | `http_server_request_size_bytes`       | Histogram | `method`, `url`                      | HTTP 请求体大小分布 (流量)，桶：1KB - 100MB |
-| `http_server_response_size_bytes`      | Histogram | `method`, `url`, `status`, `errcode` | HTTP 响应体大小分布 (流量)，桶：1KB - 100MB |
+| `http_server_response_size_bytes`      | Histogram | `method`, `url`                      | HTTP 响应体大小分布 (流量)，桶：1KB - 100MB |
+
+> 兼容性说明（`box/box v1.3.0`）：
+> - `http_server_requests_total` 仍保留 `errcode`，用于业务错误统计与告警。
+> - `http_server_request_duration_seconds` 已移除 `errcode` 标签（仅保留 `method`,`url`,`status`），用于降低时序基数。
+> - `http_server_response_size_bytes` 仅保留 `method`,`url`。
+> - Prometheus 无需手工“清除旧指标”再上报新指标。升级后新实例会按新标签集上报，旧标签集时序会自然停止写入并按存储保留策略过期。
 
 ### 1.2 HTTP Client (Wukong)
 
@@ -101,8 +107,8 @@
 
 | 指标名称                                | 类型      | Labels                                                 | 说明                   |
 | :-------------------------------------- | :-------- | :----------------------------------------------------- | :--------------------- |
-| `redis_client_requests_total`           | Counter   | `address`, `db`, `masterName`, `pipe`, `cmd`, `result` | Redis 命令执行总数     |
-| `redis_client_request_duration_seconds` | Histogram | `address`, `db`, `masterName`, `pipe`, `cmd`, `result` | Redis 命令执行耗时分布 |
+| `redis_client_requests_total`           | Counter   | `pipe`, `cmd`, `result`                                 | Redis 命令执行总数     |
+| `redis_client_request_duration_seconds` | Histogram | `pipe`, `cmd`, `result`                                 | Redis 命令执行耗时分布 |
 
 **错误分类 (`result` 标签值)**:
 
