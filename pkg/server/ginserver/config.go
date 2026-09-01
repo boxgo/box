@@ -11,6 +11,7 @@ import (
 type (
 	Config struct {
 		path         string
+		engineOpts   []gin.OptionFunc
 		Mode         string            `config:"mode" desc:"Gin mode: debug,release,test. default is release"`
 		Addr         string            `config:"addr" desc:"server listen addr, format is ip:port"`
 		BasicAuth    map[string]string `config:"basicAuth" desc:"basicAuth. key is username, value is password"`
@@ -18,10 +19,22 @@ type (
 		WriteTimeout time.Duration     `config:"writeTimeout"`
 		IdleTimeout  time.Duration     `config:"idleTimeout"`
 	}
+
+	OptionFunc func(*Config)
 )
 
-func StdConfig(key string) *Config {
+func WithEngineOption(opts ...gin.OptionFunc) OptionFunc {
+	return func(c *Config) {
+		c.engineOpts = append(c.engineOpts, opts...)
+	}
+}
+
+func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 	cfg := DefaultConfig(key)
+
+	for _, fn := range optionFunc {
+		fn(cfg)
+	}
 
 	if err := config.Scan(cfg); err != nil {
 		logger.Panicf("gin server load config error: %s", err)
@@ -41,7 +54,12 @@ func DefaultConfig(key string) *Config {
 	}
 
 	return &Config{
-		path:         "gin." + key,
+		path: "gin." + key,
+		engineOpts: []gin.OptionFunc{
+			func(eng *gin.Engine) {
+				eng.ContextWithFallback = true
+			},
+		},
 		Mode:         gin.ReleaseMode,
 		Addr:         addr,
 		BasicAuth:    nil,
@@ -49,7 +67,6 @@ func DefaultConfig(key string) *Config {
 		WriteTimeout: time.Minute,
 		IdleTimeout:  time.Minute * 5,
 	}
-
 }
 
 func (c *Config) Path() string {

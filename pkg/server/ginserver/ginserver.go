@@ -23,9 +23,7 @@ var (
 func newGinServer(cfg *Config) *GinServer {
 	gin.SetMode(gin.ReleaseMode) // init mode is release.
 
-	engine := gin.New(func(eng *gin.Engine) {
-		eng.ContextWithFallback = true
-	})
+	engine := gin.New(cfg.engineOpts...)
 	server := &http.Server{
 		Addr:         cfg.Addr,
 		Handler:      engine,
