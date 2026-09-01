@@ -58,6 +58,7 @@ func DefaultConfig(key string) *Config {
 		engineOpts: []gin.OptionFunc{
 			func(eng *gin.Engine) {
 				eng.ContextWithFallback = true
+				eng.RemoteIPHeaders = []string{"X-Real-IP", "X-Forwarded-For"}
 			},
 		},
 		Mode:         gin.ReleaseMode,
