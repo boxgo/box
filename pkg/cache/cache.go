@@ -10,6 +10,7 @@ type (
 	Cache interface {
 		Get(context.Context, string, interface{}) error
 		Set(context.Context, string, interface{}, time.Duration) error
+		SetNX(context.Context, string, interface{}, time.Duration) (bool, error)
 		Clear(context.Context, string) error
 		Expire(context.Context, string, time.Duration) error
 	}

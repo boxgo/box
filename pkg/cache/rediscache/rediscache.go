@@ -41,6 +41,20 @@ func (l *redisCache) Set(ctx context.Context, key string, val interface{}, durat
 	return l.client.Client().Set(ctx, l.cacheKey(key), data, duration).Err()
 }
 
+// SetNX cache
+func (l *redisCache) SetNX(ctx context.Context, key string, val interface{}, duration time.Duration) (bool, error) {
+	data, err := json.Marshal(val)
+	if err != nil {
+		return false, err
+	}
+
+	if cacheSize := len(data); l.cfg.BigCacheSize > 0 && cacheSize > l.cfg.BigCacheSize {
+		logger.Trace(ctx).Warnw("RedisCache.SetNX.BigCache", "key", key, "size", cacheSize)
+	}
+
+	return l.client.Client().SetNX(ctx, l.cacheKey(key), data, duration).Result()
+}
+
 // Get cache
 func (l *redisCache) Get(ctx context.Context, key string, val interface{}) error {
 	data, err := l.client.Client().Get(ctx, l.cacheKey(key)).Bytes()
