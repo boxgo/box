@@ -1,5 +1,7 @@
 coverage.out
 
+.agents
+.cursor
 .idea
 .DS_Store
 

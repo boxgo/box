@@ -31,6 +31,40 @@ type (
 		ReadTimeout     time.Duration `config:"readTimeout"`
 		WriteTimeout    time.Duration `config:"writeTimeout"`
 		KeepAlive       time.Duration `config:"keepAlive"`
+		SASL            SASLConfig    `config:"sasl"`
+	}
+
+	SASLConfig struct {
+		// Enable SASL authentication when connecting to the broker
+		Enable bool `config:"enable"`
+		// Mechanism is the name of the enabled SASL mechanism.
+		// Possible values: OAUTHBEARER, PLAIN, SCRAM-SHA-256, SCRAM-SHA-512, GSSAPI (defaults to PLAIN)
+		Mechanism SASLMechanism `config:"mechanism"`
+		// Version is the SASL protocol version to use.
+		// Kafka > 1.x should use V1, except on Azure EventHub which uses V0
+		Version int16 `config:"version"`
+		// Handshake send the Kafka SASL handshake first if enabled (defaults to true).
+		// You should only set this to false if you're using a non-Kafka SASL proxy.
+		Handshake bool `config:"handshake"`
+		// AuthIdentity is an (optional) authorization identity (authzid) to use
+		// for SASL/PLAIN authentication (if different from User).
+		AuthIdentity string `config:"authIdentity"`
+		// User is the authentication identity (authcid) to present
+		// for SASL/PLAIN or SASL/SCRAM authentication
+		User string `config:"user"`
+		// Password for SASL/PLAIN or SASL/SCRAM authentication
+		Password string `config:"password"`
+		// SCRAMAuthzID is the authz id used for SASL/SCRAM authentication
+		SCRAMAuthzID string `config:"scramAuthzId"`
+		// SCRAMClientGeneratorFunc is a generator of a user provided implementation of a SCRAM
+		// client used to perform the SCRAM exchange with the server.
+		// If not set, a default implementation based on github.com/xdg/scram is used.
+		SCRAMClientGeneratorFunc func() SCRAMClient `config:"-" json:"-"`
+		// TokenProvider is a user-defined callback for generating
+		// access tokens for SASL/OAUTHBEARER auth.
+		TokenProvider AccessTokenProvider `config:"-" json:"-"`
+		// GSSAPI is the configuration for GSSAPI/Kerberos authentication
+		GSSAPI GSSAPIConfig `config:"gssapi"`
 	}
 
 	Metadata struct {
@@ -114,6 +148,29 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 	cfg.kfkCfg.Net.ReadTimeout = cfg.Net.ReadTimeout
 	cfg.kfkCfg.Net.WriteTimeout = cfg.Net.WriteTimeout
 	cfg.kfkCfg.Net.KeepAlive = cfg.Net.KeepAlive
+	cfg.kfkCfg.Net.SASL.Enable = cfg.Net.SASL.Enable
+	if cfg.Net.SASL.Mechanism != "" {
+		cfg.kfkCfg.Net.SASL.Mechanism = cfg.Net.SASL.Mechanism
+	}
+	cfg.kfkCfg.Net.SASL.Version = cfg.Net.SASL.Version
+	cfg.kfkCfg.Net.SASL.Handshake = cfg.Net.SASL.Handshake
+	cfg.kfkCfg.Net.SASL.AuthIdentity = cfg.Net.SASL.AuthIdentity
+	cfg.kfkCfg.Net.SASL.User = cfg.Net.SASL.User
+	cfg.kfkCfg.Net.SASL.Password = cfg.Net.SASL.Password
+	cfg.kfkCfg.Net.SASL.SCRAMAuthzID = cfg.Net.SASL.SCRAMAuthzID
+	cfg.kfkCfg.Net.SASL.SCRAMClientGeneratorFunc = cfg.Net.SASL.SCRAMClientGeneratorFunc
+	cfg.kfkCfg.Net.SASL.TokenProvider = cfg.Net.SASL.TokenProvider
+	cfg.kfkCfg.Net.SASL.GSSAPI = cfg.Net.SASL.GSSAPI
+
+	// Auto inject a default SCRAM client generator based on github.com/xdg/scram
+	// to make SCRAM mechanisms work out of the box via config file.
+	if cfg.Net.SASL.Enable && cfg.kfkCfg.Net.SASL.SCRAMClientGeneratorFunc == nil {
+		switch cfg.kfkCfg.Net.SASL.Mechanism {
+		case SASLTypeSCRAMSHA256, SASLTypeSCRAMSHA512:
+			cfg.kfkCfg.Net.SASL.SCRAMClientGeneratorFunc = cfg.Net.SASL.defaultSCRAMClientGenerator
+		}
+	}
+
 	cfg.kfkCfg.Metadata.Retry.Max = cfg.Metadata.RetryMax
 	cfg.kfkCfg.Metadata.Retry.Backoff = cfg.Metadata.RetryBackoff
 	cfg.kfkCfg.Metadata.Retry.BackoffFunc = cfg.Metadata.RetryBackoffFunc
@@ -183,6 +240,19 @@ func DefaultConfig(key string) *Config {
 			ReadTimeout:     kfkCfg.Net.ReadTimeout,
 			WriteTimeout:    kfkCfg.Net.WriteTimeout,
 			KeepAlive:       kfkCfg.Net.KeepAlive,
+			SASL: SASLConfig{
+				Enable:                   kfkCfg.Net.SASL.Enable,
+				Mechanism:                kfkCfg.Net.SASL.Mechanism,
+				Version:                  kfkCfg.Net.SASL.Version,
+				Handshake:                kfkCfg.Net.SASL.Handshake,
+				AuthIdentity:             kfkCfg.Net.SASL.AuthIdentity,
+				User:                     kfkCfg.Net.SASL.User,
+				Password:                 kfkCfg.Net.SASL.Password,
+				SCRAMAuthzID:             kfkCfg.Net.SASL.SCRAMAuthzID,
+				SCRAMClientGeneratorFunc: kfkCfg.Net.SASL.SCRAMClientGeneratorFunc,
+				TokenProvider:            kfkCfg.Net.SASL.TokenProvider,
+				GSSAPI:                   kfkCfg.Net.SASL.GSSAPI,
+			},
 		},
 		Metadata: Metadata{
 			RetryMax:         kfkCfg.Metadata.Retry.Max,
