@@ -34,8 +34,8 @@ func newGinServer(cfg *Config) *GinServer {
 
 	gin.SetMode(cfg.Mode)
 
-	if cfg.BasicAuth != nil && len(cfg.BasicAuth) != 0 {
-		engine.Use(gin.BasicAuth(cfg.BasicAuth))
+	if len(cfg.BasicAuth) != 0 {
+		engine.Use(BasicAuth(cfg.BasicAuth, "Authorization Required"))
 	}
 
 	engine.NoRoute(func(c *gin.Context) {

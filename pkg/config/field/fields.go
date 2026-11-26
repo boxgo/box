@@ -141,7 +141,11 @@ func (fs *Fields) parse(path, sub string, c interface{}) {
 		}
 
 		if typField.Type.Kind() == reflect.Struct {
-			fs.parse(path, name, def)
+			if valField.CanAddr() {
+				fs.parse(path, name, valField.Addr().Interface())
+			} else {
+				fs.parse(path, name, def)
+			}
 
 			if !hasExport(valField) {
 				fn()

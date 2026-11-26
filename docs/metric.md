@@ -1,4 +1,7 @@
 - [Metrics Documentation](#metrics-documentation)
+  - [抓取认证（Basic Auth）](#抓取认证basic-auth)
+  - [Pushgateway 上报认证](#pushgateway-上报认证)
+  - [Insight 配置读取认证](#insight-配置读取认证)
   - [1. 核心指标定义 (Definitions)](#1-核心指标定义-definitions)
     - [1.1 HTTP Server (Gin)](#11-http-server-gin)
     - [1.2 HTTP Client (Wukong)](#12-http-client-wukong)
@@ -56,6 +59,58 @@
 # Metrics Documentation
 
 本文档记录了 `box` 框架中各组件暴露的 Prometheus 监控指标、推荐的 Grafana 看板配置以及告警规则。
+
+## 抓取认证（Basic Auth）
+
+在服务配置中设置 `metric.basicAuth`，以用户名为键、密码为值。支持多个账号。省略该项或配置为空映射时，metrics 不要求 Basic Auth。
+
+```yaml
+metric:
+  basicAuth:
+    prometheus: "替换为实际密码"
+```
+
+该配置适用于 Insight 的 `/metrics` 和应用直接挂载的 `metric.Handler()`。缺少凭据或凭据错误时，接口返回 HTTP 401。若同时设置了 `gin.insight.basicAuth`，用于抓取的账号和密码必须通过两处校验。使用 HTTPS 传输 Basic Auth 凭据。
+
+在 Prometheus 的抓取任务中填写同一账号，并从密码文件读取密码。
+
+```yaml
+scrape_configs:
+  - job_name: box
+    scheme: https
+    basic_auth:
+      username: prometheus
+      password_file: /etc/prometheus/secrets/box-metrics-password
+    static_configs:
+      - targets: ["box.example.com:443"]
+```
+
+## Pushgateway 上报认证
+
+启用上报后，`metric.pushBasicAuth` 指定发送给 Pushgateway 的用户名和密码。使用 HTTPS 传输凭据。省略这两个字段时，仍可向无需认证的 Pushgateway 上报。
+
+```yaml
+metric:
+  pushEnabled: true
+  pushTargetURL: https://pushgateway.example.com
+  pushInterval: 15s
+  pushBasicAuth:
+    username: box-pusher
+    password: "替换为实际密码"
+```
+
+## Insight 配置读取认证
+
+`gin.insight.configBasicAuth` 用于保护 `/config` 和 `/config/:key`。认证成功后可读取完整配置，包括凭据字段。
+
+```yaml
+gin:
+  insight:
+    configBasicAuth:
+      config-reader: "替换为实际密码"
+```
+
+只设置 `gin.insight.basicAuth` 时，配置接口沿用 Insight 的全局账号。两项都设置时，请用能通过两处校验的账号。两项都为空时，配置接口返回 HTTP 401。
 
 ## 1. 核心指标定义 (Definitions)
 

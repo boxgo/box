@@ -2,9 +2,12 @@ package metric
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"sync"
 	"time"
 
+	"github.com/boxgo/box/internal/basicauth"
 	"github.com/boxgo/box/pkg/config"
 	"github.com/boxgo/box/pkg/insight"
 	"github.com/boxgo/box/pkg/logger"
@@ -18,7 +21,8 @@ type (
 	// Metric config
 	Metric struct {
 		cfg  *Config
-		stop chan bool
+		mu   sync.Mutex
+		stop chan struct{}
 	}
 )
 
@@ -26,14 +30,8 @@ var (
 	Default = StdConfig("").Build()
 )
 
-func newMetric(cfg *Config) *Metric {
-	m := &Metric{
-		cfg: cfg,
-	}
-
-	insight.GetH("/metrics", m.Handler())
-
-	return m
+func init() {
+	insight.GetH("/metrics", Default.Handler())
 }
 
 // Name config name
@@ -46,21 +44,35 @@ func (m *Metric) Serve(context.Context) error {
 	if !m.cfg.PushEnabled {
 		return nil
 	}
+	if m.cfg.PushInterval <= 0 {
+		return errors.New("metric pushInterval must be positive")
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.stop != nil {
+		return nil
+	}
+	stop := make(chan struct{})
+	m.stop = stop
+
+	pusher := push.
+		New(m.cfg.PushTargetURL, config.ServiceName()).
+		Gatherer(prometheus.DefaultGatherer).
+		Grouping("namespace", config.ServiceNamespace()).
+		Grouping("instance", system.Hostname())
+	if auth := m.cfg.PushBasicAuth; auth.Username != "" || auth.Password != "" {
+		pusher.BasicAuth(auth.Username, auth.Password)
+	}
 
 	go func() {
 		ticker := time.NewTicker(m.cfg.PushInterval)
 		defer ticker.Stop()
 
-		pusher := push.
-			New(m.cfg.PushTargetURL, config.ServiceName()).
-			Gatherer(prometheus.DefaultRegisterer.(prometheus.Gatherer)).
-			Grouping("namespace", config.ServiceNamespace()).
-			Grouping("instance", system.Hostname())
-
 		for {
 			select {
-			case <-m.stop:
-				break
+			case <-stop:
+				return
 			case <-ticker.C:
 				if err := pusher.Add(); err != nil {
 					logger.Error("metrics.pusher.add.error", err)
@@ -74,20 +86,33 @@ func (m *Metric) Serve(context.Context) error {
 
 // Shutdown close clients when Shutdown
 func (m *Metric) Shutdown(context.Context) error {
-	if !m.cfg.PushEnabled {
-		return nil
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.stop != nil {
+		close(m.stop)
+		m.stop = nil
 	}
-
-	go func() {
-		m.stop <- true
-	}()
-
 	return nil
 }
 
 // Handler metrics http
 func (m *Metric) Handler() http.Handler {
-	return promhttp.Handler()
+	handler := promhttp.Handler()
+	if len(m.cfg.BasicAuth) == 0 {
+		return handler
+	}
+
+	verify := basicauth.NewVerifier(m.cfg.BasicAuth)
+	challenge := basicauth.Challenge("metrics")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := verify(r); ok {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
+		w.Header().Set("WWW-Authenticate", challenge)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+	})
 }
 
 // NewCounterVec creates a new CounterVec based on the provided CounterOpts and partitioned by the given label names.

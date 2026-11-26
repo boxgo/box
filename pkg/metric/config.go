@@ -9,11 +9,19 @@ import (
 
 type (
 	Config struct {
-		Namespace     string        `config:"namespace"`
-		Subsystem     string        `config:"subsystem"`
-		PushEnabled   bool          `config:"pushEnabled"`
-		PushTargetURL string        `config:"pushTargetURL"`
-		PushInterval  time.Duration `config:"pushInterval"`
+		Namespace     string            `config:"namespace"`
+		Subsystem     string            `config:"subsystem"`
+		PushEnabled   bool              `config:"pushEnabled"`
+		PushTargetURL string            `config:"pushTargetURL"`
+		PushInterval  time.Duration     `config:"pushInterval"`
+		PushBasicAuth PushBasicAuth     `config:"pushBasicAuth"`
+		BasicAuth     map[string]string `config:"basicAuth" desc:"Basic Auth accounts for metrics. Keys are usernames and values are passwords."`
+	}
+
+	// PushBasicAuth holds the credentials sent to the Pushgateway.
+	PushBasicAuth struct {
+		Username string `config:"username"`
+		Password string `config:"password"`
 	}
 
 	// OptionFunc is option function.
@@ -30,7 +38,10 @@ func StdConfig(key string, optionFunc ...OptionFunc) *Config {
 	if err := config.Scan(cfg); err != nil {
 		logger.Panicf("Metric load config error: %s", err)
 	} else {
-		logger.Debugw("Metric load config", "config", cfg)
+		logCfg := *cfg
+		logCfg.BasicAuth = nil
+		logCfg.PushBasicAuth = PushBasicAuth{}
+		logger.Debugw("Metric load config", "config", &logCfg)
 	}
 
 	return cfg
@@ -49,7 +60,7 @@ func DefaultConfig(key string) *Config {
 
 // Build a instance.
 func (c *Config) Build() *Metric {
-	return newMetric(c)
+	return &Metric{cfg: c}
 }
 
 // Path is config path.

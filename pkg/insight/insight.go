@@ -1,21 +1,30 @@
 package insight
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"slices"
 	"sort"
 	"strings"
 
 	"github.com/boxgo/box/pkg/config"
+	"github.com/boxgo/box/pkg/config/field"
+	"github.com/boxgo/box/pkg/logger"
 	"github.com/boxgo/box/pkg/server/ginserver"
 	"github.com/gin-gonic/gin"
 )
 
 var (
-	Default = ginserver.StdConfig("insight").Build()
+	serverConfig = ginserver.StdConfig("insight")
+	Default      = serverConfig.Build()
 )
+
+type configAccess struct {
+	BasicAuth map[string]string `config:"configBasicAuth" desc:"Basic Auth accounts for Insight config routes"`
+}
+
+func (*configAccess) Path() string { return "gin.insight" }
 
 func init() {
 	Get("/", func(ctx *gin.Context) {
@@ -32,23 +41,41 @@ func init() {
 		ctx.Data(200, gin.MIMEPlain, []byte(buildInfoStr))
 	})
 
-	Get("/config", func(ctx *gin.Context) {
+	access := &configAccess{}
+	if err := config.Scan(access); err != nil {
+		logger.Panicf("Insight config access load error: %s", err)
+	}
+	registerConfigRoutes(Default, len(serverConfig.BasicAuth) > 0, access.BasicAuth)
+}
+
+func registerConfigRoutes(server *ginserver.GinServer, hasServerAuth bool, accounts map[string]string) {
+	routes := server.Group("/config")
+	if len(accounts) > 0 || !hasServerAuth {
+		routes.Use(ginserver.BasicAuth(accounts, "insight config"))
+	}
+
+	routes.GET("", func(ctx *gin.Context) {
+		fields := slices.Clone(*config.Fields())
 		switch ctx.Query("format") {
 		case "json":
-			ctx.JSON(200, config.Fields())
-		case "table":
-			ctx.Data(200, gin.MIMEPlain, bytes.NewBufferString(config.Fields().Table()).Bytes())
+			type configField struct {
+				field.Field
+				Value any `json:"value"`
+			}
+			values := make([]configField, 0, len(fields))
+			for _, f := range fields {
+				values = append(values, configField{Field: f, Value: f.Value.Interface()})
+			}
+			ctx.JSON(200, values)
 		case "env":
-			ctx.Data(200, gin.MIMEPlain, bytes.NewBufferString(config.Fields().Env()).Bytes())
+			ctx.String(200, "%s", fields.Env())
 		default:
-			ctx.Data(200, gin.MIMEPlain, bytes.NewBufferString(config.Fields().Table()).Bytes())
+			ctx.String(200, "%s", fields.Table())
 		}
 	})
 
-	Get("/config/:key", func(ctx *gin.Context) {
-		key := ctx.Param("key")
-
-		ctx.Data(200, gin.MIMEPlain, config.Get(key).Bytes())
+	routes.GET("/:key", func(ctx *gin.Context) {
+		ctx.Data(200, gin.MIMEPlain, config.Get(ctx.Param("key")).Bytes())
 	})
 }
 

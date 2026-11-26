@@ -33,9 +33,9 @@ func (boxMetric) Serve(ctx context.Context) error {
 		system.StartAt().Format(time.RFC3339),
 	).Inc()
 
-	return nil
+	return metric.Default.Serve(ctx)
 }
 
 func (boxMetric) Shutdown(ctx context.Context) error {
-	return nil
+	return metric.Default.Shutdown(ctx)
 }
